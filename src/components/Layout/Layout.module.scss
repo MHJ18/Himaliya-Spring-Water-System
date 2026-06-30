@@ -1,0 +1,97 @@
+@import '../../styles/app';
+
+.root {
+  height: 100%;
+  position: relative;
+  left: 0;
+  transition: left $sidebar-transition-time ease-in-out;
+}
+
+.wrap {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  margin-left: $sidebar-width-open + 25px;
+  flex-direction: column;
+  left: 0;
+  right: 0;
+  transition: left $sidebar-transition-time ease-in-out;
+
+  @media print {
+    margin: 0;
+  }
+
+  @media (max-width: breakpoint-max(md)) {
+    margin-left: 0;
+    margin-right: 0;
+    left: 0;
+  }
+
+  :global(.sidebar-right) & {
+    margin-left: 0;
+    margin-right: $sidebar-width-open + 25px;
+
+    @media (max-width: breakpoint-max(md)) {
+      margin-right: 0;
+    }
+  }
+
+  :global(.sidebar-hide) & {
+    margin: 0;
+  }
+}
+
+.sidebarBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 4550;
+  background: rgba(4, 8, 20, 0.62);
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.28s ease, visibility 0.28s ease;
+
+  @media (min-width: breakpoint-min(md)) {
+    display: none;
+  }
+}
+
+.sidebarBackdropVisible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.content {
+  position: relative;
+  flex-grow: 1;
+  padding: 25px $content-padding ($content-padding + 20px);
+  overflow: hidden;
+  min-width: 0;
+
+  @media (max-width: breakpoint-max(md)) {
+    padding: 16px 14px 72px;
+  }
+
+  @media (min-width: breakpoint-min(md)) {
+    user-select: auto !important;
+  }
+}
+
+.routeMotion {
+  width: 100%;
+  min-width: 0;
+}
+
+.contentFooter {
+  position: absolute;
+  bottom: 15px;
+  color: $text-muted;
+
+  @media (max-width: breakpoint-max(md)) {
+    position: static;
+    margin-top: 24px;
+    padding-bottom: 8px;
+    font-size: 0.8125rem;
+    text-align: center;
+  }
+}

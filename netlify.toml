@@ -1,0 +1,23 @@
+[build]
+  command = "npm run build"
+  publish = "build"
+
+# React Router owns application routes. Netlify must serve the SPA shell when
+# a visitor refreshes or directly opens a private route such as /app/customers.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Mobile browsers commonly restore old tabs from memory. Force the application
+# shell and former service-worker URL to revalidate while keeping hashed assets
+# available through Netlify's normal immutable caching.
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/service-worker.js"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"

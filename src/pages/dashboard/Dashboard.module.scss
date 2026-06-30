@@ -1,0 +1,96 @@
+@import '../../styles/app';
+
+.root {
+  :global {
+    .post-comments footer {
+      margin: 0 (-$widget-padding-horizontal) (-$widget-padding-vertical);
+      padding: $widget-padding-vertical $widget-padding-horizontal;
+    }
+
+    .stat-item .name {
+      margin-top: 10px;
+    }
+
+    .list-group-item:hover {
+      background-color: $bg-addition;
+    }
+
+    .detail {
+      .x_label {
+        background: $widget-bg-color !important;
+      }
+    }
+  }
+}
+
+.table {
+  :global(.table.table-sm) {
+    td {
+      font-size: 1rem;
+      vertical-align: middle;
+    }
+  }
+}
+
+.searchBtn {
+  border-top-left-radius: 0px;
+  border-bottom-left-radius: 0px;
+}
+
+.coveragePanel {
+  display: grid;
+  grid-template-columns: minmax(150px, 0.8fr) minmax(0, 1.6fr);
+  gap: 18px;
+  min-height: 250px;
+}
+
+.coverageSummary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 24px;
+  background: linear-gradient(145deg, rgba(41, 133, 255, 0.2), rgba(60, 210, 255, 0.08));
+  border: 1px solid var(--hs-card-border, rgba(255, 255, 255, 0.08));
+  border-radius: 18px;
+
+  > span {
+    display: grid;
+    width: 48px;
+    height: 48px;
+    place-items: center;
+    color: #77ddff;
+    font-size: 1.4rem;
+    background: rgba(52, 153, 255, 0.16);
+    border-radius: 14px;
+  }
+
+  strong,
+  small { display: block; }
+  strong { color: var(--hs-page-text, #fff); font-size: 2rem; }
+  small { color: var(--hs-page-muted, rgba(255, 255, 255, 0.62)); }
+}
+
+.coverageAreas {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+
+  > div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    color: var(--hs-page-text, #fff);
+    background: rgba(71, 126, 205, 0.08);
+    border: 1px solid var(--hs-card-border, rgba(255, 255, 255, 0.06));
+    border-radius: 12px;
+  }
+
+  p { margin: 0; color: var(--hs-page-muted, rgba(255, 255, 255, 0.62)); text-align: center; }
+}
+
+@media (max-width: 600px) {
+  .coveragePanel { grid-template-columns: 1fr; }
+}
