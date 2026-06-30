@@ -1,0 +1,36 @@
+<svg width="1280" height="520" viewBox="0 0 1280 520" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="80" y1="20" x2="1180" y2="500" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#06111F"/>
+      <stop offset="0.52" stop-color="#082A46"/>
+      <stop offset="1" stop-color="#064D68"/>
+    </linearGradient>
+    <linearGradient id="drop" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#B8F6FF"/>
+      <stop offset="1" stop-color="#20B8F5"/>
+    </linearGradient>
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="22" stdDeviation="28" flood-color="#00101D" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+  <rect width="1280" height="520" rx="36" fill="url(#bg)"/>
+  <circle cx="1130" cy="40" r="270" fill="#37C7FF" fill-opacity="0.08"/>
+  <circle cx="1050" cy="500" r="230" fill="#7CF1FF" fill-opacity="0.07"/>
+  <path d="M0 415C170 370 262 455 426 415C611 370 750 455 919 411C1068 372 1157 395 1280 355V520H0V415Z" fill="#4CD8FF" fill-opacity="0.09"/>
+  <g filter="url(#shadow)">
+    <rect x="82" y="82" width="168" height="168" rx="48" fill="#0B3352" stroke="#8CEBFF" stroke-opacity="0.35"/>
+    <path d="M166 116C166 116 113 179 113 209C113 238 137 261 166 261C195 261 219 238 219 209C219 179 166 116 166 116Z" fill="url(#drop)"/>
+    <path d="M143 217C148 230 160 237 174 235" stroke="white" stroke-width="8" stroke-linecap="round" stroke-opacity="0.8"/>
+  </g>
+  <text x="304" y="162" fill="#8CEBFF" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="24" font-weight="800" letter-spacing="4">WATER DELIVERY PLATFORM</text>
+  <text x="302" y="231" fill="white" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="58" font-weight="900">Himaliya Spring Water</text>
+  <text x="304" y="284" fill="#C9EAF6" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="25" font-weight="500">Orders, customers, invoices and delivery operations—together.</text>
+  <g font-family="Inter,Segoe UI,Arial,sans-serif" font-size="19" font-weight="700">
+    <rect x="304" y="332" width="165" height="52" rx="26" fill="#74E8FF" fill-opacity="0.13" stroke="#83EBFF" stroke-opacity="0.3"/>
+    <text x="342" y="365" fill="#BDF6FF">Supabase</text>
+    <rect x="487" y="332" width="138" height="52" rx="26" fill="#74E8FF" fill-opacity="0.13" stroke="#83EBFF" stroke-opacity="0.3"/>
+    <text x="522" y="365" fill="#BDF6FF">React</text>
+    <rect x="643" y="332" width="186" height="52" rx="26" fill="#74E8FF" fill-opacity="0.13" stroke="#83EBFF" stroke-opacity="0.3"/>
+    <text x="678" y="365" fill="#BDF6FF">Responsive</text>
+  </g>
+</svg>
