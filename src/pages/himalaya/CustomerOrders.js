@@ -13,6 +13,7 @@ import { BOTTLE_TYPE_LABELS } from '../../data/constants';
 import { resolveOrderPricing } from '../../utils/orderPricing';
 import LoadingState from '../../components/LoadingState/LoadingState';
 import DeliveryCelebration from '../../components/DeliveryCelebration/DeliveryCelebration';
+import { useSettings } from '../../context/SettingsContext';
 import './UtilityPages.css';
 
 function formatDate(value) {
@@ -33,6 +34,7 @@ function bottleLabel(type) {
 }
 
 export default function CustomerOrders() {
+  const { settings } = useSettings();
   const [orders, setOrders] = React.useState([]);
   const [prices, setPrices] = React.useState({});
   const [loading, setLoading] = React.useState(true);
@@ -56,6 +58,10 @@ export default function CustomerOrders() {
   React.useEffect(() => { load(); }, [load]);
 
   const updateStatus = async (order, status) => {
+    if (status === 'delivered' && settings.requireDeliveryConfirmation) {
+      const confirmed = window.confirm(`Confirm delivery for ${order.profile?.name || 'this customer'}? This will notify the customer immediately.`);
+      if (!confirmed) return;
+    }
     setUpdating(order.id);
     try {
       const pricing = resolveOrderPricing(order, prices);

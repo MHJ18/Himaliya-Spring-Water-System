@@ -5,6 +5,9 @@ import { getCurrentAdmin } from '../../utils/adminAuth';
 
 function buildInvoicePayload(customer, historyItems, company) {
   const admin = getCurrentAdmin() || {};
+  const issuedAt = new Date();
+  const dueAt = new Date(issuedAt);
+  dueAt.setDate(dueAt.getDate() + Math.max(0, Number(company.invoiceDueDays) || 0));
   const totalAmount = historyItems.reduce((sum, item) => sum + Number(item.totalAmount || 0), 0);
   const totalQty = historyItems.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
 
@@ -37,6 +40,9 @@ function buildInvoicePayload(customer, historyItems, company) {
       entryCount: historyItems.length,
       totalAmount,
       totalQty,
+      issuedAt: issuedAt.toISOString(),
+      dueDate: dueAt.toISOString(),
+      paymentTermsDays: Math.max(0, Number(company.invoiceDueDays) || 0),
     },
   };
 }

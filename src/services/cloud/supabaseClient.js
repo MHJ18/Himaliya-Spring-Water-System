@@ -190,6 +190,44 @@ export async function verifyPassword(email, password) {
   });
 }
 
+export async function requestPasswordReset(email, redirectTo) {
+  const redirect = encodeURIComponent(redirectTo || `${window.location.origin}/reset-password`);
+  await authRequest(`/recover?redirect_to=${redirect}`, {
+    method: 'POST',
+    body: JSON.stringify({ email: email.trim().toLowerCase() }),
+  });
+  return true;
+}
+
+export async function updatePasswordWithToken(accessToken, newPassword) {
+  return authRequest('/user', {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify({ password: newPassword }),
+  });
+}
+
+export async function changeSignedInPassword(email, currentPassword, newPassword) {
+  const sessionType = getStoredSessionType() || 'admin';
+  const verifiedSession = await verifyPassword(email.trim().toLowerCase(), currentPassword);
+  storeSession(verifiedSession, sessionType);
+  await updatePasswordWithToken(verifiedSession.access_token, newPassword);
+  return true;
+}
+
+export async function adminResetCustomerPassword(customerId, newPassword, ownerPassword) {
+  const session = await getFreshSession();
+  const response = await fetch('/.netlify/functions/admin-reset-user-password', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${session.access_token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ customerId, password: newPassword, ownerPassword }),
+  });
+  return parseResponse(response);
+}
+
 export async function signOut() {
   const token = getAccessToken();
   // Clear local auth first so the UI cannot remain on a protected screen while

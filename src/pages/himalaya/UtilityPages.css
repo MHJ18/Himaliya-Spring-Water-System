@@ -376,6 +376,7 @@ body.dashboard-dark .profile-business p {
 .customer-admin-order__actions strong { color: var(--utility-accent); font-size: .76rem; letter-spacing: .08em; text-align: center; text-transform: uppercase; }
 .customer-admin-order--pending { background: linear-gradient(135deg, rgba(245,158,11,.13), rgba(255,212,138,.045)); border-color: rgba(255, 193, 72, .58); box-shadow: inset .22rem 0 0 #fbbf24; }
 .customer-admin-order--pending .customer-admin-order__actions > strong { color: #fbbf24; }
+.customer-admin-order--rejected .customer-admin-order__actions > strong { color: #ff5d70; }
 .customer-admin-order--accepted { border-color: rgba(157, 246, 200, .34); }
 .customer-admin-order--delivered { border-color: rgba(125, 223, 255, .34); }
 .customer-admin-order--accepted .customer-admin-order__main,

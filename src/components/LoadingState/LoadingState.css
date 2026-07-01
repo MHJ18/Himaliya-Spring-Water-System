@@ -7,9 +7,24 @@
   background:
     radial-gradient(circle at 15% 0%, rgba(36, 166, 232, .12), transparent 24rem),
     linear-gradient(180deg, #071523, #050e19) !important;
-  border: 1px solid rgba(125, 223, 255, .08);
-  border-radius: 1.25rem;
+  border: 0;
+  border-radius: 0;
   text-align: center;
+}
+
+.hs-loading-state:not(.hs-loading-state--compact) {
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow-y: auto;
+  padding: clamp(1rem, 4vw, 3rem);
+}
+
+body.hs-is-loading,
+body.hs-is-loading #root {
+  background: #050e19 !important;
 }
 
 .hs-loading-state--compact {

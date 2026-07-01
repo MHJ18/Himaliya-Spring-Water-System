@@ -317,6 +317,18 @@
   text-decoration: none;
 }
 
+.water-login-forgot { display: inline-flex; align-self: flex-end; margin-top: .7rem; color: #8ee9fb; font-size: .8rem; font-weight: 700; }
+.water-login-forgot:hover { color: #fff; text-decoration: none; }
+.water-login-alert.is-success { color: #b8f7d4; background: rgba(22,163,74,.13); border-color: rgba(74,222,128,.28); }
+.password-access-page { display: grid; place-items: center; }
+.password-access-card { width: min(29rem, 100%); }
+.password-access-card h1 { margin: .75rem 0 .35rem; color: #fff; font-size: 1.55rem; font-weight: 900; }
+.password-access-card > p { margin-bottom: 1.2rem; color: #bcd3e3; }
+.password-access-icon { display: grid; width: 3.2rem; height: 3.2rem; margin-bottom: .9rem; place-items: center; color: #062238; background: linear-gradient(135deg,#9ff3ff,#55c8ff); border-radius: 1rem; }
+.password-access-success { display: flex; align-items: center; gap: .75rem; margin: 1rem 0; padding: .9rem; color: #a7f3d0; background: rgba(16,185,129,.1); border: 1px solid rgba(52,211,153,.22); border-radius: .85rem; text-align: left; }
+.password-access-success div { display: grid; }
+.password-access-success span { color: #a9cddd; font-size: .78rem; }
+
 @media (max-width: 900px) {
   .water-login-shell {
     grid-template-columns: 1fr;

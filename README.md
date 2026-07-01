@@ -70,6 +70,10 @@ REACT_APP_SUPABASE_ANON_KEY=your-publishable-or-anon-key
 
 Never place a Supabase `service_role` key in this browser application.
 
+For owner-authorized customer password resets on Netlify, add `SUPABASE_SERVICE_ROLE_KEY` in **Netlify → Site configuration → Environment variables**. Never prefix it with `REACT_APP_`; the key is consumed only by the server function.
+
+In **Supabase → Authentication → URL Configuration**, add the deployed `/reset-password` URL (and `http://localhost:3000/reset-password` for local testing) to the allowed redirect URLs.
+
 ### 3. Apply database migrations
 
 Review and apply the SQL files under [`supabase/migrations`](supabase/migrations) in chronological order. Back up an existing production database before applying schema changes.

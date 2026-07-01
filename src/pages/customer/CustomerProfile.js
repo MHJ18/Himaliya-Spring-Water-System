@@ -1,13 +1,14 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { withRouter } from 'react-router-dom';
-import { ArrowLeft, Building2, Droplets, Mail, MapPin, Moon, Phone, Save, Sun, UserRound } from 'lucide-react';
+import { ArrowLeft, Droplets, Moon, Save, Sun } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import { getCustomerProfile, saveCustomerProfile } from '../../services/api/customerPortalApi';
 import LoadingState from '../../components/LoadingState/LoadingState';
 import './CustomerPortal.css';
 import useCustomerTheme from './useCustomerTheme';
+import PasswordChangeForm from '../../components/PasswordChangeForm/PasswordChangeForm';
 
 function CustomerProfile({ history }) {
   const { theme, setTheme } = useCustomerTheme();
@@ -67,18 +68,6 @@ function CustomerProfile({ history }) {
       </header>
 
       <motion.div className="customer-profile-layout" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}>
-        <aside className="customer-portal-card customer-profile-identity">
-          <span className="customer-profile-avatar customer-profile-avatar--large"><UserRound size={40} /></span>
-          <h1>{profile.name}</h1>
-          <p>Customer account</p>
-          <div className="customer-contract">
-            <p><Building2 size={17} /><span><small>Company</small><strong>{profile.companyName || 'Himaliya Spring Water'}</strong></span></p>
-            <p><Mail size={17} /><span><small>Email</small><strong>{profile.email}</strong></span></p>
-            <p><Phone size={17} /><span><small>Phone</small><strong>{profile.phone || 'Not provided'}</strong></span></p>
-            <p><MapPin size={17} /><span><small>Delivery address</small><strong>{profile.address || 'Not provided'}</strong></span></p>
-          </div>
-        </aside>
-
         <section className="customer-portal-card customer-profile-editor">
           <div className="customer-card-heading">
             <span>Private profile</span>
@@ -100,6 +89,7 @@ function CustomerProfile({ history }) {
             </div>
           </form>
         </section>
+        <section className="customer-portal-card customer-profile-editor"><PasswordChangeForm email={profile.email} /></section>
       </motion.div>
     </main>
   );

@@ -11,6 +11,9 @@ import { isSupabaseConfigured } from '../../services/cloud/supabaseClient';
 import { changeSidebarPosition, changeSidebarVisibility } from '../../actions/navigation';
 import { BOTTLE_TYPES, BOTTLE_TYPE_LABELS } from '../../data/constants';
 import { getBottlePrices, saveBottlePrices } from '../../services/api/bottlePriceApi';
+import { getCurrentAdminProfile } from '../../utils/adminAuth';
+import PasswordChangeForm from '../../components/PasswordChangeForm/PasswordChangeForm';
+import { getInventory, saveInventory } from '../../services/api/inventoryApi';
 import './UtilityPages.css';
 
 const defaultBottlePrices = BOTTLE_TYPES.reduce((acc, type) => ({ ...acc, [type]: '' }), {});
@@ -39,12 +42,18 @@ export default function Settings() {
   });
   const [bottlePrices, setBottlePrices] = useState(defaultBottlePrices);
   const [savingPrices, setSavingPrices] = useState(false);
+  const [currentAdminEmail, setCurrentAdminEmail] = useState('');
+  const [inventory, setInventory] = useState(defaultBottlePrices);
+  const [savingInventory, setSavingInventory] = useState(false);
 
   useEffect(() => {
     getBottlePrices(defaultBottlePrices)
       .then((prices) => setBottlePrices({ ...defaultBottlePrices, ...prices }))
       .catch(() => toast.error('Could not load bottle prices.'));
   }, []);
+
+  useEffect(() => { getCurrentAdminProfile().then((admin) => setCurrentAdminEmail(admin.email)).catch(() => {}); }, []);
+  useEffect(() => { getInventory().then((stock) => setInventory({ ...defaultBottlePrices, ...stock })).catch(() => {}); }, []);
 
   useEffect(() => {
     setForm((current) => ({ ...current, ...settings }));
@@ -87,6 +96,14 @@ export default function Settings() {
     } finally {
       setSavingPrices(false);
     }
+  };
+
+  const handleSaveInventory = async (event) => {
+    event.preventDefault();
+    setSavingInventory(true);
+    try { await saveInventory(inventory); toast.success('Inventory levels updated.'); }
+    catch (error) { toast.error(error.message || 'Apply the inventory migration before saving stock.'); }
+    finally { setSavingInventory(false); }
   };
 
   return (
@@ -226,6 +243,11 @@ export default function Settings() {
               </Button>
             </div>
           </Widget>
+          <Widget title={<h5>Live Bottle Inventory</h5>} className="mb-4 settings-price-card">
+            <p className="text-muted">Sales automatically reduce these quantities. Alerts use the low-stock threshold configured in Order Workflow.</p>
+            <form onSubmit={handleSaveInventory}><Row>{BOTTLE_TYPES.map((type) => <Col sm={6} className="mb-3" key={type}><FormGroup className="settings-price-item mb-0"><Label for={`stock-${type}`}>{BOTTLE_TYPE_LABELS[type] || type}<small>units available</small></Label><Input id={`stock-${type}`} type="number" min="0" step="1" value={inventory[type] || ''} onChange={(event) => setInventory((current) => ({ ...current, [type]: event.target.value }))} /></FormGroup></Col>)}</Row><Button color="primary" type="submit" disabled={savingInventory}>{savingInventory ? 'Saving...' : 'Save Inventory'}</Button></form>
+          </Widget>
+          {currentAdminEmail && <Widget title={<h5>Account Security</h5>} className="mb-4"><PasswordChangeForm email={currentAdminEmail} compact /></Widget>}
         </Col>
       </Row>
     </PageShell>

@@ -1,6 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { Link, withRouter } from 'react-router-dom';
+import { withRouter } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   BellRing, ChevronDown, Droplets, LogOut, UserRound,
@@ -8,7 +8,9 @@ import {
 import { toast } from 'react-toastify';
 import {
   createCustomerOrder,
+  cancelCustomerOrder,
   getCustomerNotifications,
+  getCustomerOrderControls,
   getCustomerOrders,
   getCustomerInvoices,
   getCustomerProfile,
@@ -84,6 +86,8 @@ function CustomerPortal({ history }) {
   const [submitting, setSubmitting] = React.useState(false);
   const [accountOpen, setAccountOpen] = React.useState(false);
   const [deliveredOrder, setDeliveredOrder] = React.useState(null);
+  const [orderControls, setOrderControls] = React.useState({ allowCancellation: true, orderCutoffTime: '18:00', orderingOpen: true });
+  const [cancelingOrder, setCancelingOrder] = React.useState('');
   const [notificationPermission, setNotificationPermission] = React.useState(
     canUseBrowserNotifications() ? window.Notification.permission : 'unsupported',
   );
@@ -101,10 +105,11 @@ function CustomerPortal({ history }) {
         return;
       }
       const nextPrices = await getBottlePrices({});
-      const [nextOrders, nextNotifications, nextInvoices] = await Promise.all([
+      const [nextOrders, nextNotifications, nextInvoices, nextControls] = await Promise.all([
         getCustomerOrders(nextPrices),
         getCustomerNotifications(),
         getCustomerInvoices(),
+        getCustomerOrderControls(),
       ]);
       const hasAnyPrice = Object.values(nextPrices || {}).some((value) => Number(value) > 0);
       setProfile(nextProfile);
@@ -119,6 +124,7 @@ function CustomerPortal({ history }) {
       setInvoices(nextInvoices);
       seenInvoiceIds.current = new Set(nextInvoices.map((invoice) => invoice.id || invoice.invoiceNumber));
       setPrices(nextPrices || {});
+      setOrderControls(nextControls);
       setPriceWarning(hasAnyPrice ? '' : 'Bottle prices are not visible to this customer account yet. Ask admin to save prices in Settings and apply the Supabase price visibility SQL.');
     } catch (err) {
       toast.error(err.message || 'Could not load customer portal.');
@@ -206,6 +212,19 @@ function CustomerPortal({ history }) {
     setNotifications((current) => current.map((item) => ({ ...item, read: true })));
   };
 
+  const cancelOrder = async (orderId) => {
+    setCancelingOrder(orderId);
+    try {
+      const canceled = await cancelCustomerOrder(orderId);
+      setOrders((current) => current.map((order) => (order.id === canceled.id ? canceled : order)));
+      toast.success('Order canceled.');
+    } catch (error) {
+      toast.error(error.message || 'Could not cancel this order.');
+    } finally {
+      setCancelingOrder('');
+    }
+  };
+
   const logout = async () => {
     const remoteLogout = signOut();
     history.replace('/');
@@ -288,21 +307,19 @@ function CustomerPortal({ history }) {
               aria-expanded={accountOpen}
               onClick={() => setAccountOpen((open) => !open)}
             >
-              <span className="customer-account-avatar">{profile.name.charAt(0).toUpperCase()}</span>
-              <span className="customer-account-copy"><strong>{profile.name}</strong><small>Customer account</small></span>
+              <span className="customer-account-copy"><strong>{profile.name}</strong></span>
               <ChevronDown size={18} className={accountOpen ? 'is-open' : ''} />
             </button>
             {accountOpen && (
               <motion.div className="customer-account-menu" role="menu" initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.18 }}>
-                <Link
+                <button
+                  type="button"
                   role="menuitem"
-                  to="/customer/profile"
-                  onClick={(event) => {
-                    event.preventDefault();
+                  onClick={() => {
                     setAccountOpen(false);
                     history.push('/customer/profile');
                   }}
-                ><UserRound size={18} /><span><strong>View profile & settings</strong><small>Contact details and theme</small></span></Link>
+                ><UserRound size={18} /><span><strong>View profile & settings</strong><small>Contact details and theme</small></span></button>
                 <button type="button" role="menuitem" className="is-danger" onClick={logout}><LogOut size={18} /><span><strong>Sign out</strong><small>Return to the landing page</small></span></button>
               </motion.div>
             )}
@@ -343,6 +360,7 @@ function CustomerPortal({ history }) {
               <small className="customer-price-hint">PKR {selectedUnitPrice.toLocaleString()} per unit</small>
             </label>
             {priceWarning && <div className="customer-price-warning">{priceWarning}</div>}
+            {!orderControls.orderingOpen && <div className="customer-price-warning">Orders are closed after {orderControls.orderCutoffTime}. Please order again tomorrow.</div>}
             <label className="customer-form-wide">
               Delivery address from profile
               <input value={orderForm.deliveryAddress} onChange={(e) => updateOrder('deliveryAddress', e.target.value)} required />
@@ -360,7 +378,7 @@ function CustomerPortal({ history }) {
               <textarea value={orderForm.notes} onChange={(e) => updateOrder('notes', e.target.value)} placeholder="Gate number, delivery timing, empty gallons to collect..." />
             </label>
             <div className="customer-btn-row">
-              <button type="submit" className="customer-btn" disabled={submitting}>{submitting ? 'Sending...' : 'Place order'}</button>
+              <button type="submit" className="customer-btn" disabled={submitting || !orderControls.orderingOpen}>{submitting ? 'Sending...' : orderControls.orderingOpen ? 'Place order' : 'Orders closed'}</button>
             </div>
           </form>
         </section>
@@ -402,6 +420,7 @@ function CustomerPortal({ history }) {
                 <div className="customer-order-history-meta">
                   <strong>PKR {pricing.totalAmount.toLocaleString()}</strong>
                   <span className={`customer-status customer-status--${order.status}`}>{statusLabel(order.status)}</span>
+                  {order.status === 'pending' && orderControls.allowCancellation && <button type="button" className="customer-order-cancel" disabled={cancelingOrder === order.id} onClick={() => cancelOrder(order.id)}>{cancelingOrder === order.id ? 'Canceling...' : 'Cancel'}</button>}
                 </div>
               </article>
             );})}

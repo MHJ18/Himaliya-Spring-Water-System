@@ -14,6 +14,9 @@ import {
 } from '../services/cloud/supabaseClient';
 import WaterLogin from '../pages/login/WaterLogin';
 import CustomerLogin from '../pages/customer/CustomerLogin';
+import CustomerProfile from '../pages/customer/CustomerProfile';
+import ForgotPassword from '../pages/login/ForgotPassword';
+import ResetPassword from '../pages/login/ResetPassword';
 import LoadingState from './LoadingState/LoadingState';
 import RouteBranding from './RouteBranding/RouteBranding';
 
@@ -21,7 +24,6 @@ const LayoutComponent = React.lazy(() => import('./Layout/Layout'));
 const Landing = React.lazy(() => import('../pages/landing/Landing'));
 const PublicInvoice = React.lazy(() => import('../pages/invoice/PublicInvoice'));
 const CustomerPortal = React.lazy(() => import('../pages/customer/CustomerPortal'));
-const CustomerProfile = React.lazy(() => import('../pages/customer/CustomerProfile'));
 
 const CloseButton = ({ closeToast }) => (
   <i onClick={closeToast} className="la la-close notifications-close" role="presentation" />
@@ -87,7 +89,7 @@ class App extends React.PureComponent {
     return (
       <MotionConfig reducedMotion="user">
         <AppProviders>
-          <ToastContainer autoClose={5000} hideProgressBar closeButton={<CloseButton />} />
+          <ToastContainer autoClose={3000} hideProgressBar closeButton={<CloseButton />} />
           <BrowserRouter>
             <React.Fragment>
               <RoutedSessionExpiryHandler dispatch={this.props.dispatch} />
@@ -97,6 +99,8 @@ class App extends React.PureComponent {
                   <Route path="/" exact component={Landing} />
                   <Route path="/login" exact component={WaterLogin} />
                   <Route path="/customer/login" exact component={CustomerLogin} />
+                  <Route path="/forgot-password" exact component={ForgotPassword} />
+                  <Route path="/reset-password" exact component={ResetPassword} />
                   <CustomerPrivateRoute path="/customer/app" exact component={CustomerPortal} />
                   <CustomerPrivateRoute path="/customer/profile" exact component={CustomerProfile} />
                   <Route path="/invoice/:invoiceNumber" exact component={PublicInvoice} />

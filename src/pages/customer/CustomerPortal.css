@@ -380,7 +380,7 @@
 
 .customer-profile-toolbar .customer-btn { gap: .45rem; }
 .customer-profile-brand { display: inline-flex; align-items: center; gap: .5rem; color: #9ff3ff; font-weight: 900; }
-.customer-profile-layout { display: grid; max-width: 1080px; grid-template-columns: minmax(16rem, 20rem) minmax(0, 1fr); gap: 1.25rem; margin: 0 auto; }
+.customer-profile-layout { display: grid; max-width: 850px; grid-template-columns: minmax(0, 1fr); gap: 1.25rem; margin: 0 auto; }
 .customer-profile-identity { align-self: start; text-align: center; }
 .customer-profile-identity h1 { margin: 1rem 0 .2rem; color: #f2fbff; font-size: 1.45rem; }
 .customer-profile-identity > p { color: #a9cddd; }
@@ -453,6 +453,7 @@
 .customer-status--delivered { background: #9ff3ff; }
 .customer-status--rejected,
 .customer-status--canceled { color: #fff; background: #ef4444; }
+.customer-order-cancel { min-height: 2rem; padding: 0 .55rem; color: #ffabb5; background: rgba(239,68,68,.09); border: 1px solid rgba(239,68,68,.2); border-radius: .6rem; font-size: .68rem; font-weight: 800; }
 
 .customer-invoice-list article {
   align-items: flex-start;
@@ -681,7 +682,7 @@
   border-radius: .75rem;
   font-weight: 900;
 }
-.customer-account-copy { display: grid; min-width: 8.5rem; }
+.customer-account-copy { display: grid; min-width: 0; }
 .customer-account-copy strong { color: #fff; font-size: .82rem; }
 .customer-account-copy small { color: #c7effa; font-size: .68rem; }
 .customer-account-trigger > svg { transition: transform .18s ease; }

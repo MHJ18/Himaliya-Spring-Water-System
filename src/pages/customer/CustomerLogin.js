@@ -86,6 +86,9 @@ function CustomerLogin({ location, history }) {
   };
 
   const visibleError = error || (sessionExpired ? 'Your session has expired. Log in again.' : '');
+  const loginNotice = location.state && location.state.passwordChanged
+    ? 'Password updated. Sign in with your new password.'
+    : '';
 
   return (
     <main className="water-login-page customer-login-page">
@@ -150,11 +153,11 @@ function CustomerLogin({ location, history }) {
           </LayoutGroup>
 
           <form className="water-login-form customer-login-form" method="post" onSubmit={submit} autoComplete="on">
-            {visibleError && (
+            {(visibleError || loginNotice) && (
               <ShakeX key={visibleError} duration={0.4}>
-                <div className="water-login-alert" role="alert" aria-live="assertive">
+                <div className={`water-login-alert ${loginNotice && !visibleError ? 'is-success' : ''}`} role="alert" aria-live="assertive">
                   <span className="water-login-alert-icon" aria-hidden="true">!</span>
-                  <span>{visibleError}</span>
+                  <span>{visibleError || loginNotice}</span>
                 </div>
               </ShakeX>
             )}
@@ -214,6 +217,7 @@ function CustomerLogin({ location, history }) {
               {loading ? 'Please wait...' : mode === 'signup' ? 'Create customer account' : 'Sign in and order'}
             </button>
             <p className="water-login-note">Use the same phone/email from your Himaliya Spring Water contract to link invoices automatically.</p>
+            {mode === 'signin' && <Link className="water-login-forgot" to="/forgot-password?account=customer">Forgot password?</Link>}
           </form>
 
           <div className="customer-login-links">

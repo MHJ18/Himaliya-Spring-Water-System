@@ -22,7 +22,7 @@ export default function DeliveryCelebration({ animationPath, title, message, onC
   }, [animationPath]);
 
   React.useEffect(() => {
-    const timeoutId = window.setTimeout(onClose, reduceMotion ? 2200 : 3800);
+    const timeoutId = window.setTimeout(onClose, reduceMotion ? 2000 : 3000);
     return () => window.clearTimeout(timeoutId);
   }, [onClose, reduceMotion]);
 

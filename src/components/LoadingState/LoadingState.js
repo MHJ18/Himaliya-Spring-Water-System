@@ -1,11 +1,22 @@
 import React from 'react';
 import './LoadingState.css';
 
+let activeLoadingStates = 0;
+
 export default function LoadingState({
   label = 'Loading Himaliya Spring...',
   compact = false,
   variant = 'dashboard',
 }) {
+  React.useEffect(() => {
+    activeLoadingStates += 1;
+    document.body.classList.add('hs-is-loading');
+    return () => {
+      activeLoadingStates = Math.max(0, activeLoadingStates - 1);
+      if (activeLoadingStates === 0) document.body.classList.remove('hs-is-loading');
+    };
+  }, []);
+
   return (
     <div className={`hs-loading-state hs-loading-state--${variant}${compact ? ' hs-loading-state--compact' : ''}`} role="status" aria-live="polite">
       {variant === 'table' ? (

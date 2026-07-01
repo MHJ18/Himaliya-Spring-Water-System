@@ -21,7 +21,7 @@ function WaterLogin({ dispatch, isFetching, errorMessage, location }) {
   const from = (location.state && location.state.from) || { pathname: '/app/main/dashboard' };
   const visibleError = errorMessage || (sessionExpired
     ? 'Your session has expired. Log in again.'
-    : '');
+    : location.state && location.state.passwordChanged ? 'Password updated. Sign in with your new password.' : '');
 
   if (hasStoredSessionType('admin')) {
     return <Redirect to={from} />;
@@ -88,7 +88,7 @@ function WaterLogin({ dispatch, isFetching, errorMessage, location }) {
           <form className="water-login-form" method="post" onSubmit={handleSubmit} autoComplete="on" noValidate>
             {visibleError && (
               <ShakeX key={visibleError} duration={0.4}>
-                <div className="water-login-alert" role="alert" aria-live="assertive">
+                <div className={`water-login-alert ${location.state && location.state.passwordChanged && !errorMessage ? 'is-success' : ''}`} role="alert" aria-live="assertive">
                   <span className="water-login-alert-icon" aria-hidden="true">!</span>
                   <span>{visibleError}</span>
                 </div>
@@ -140,6 +140,7 @@ function WaterLogin({ dispatch, isFetching, errorMessage, location }) {
               {isFetching ? 'Signing in...' : 'Sign in to dashboard'}
             </button>
             <p className="water-login-note">Your browser can save credentials after a successful sign in.</p>
+            <Link className="water-login-forgot" to="/forgot-password?account=admin">Forgot password?</Link>
           </form>
 
           <Link className="water-login-back" to="/">&larr; Back to landing</Link>

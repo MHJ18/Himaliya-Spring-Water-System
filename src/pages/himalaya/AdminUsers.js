@@ -13,6 +13,7 @@ import {
   deleteAdminCustomerProfile,
   getAdminCustomerProfiles,
 } from '../../services/api/customerPortalApi';
+import { adminResetCustomerPassword } from '../../services/cloud/supabaseClient';
 
 const initialForm = {
   name: '',
@@ -78,6 +79,10 @@ export default function AdminUsers() {
   const [currentAdmin, setCurrentAdmin] = useState(null);
   const [customerDeleteTarget, setCustomerDeleteTarget] = useState(null);
   const [customerDeletePhrase, setCustomerDeletePhrase] = useState('');
+  const [passwordTarget, setPasswordTarget] = useState(null);
+  const [temporaryPassword, setTemporaryPassword] = useState('');
+  const [resetOwnerPassword, setResetOwnerPassword] = useState('');
+  const [resettingPassword, setResettingPassword] = useState(false);
 
   const loadAdmins = () => {
     getAdmins().then(setAdmins).catch(() => setAdmins([]));
@@ -175,6 +180,31 @@ export default function AdminUsers() {
       closeCustomerDelete();
     } catch (err) {
       toast.error(err.message || 'Could not remove customer profile.');
+    }
+  };
+
+  const generateTemporaryPassword = () => {
+    const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$';
+    const values = window.crypto.getRandomValues(new Uint32Array(12));
+    setTemporaryPassword(Array.from(values, (value) => alphabet[value % alphabet.length]).join(''));
+  };
+
+  const resetCustomerPassword = async () => {
+    if (!passwordTarget || temporaryPassword.length < 8) {
+      toast.error('Enter or generate a temporary password with at least 8 characters.');
+      return;
+    }
+    setResettingPassword(true);
+    try {
+      await adminResetCustomerPassword(passwordTarget.id, temporaryPassword, resetOwnerPassword);
+      toast.success(`Temporary password set for ${passwordTarget.name}. Share it securely.`);
+      setPasswordTarget(null);
+      setTemporaryPassword('');
+      setResetOwnerPassword('');
+    } catch (err) {
+      toast.error(err.message || 'Could not reset the customer password.');
+    } finally {
+      setResettingPassword(false);
     }
   };
 
@@ -296,7 +326,10 @@ export default function AdminUsers() {
                   <td><Badge color={customer.active ? 'success' : 'secondary'}>{customer.active ? 'Active' : 'Inactive'}</Badge></td>
                   <td className="text-right">
                     {customer.canRemove ? (
-                      <Button color="danger" size="sm" outline className="admin-delete-btn" onClick={() => setCustomerDeleteTarget(customer)}>Remove</Button>
+                      <div className="admin-user-actions">
+                        {currentAdmin && currentAdmin.role === 'Owner' && <Button color="info" size="sm" outline onClick={() => { setPasswordTarget(customer); setTemporaryPassword(''); setResetOwnerPassword(''); }}>Reset password</Button>}
+                        <Button color="danger" size="sm" outline className="admin-delete-btn" onClick={() => setCustomerDeleteTarget(customer)}>Remove</Button>
+                      </div>
                     ) : (
                       <span className="text-muted small">Manage in Customers</span>
                     )}
@@ -309,6 +342,16 @@ export default function AdminUsers() {
             </tbody>
           </Table>
         </div>
+        {passwordTarget && (
+          <div className="admin-delete-panel admin-password-panel">
+            <div className="admin-delete-panel-head"><span className="admin-delete-icon"><i className="fa fa-key" /></span><div><h4>Set temporary password</h4><p>Reset access for <strong>{passwordTarget.name}</strong>. Share the password through a trusted channel.</p></div></div>
+            <Row form className="align-items-end">
+              <Col md={4}><FormGroup><Label for="temporary-customer-password">Temporary password</Label><Input id="temporary-customer-password" type="text" value={temporaryPassword} onChange={(event) => setTemporaryPassword(event.target.value)} autoComplete="off" placeholder="At least 8 characters" /></FormGroup><Button color="secondary" size="sm" outline onClick={generateTemporaryPassword}>Generate secure password</Button></Col>
+              <Col md={4}><FormGroup><Label for="reset-owner-password">Owner password</Label><Input id="reset-owner-password" type="password" value={resetOwnerPassword} onChange={(event) => setResetOwnerPassword(event.target.value)} autoComplete="current-password" /></FormGroup></Col>
+              <Col md={4}><div className="admin-delete-actions"><Button color="secondary" outline onClick={() => { setPasswordTarget(null); setTemporaryPassword(''); setResetOwnerPassword(''); }}>Cancel</Button><Button color="primary" disabled={resettingPassword} onClick={resetCustomerPassword}>{resettingPassword ? 'Updating...' : 'Set password'}</Button></div></Col>
+            </Row>
+          </div>
+        )}
         {customerDeleteTarget && (
           <div className="admin-delete-panel">
             <div className="admin-delete-panel-head">
@@ -317,7 +360,7 @@ export default function AdminUsers() {
                 <h4>Remove customer app profile</h4>
                 <p>
                   Type <strong>DELETE</strong> to remove <strong>{customerDeleteTarget.name}</strong> from the app tables.
-                  Supabase Auth login removal needs a secure server/admin action.
+                  This removes the customer profile and its operational records. Use Reset password above when the customer only needs restored access.
                 </p>
               </div>
             </div>

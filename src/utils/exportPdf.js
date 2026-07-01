@@ -130,6 +130,10 @@ export function exportInvoicePdf(invoice) {
   doc.setFontSize(7.5);
   doc.setTextColor(muted[0], muted[1], muted[2]);
   doc.text(billDate.toLocaleDateString('en-PK'), 151, 27);
+  if (summary.dueDate) {
+    doc.setFontSize(6.5);
+    doc.text(`Due: ${new Date(summary.dueDate).toLocaleDateString('en-PK')}`, 151, 30);
+  }
 
   doc.setDrawColor(accent[0], accent[1], accent[2]);
   doc.setLineWidth(0.5);

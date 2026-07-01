@@ -832,6 +832,15 @@ body.dashboard-light .himalaya-add-customer .MuiDivider-root {
   color: var(--hs-page-text, #f4f8ff);
 }
 
+.admin-user-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: .4rem;
+}
+
+.admin-password-panel { border-color: rgba(75, 205, 255, .2); }
+
 .admin-delete-btn {
   min-width: 74px;
   border-radius: 12px;

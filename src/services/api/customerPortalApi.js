@@ -150,6 +150,29 @@ export async function getCustomerOrders(prices) {
   return rows.map((row) => toOrder(row, prices));
 }
 
+export async function getCustomerOrderControls() {
+  try {
+    const rows = await dbRequest('/rpc/get_customer_order_controls', { method: 'POST', body: '{}' });
+    const row = Array.isArray(rows) ? rows[0] : rows;
+    return {
+      allowCancellation: row ? row.allow_cancellation !== false : true,
+      orderCutoffTime: (row && row.order_cutoff_time) || '18:00',
+      orderingOpen: row ? row.ordering_open !== false : true,
+    };
+  } catch {
+    return { allowCancellation: true, orderCutoffTime: '18:00', orderingOpen: true };
+  }
+}
+
+export async function cancelCustomerOrder(orderId) {
+  const rows = await dbRequest(`/customer_orders?id=eq.${encodeURIComponent(orderId)}&status=eq.pending&select=*`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status: 'canceled', updated_at: new Date().toISOString() }),
+  });
+  if (!rows || !rows[0]) throw new Error('This order can no longer be canceled.');
+  return toOrder(rows[0], {});
+}
+
 export async function createCustomerOrder(profile, form) {
   requireCloud();
   const unitPrice = Number(form.unitPrice || 0);
