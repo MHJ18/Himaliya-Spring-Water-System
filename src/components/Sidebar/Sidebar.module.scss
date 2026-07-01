@@ -2,7 +2,7 @@
 
 .root {
   width: $sidebar-width-open;
-  position: absolute;
+  position: fixed;
   left: 0;
   top: 0;
   bottom: 0;
@@ -246,6 +246,50 @@
       vertical-align: 2px;
     }
   }
+}
+
+@media (min-width: breakpoint-min(lg)) {
+  .root { overflow: hidden; }
+
+  .logo { margin: 12px 0 8px; font-size: 15px; }
+
+  .nav {
+    flex: 1;
+    overflow: visible;
+    padding-right: 5px;
+    padding-bottom: 6px;
+
+    li > a > span { width: 28px; height: 28px; }
+  }
+
+  .navTitle {
+    margin: 10px 0 3px 14px;
+    font-size: 10px;
+    letter-spacing: .08em;
+  }
+
+  .quickLinksTitle { margin-top: 8px; }
+
+  .sidebarLabels {
+    display: grid;
+    gap: 2px;
+    margin: 0;
+    padding: 2px 12px 8px;
+
+    > li + li { margin-top: 0; }
+
+    li > a {
+      display: flex;
+      min-height: 27px;
+      align-items: center;
+      padding: 2px 5px;
+      border-radius: 7px;
+
+      &:hover { background: var(--hs-sidebar-hover, rgba(255,255,255,.07)); }
+    }
+  }
+
+  .labelName { margin-left: 4px; font-size: .72rem; font-weight: 600; }
 }
 
 .groupTitle {

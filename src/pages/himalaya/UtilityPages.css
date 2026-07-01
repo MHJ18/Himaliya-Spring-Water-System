@@ -340,6 +340,14 @@ body.dashboard-dark .profile-business p {
 .profile-business { background: var(--utility-surface-soft); }
 
 .customer-orders-admin .water-page-card__header { align-items: center; }
+.customer-order-queue-controls { display: flex; align-items: center; justify-content: flex-end; gap: .65rem; }
+.customer-order-pending-count { display: inline-flex; min-height: 2.3rem; align-items: center; padding: 0 .8rem; color: #3d2600 !important; background: linear-gradient(135deg, #ffe39a, #fbbf24); border: 1px solid rgba(255,226,138,.5); border-radius: 999px; font-size: .72rem !important; font-weight: 900 !important; letter-spacing: .04em !important; text-transform: uppercase; box-shadow: 0 .45rem 1.2rem rgba(245,158,11,.16); }
+.customer-order-refresh { display: grid; width: 2.5rem; height: 2.5rem; padding: 0; place-items: center; color: #dff9ff; background: rgba(48,183,235,.14); border: 1px solid rgba(91,213,255,.28); border-radius: .8rem; cursor: pointer; transition: color .18s ease, background .18s ease, transform .18s ease; }
+.customer-order-refresh:hover:not(:disabled) { color: #fff; background: rgba(48,183,235,.25); transform: translateY(-1px); }
+.customer-order-refresh:focus-visible { outline: 3px solid rgba(91,213,255,.25); outline-offset: 2px; }
+.customer-order-refresh:disabled { opacity: .55; cursor: wait; }
+.customer-order-refresh .is-spinning { animation: customer-order-spin .8s linear infinite; }
+@keyframes customer-order-spin { to { transform: rotate(360deg); } }
 .customer-admin-order-list {
   display: grid;
   max-height: min(44rem, 68vh);
@@ -366,7 +374,8 @@ body.dashboard-dark .profile-business p {
 .customer-admin-order__total { display: inline-flex; margin: .12rem 0 .2rem; color: var(--utility-text); font-size: .92rem; }
 .customer-admin-order__actions { display: flex; min-width: 9rem; flex-direction: column; gap: .45rem; align-items: stretch; }
 .customer-admin-order__actions strong { color: var(--utility-accent); font-size: .76rem; letter-spacing: .08em; text-align: center; text-transform: uppercase; }
-.customer-admin-order--pending { border-color: rgba(255, 212, 138, .42); }
+.customer-admin-order--pending { background: linear-gradient(135deg, rgba(245,158,11,.13), rgba(255,212,138,.045)); border-color: rgba(255, 193, 72, .58); box-shadow: inset .22rem 0 0 #fbbf24; }
+.customer-admin-order--pending .customer-admin-order__actions > strong { color: #fbbf24; }
 .customer-admin-order--accepted { border-color: rgba(157, 246, 200, .34); }
 .customer-admin-order--delivered { border-color: rgba(125, 223, 255, .34); }
 .customer-admin-order--accepted .customer-admin-order__main,
@@ -495,11 +504,48 @@ body.dashboard-dark .profile-business p {
 }
 
 @media (max-width: 767.98px) {
+  .customer-orders-admin .water-page-card__header { align-items: center; flex-direction: row; }
+  .customer-orders-admin .water-page-card__header h2 { font-size: 1rem; }
+  .customer-orders-admin .water-page-card__header > div:first-child { min-width: 0; }
+  .customer-order-queue-controls { flex: 0 0 auto; margin-left: auto; gap: .4rem; }
+  .customer-order-pending-count { min-height: 2rem; padding: 0 .58rem; font-size: .62rem !important; }
+  .customer-order-refresh { width: 2.15rem; height: 2.15rem; border-radius: .7rem; }
   .customer-admin-order { grid-template-columns: 1fr; }
-  .customer-admin-order--delivered .customer-admin-order__main { grid-template-columns: 1fr; }
-  .customer-admin-order--delivered .customer-admin-order__total { grid-column: 1; grid-row: auto; }
+  .customer-admin-order--accepted,
+  .customer-admin-order--delivered,
+  .customer-admin-order--rejected,
+  .customer-admin-order--canceled { min-height: 3.5rem; grid-template-columns: minmax(0, 1fr) auto; gap: .5rem; padding: .5rem .6rem; }
+  .customer-admin-order--accepted .customer-admin-order__main,
+  .customer-admin-order--delivered .customer-admin-order__main,
+  .customer-admin-order--rejected .customer-admin-order__main,
+  .customer-admin-order--canceled .customer-admin-order__main { grid-template-columns: minmax(0, 1fr) auto; column-gap: .5rem; }
+  .customer-admin-order--accepted .customer-admin-order__total,
+  .customer-admin-order--delivered .customer-admin-order__total,
+  .customer-admin-order--rejected .customer-admin-order__total,
+  .customer-admin-order--canceled .customer-admin-order__total { grid-column: 2; grid-row: 1 / 3; font-size: .75rem; }
+  .customer-admin-order--accepted .customer-admin-order__main small,
+  .customer-admin-order--delivered .customer-admin-order__main small,
+  .customer-admin-order--rejected .customer-admin-order__main small,
+  .customer-admin-order--canceled .customer-admin-order__main small { display: none; }
+  .customer-admin-order--accepted .customer-admin-order__main span,
+  .customer-admin-order--delivered .customer-admin-order__main span,
+  .customer-admin-order--rejected .customer-admin-order__main span,
+  .customer-admin-order--canceled .customer-admin-order__main span { font-size: .6rem; }
+  .customer-admin-order--accepted .customer-admin-order__main h3,
+  .customer-admin-order--delivered .customer-admin-order__main h3,
+  .customer-admin-order--rejected .customer-admin-order__main h3,
+  .customer-admin-order--canceled .customer-admin-order__main h3 { margin: .08rem 0 0; font-size: .78rem; }
   .customer-admin-order__actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .customer-admin-order__actions strong { grid-column: 1 / -1; text-align: left; }
+  .customer-admin-order--accepted .customer-admin-order__actions,
+  .customer-admin-order--delivered .customer-admin-order__actions,
+  .customer-admin-order--rejected .customer-admin-order__actions,
+  .customer-admin-order--canceled .customer-admin-order__actions { display: flex; min-width: 0; justify-content: center; }
+  .customer-admin-order--accepted .customer-admin-order__actions strong,
+  .customer-admin-order--delivered .customer-admin-order__actions strong,
+  .customer-admin-order--rejected .customer-admin-order__actions strong,
+  .customer-admin-order--canceled .customer-admin-order__actions strong { font-size: .6rem; text-align: center; }
+  .customer-admin-order--accepted .customer-admin-order__actions .btn { padding: .28rem .45rem; font-size: .62rem; }
 }
 
 @media (max-width: 767px) {

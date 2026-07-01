@@ -568,8 +568,22 @@
   .customer-portal-page { padding: .75rem; }
   .customer-form { grid-template-columns: 1fr; }
   .customer-order-price-summary { margin-top: 0; }
-  .customer-order-list article { align-items: flex-start; flex-direction: column; }
+  .customer-order-list article { align-items: flex-start; flex-direction: column; gap: .5rem; padding: .7rem; }
+  .customer-order-list article strong { font-size: .78rem; }
+  .customer-order-list article small { margin-top: .12rem; font-size: .66rem; }
+  .customer-order-list article.is-compact {
+    min-height: 3.1rem;
+    align-items: center;
+    flex-direction: row;
+    gap: .5rem;
+    padding: .48rem .6rem;
+  }
+  .customer-order-list article.is-compact small { display: none; }
   .customer-order-history-meta { width: 100%; justify-content: space-between; }
+  .customer-order-list article.is-compact .customer-order-history-meta { width: auto; margin-left: auto; }
+  .customer-order-history-meta { gap: .35rem; }
+  .customer-order-history-meta > strong { font-size: .72rem; }
+  .customer-status { padding: .3rem .48rem; font-size: .6rem; }
   .customer-notification-list article,
   .customer-invoice-list article {
     align-items: flex-start;

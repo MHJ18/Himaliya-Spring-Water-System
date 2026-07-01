@@ -153,7 +153,7 @@ class Sidebar extends React.Component {
           />
         </ul>
 
-        <h5 className={s.navTitle}>QUICK LINKS</h5>
+        <h5 className={[s.navTitle, s.quickLinksTitle].join(' ')}>QUICK LINKS</h5>
         <ul className={s.sidebarLabels}>
           <li>
             <Link to="/app/daily-sales" onClick={this.closeDrawer}>

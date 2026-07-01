@@ -15,7 +15,7 @@ import './UtilityPages.css';
 
 const defaultBottlePrices = BOTTLE_TYPES.reduce((acc, type) => ({ ...acc, [type]: '' }), {});
 
-export default function Settings({ history }) {
+export default function Settings() {
   const { settings, updateSettings, toggleDarkMode } = useSettings();
   const dispatch = useDispatch();
   const sidebarPosition = useSelector((state) => state.navigation.sidebarPosition);
@@ -39,7 +39,6 @@ export default function Settings({ history }) {
   });
   const [bottlePrices, setBottlePrices] = useState(defaultBottlePrices);
   const [savingPrices, setSavingPrices] = useState(false);
-  const [customerQuery, setCustomerQuery] = useState('');
 
   useEffect(() => {
     getBottlePrices(defaultBottlePrices)
@@ -89,16 +88,6 @@ export default function Settings({ history }) {
       setSavingPrices(false);
     }
   };
-
-  const manageableCustomers = customers
-    .filter((customer) => {
-      const q = customerQuery.trim().toLowerCase();
-      if (!q) return true;
-      return (customer.name || '').toLowerCase().includes(q)
-        || (customer.phone || '').toLowerCase().includes(q)
-        || (customer.email || '').toLowerCase().includes(q);
-    })
-    .slice(0, 8);
 
   return (
     <PageShell title="Settings" subtitle="Business profile and preferences">
@@ -235,37 +224,6 @@ export default function Settings({ history }) {
               <Button color="info" outline onClick={() => exportSalesToCsv(customers)}>
                 <i className="fa fa-download mr-1" /> Sales CSV
               </Button>
-            </div>
-          </Widget>
-          <Widget title={<h5>Customer Profile Management</h5>} className="mb-4 settings-customer-card">
-            <p className="text-muted mb-3">
-              Modify customer details or delete a customer from the secure edit screen.
-            </p>
-            <Input
-              type="search"
-              value={customerQuery}
-              onChange={(event) => setCustomerQuery(event.target.value)}
-              placeholder="Search customers to modify..."
-              className="mb-3"
-            />
-            <div className="settings-customer-list">
-              {manageableCustomers.map((customer) => (
-                <div key={customer.id} className="settings-customer-row">
-                  <div>
-                    <strong>{customer.name || 'Unnamed customer'}</strong>
-                    <small>{customer.phone || customer.email || 'No contact saved'}</small>
-                  </div>
-                  <Button
-                    color="info"
-                    outline
-                    size="sm"
-                    onClick={() => history.push(`/app/customers/${encodeURIComponent(customer.id)}/edit`)}
-                  >
-                    Modify
-                  </Button>
-                </div>
-              ))}
-              {!manageableCustomers.length && <p className="text-muted mb-0">No customers found.</p>}
             </div>
           </Widget>
         </Col>

@@ -20,6 +20,7 @@ import { signOut } from '../../services/cloud/supabaseClient';
 import { BOTTLE_TYPES, BOTTLE_TYPE_LABELS } from '../../data/constants';
 import { exportInvoicePdf } from '../../utils/exportPdf';
 import LoadingState from '../../components/LoadingState/LoadingState';
+import DeliveryCelebration from '../../components/DeliveryCelebration/DeliveryCelebration';
 import './CustomerPortal.css';
 import useCustomerTheme from './useCustomerTheme';
 
@@ -82,10 +83,12 @@ function CustomerPortal({ history }) {
   const [priceWarning, setPriceWarning] = React.useState('');
   const [submitting, setSubmitting] = React.useState(false);
   const [accountOpen, setAccountOpen] = React.useState(false);
+  const [deliveredOrder, setDeliveredOrder] = React.useState(null);
   const [notificationPermission, setNotificationPermission] = React.useState(
     canUseBrowserNotifications() ? window.Notification.permission : 'unsupported',
   );
   const seenInvoiceIds = React.useRef(new Set());
+  const seenOrderStatuses = React.useRef(new Map());
   const accountRef = React.useRef(null);
 
   const load = React.useCallback(async () => {
@@ -111,6 +114,7 @@ function CustomerPortal({ history }) {
         deliveryDate: current.deliveryDate || todayIso(),
       }));
       setOrders(nextOrders);
+      seenOrderStatuses.current = new Map(nextOrders.map((order) => [order.id, order.status]));
       setNotifications(nextNotifications);
       setInvoices(nextInvoices);
       seenInvoiceIds.current = new Set(nextInvoices.map((invoice) => invoice.id || invoice.invoiceNumber));
@@ -152,6 +156,12 @@ function CustomerPortal({ history }) {
         toast.info(`New invoice ${newest.invoiceNumber} is available.`);
       }
       seenInvoiceIds.current = new Set(nextInvoices.map((invoice) => invoice.id || invoice.invoiceNumber));
+      const deliveredUpdate = nextOrders.find((order) => {
+        const previousStatus = seenOrderStatuses.current.get(order.id);
+        return order.status === 'delivered' && previousStatus && previousStatus !== 'delivered';
+      });
+      if (deliveredUpdate) setDeliveredOrder(deliveredUpdate);
+      seenOrderStatuses.current = new Map(nextOrders.map((order) => [order.id, order.status]));
       setOrders(nextOrders);
       setNotifications(nextNotifications);
       setInvoices(nextInvoices);
@@ -181,6 +191,7 @@ function CustomerPortal({ history }) {
       const totalAmount = unitPrice * Number(orderForm.quantity || 1);
       const order = await createCustomerOrder(profile, { ...orderForm, unitPrice, totalAmount });
       setOrders((current) => [order, ...current]);
+      seenOrderStatuses.current.set(order.id, order.status);
       setOrderForm({ ...defaultOrder, deliveryAddress: profile.address, deliveryDate: todayIso() });
       toast.success('Order placed. The admin team will accept it shortly.');
     } catch (err) {
@@ -246,6 +257,14 @@ function CustomerPortal({ history }) {
 
   return (
     <main className={`customer-portal-page customer-theme--${theme}`}>
+      {deliveredOrder && (
+        <DeliveryCelebration
+          animationPath="/Approved%20animation.json"
+          title="Your order has arrived"
+          message="Delivery completed successfully. Thank you for choosing Himaliya Spring Water."
+          onClose={() => setDeliveredOrder(null)}
+        />
+      )}
       <header className="customer-portal-header">
         <div className="customer-brand-lockup">
           <span className="customer-brand-mark" aria-hidden="true"><Droplets size={24} /></span>

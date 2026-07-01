@@ -54,6 +54,22 @@
   }
 }
 
+@media (min-width: breakpoint-min(lg)) {
+  .headerLink {
+    a { font-size: 12px; }
+
+    > a { padding: 8px 14px 8px 9px; }
+
+    .icon {
+      max-width: 28px;
+      max-height: 28px;
+      margin-right: .4rem;
+    }
+  }
+
+  a.headerLinkActive { padding-left: 6px; font-size: 12px; }
+}
+
 a.headerLinkActive {
   font-weight: $font-weight-semi-bold;
   font-size: 15px;

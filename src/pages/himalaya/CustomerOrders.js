@@ -1,6 +1,7 @@
 import React from 'react';
 import { Button } from 'reactstrap';
 import { motion } from 'framer-motion';
+import { RefreshCw } from 'lucide-react';
 import { toast } from 'react-toastify';
 import PageShell from '../../components/PageShell/PageShell';
 import {
@@ -11,6 +12,7 @@ import { getBottlePrices } from '../../services/api/bottlePriceApi';
 import { BOTTLE_TYPE_LABELS } from '../../data/constants';
 import { resolveOrderPricing } from '../../utils/orderPricing';
 import LoadingState from '../../components/LoadingState/LoadingState';
+import DeliveryCelebration from '../../components/DeliveryCelebration/DeliveryCelebration';
 import './UtilityPages.css';
 
 function formatDate(value) {
@@ -35,6 +37,7 @@ export default function CustomerOrders() {
   const [prices, setPrices] = React.useState({});
   const [loading, setLoading] = React.useState(true);
   const [updating, setUpdating] = React.useState('');
+  const [deliveredOrder, setDeliveredOrder] = React.useState(null);
 
   const load = React.useCallback(async () => {
     setLoading(true);
@@ -59,6 +62,7 @@ export default function CustomerOrders() {
       const updated = await updateAdminCustomerOrder(order, status, '', pricing);
       setOrders((current) => current.map((item) => (item.id === updated.id ? updated : item)));
       toast.success(`Order ${status}. Customer notification sent.`);
+      if (status === 'delivered') setDeliveredOrder(updated);
     } catch (err) {
       toast.error(err.message || 'Could not update order.');
     } finally {
@@ -70,13 +74,26 @@ export default function CustomerOrders() {
 
   return (
     <PageShell title="Customer Orders" subtitle="Accept customer requests and keep customers updated">
+      {deliveredOrder && (
+        <DeliveryCelebration
+          animationPath="/Approved%20animation.json"
+          title="Delivery completed"
+          message={`${deliveredOrder.profile?.name || 'Customer'} has been notified that the order was delivered.`}
+          onClose={() => setDeliveredOrder(null)}
+        />
+      )}
       <motion.section className="water-page-card customer-orders-admin" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
         <div className="water-page-card__header">
           <div>
-            <span>Delivery app queue</span>
-            <h2>{pendingCount} pending</h2>
+            <span>Customer orders</span>
+            <h2>Delivery queue</h2>
           </div>
-          <Button color="info" size="sm" onClick={load} disabled={loading}>Refresh</Button>
+          <div className="customer-order-queue-controls">
+            <span className="customer-order-pending-count">{pendingCount} pending</span>
+            <button type="button" className="customer-order-refresh" onClick={load} disabled={loading} aria-label="Refresh delivery queue" title="Refresh delivery queue">
+              <RefreshCw size={19} className={loading ? 'is-spinning' : ''} />
+            </button>
+          </div>
         </div>
         {loading ? (
           <LoadingState label="Loading customer orders..." compact />
