@@ -1,5 +1,7 @@
 import React from 'react';
-import { Button } from 'reactstrap';
+import { Button } from '@mui/material';
+import { Link } from 'react-router-dom';
+import RouteRoundedIcon from '@mui/icons-material/RouteRounded';
 import { motion } from 'framer-motion';
 import { RefreshCw } from 'lucide-react';
 import { toast } from 'react-toastify';
@@ -12,8 +14,6 @@ import { getBottlePrices } from '../../services/api/bottlePriceApi';
 import { BOTTLE_TYPE_LABELS } from '../../data/constants';
 import { resolveOrderPricing } from '../../utils/orderPricing';
 import LoadingState from '../../components/LoadingState/LoadingState';
-import DeliveryCelebration from '../../components/DeliveryCelebration/DeliveryCelebration';
-import { useSettings } from '../../context/SettingsContext';
 import './UtilityPages.css';
 
 function formatDate(value) {
@@ -34,12 +34,10 @@ function bottleLabel(type) {
 }
 
 export default function CustomerOrders() {
-  const { settings } = useSettings();
   const [orders, setOrders] = React.useState([]);
   const [prices, setPrices] = React.useState({});
   const [loading, setLoading] = React.useState(true);
   const [updating, setUpdating] = React.useState('');
-  const [deliveredOrder, setDeliveredOrder] = React.useState(null);
 
   const load = React.useCallback(async () => {
     setLoading(true);
@@ -58,17 +56,16 @@ export default function CustomerOrders() {
   React.useEffect(() => { load(); }, [load]);
 
   const updateStatus = async (order, status) => {
-    if (status === 'delivered' && settings.requireDeliveryConfirmation) {
-      const confirmed = window.confirm(`Confirm delivery for ${order.profile?.name || 'this customer'}? This will notify the customer immediately.`);
-      if (!confirmed) return;
-    }
     setUpdating(order.id);
     try {
       const pricing = resolveOrderPricing(order, prices);
       const updated = await updateAdminCustomerOrder(order, status, '', pricing);
       setOrders((current) => current.map((item) => (item.id === updated.id ? updated : item)));
-      toast.success(`Order ${status}. Customer notification sent.`);
-      if (status === 'delivered') setDeliveredOrder(updated);
+      toast.success(
+        status === 'accepted'
+          ? 'Order accepted. It is now available in Delivery routes.'
+          : `Order ${status}. Customer notification sent.`,
+      );
     } catch (err) {
       toast.error(err.message || 'Could not update order.');
     } finally {
@@ -79,15 +76,15 @@ export default function CustomerOrders() {
   const pendingCount = orders.filter((order) => order.status === 'pending').length;
 
   return (
-    <PageShell title="Customer Orders" subtitle="Accept customer requests and keep customers updated">
-      {deliveredOrder && (
-        <DeliveryCelebration
-          animationPath="/Approved%20animation.json"
-          title="Delivery completed"
-          message={`${deliveredOrder.profile?.name || 'Customer'} has been notified that the order was delivered.`}
-          onClose={() => setDeliveredOrder(null)}
-        />
+    <PageShell
+      title="Customer Orders"
+      subtitle="Accept customer requests and keep customers updated"
+      actions={(
+        <Button component={Link} to="/app/rider-tracking" variant="contained" startIcon={<RouteRoundedIcon />}>
+          Open delivery tracker
+        </Button>
       )}
+    >
       <motion.section className="water-page-card customer-orders-admin" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
         <div className="water-page-card__header">
           <div>
@@ -102,7 +99,7 @@ export default function CustomerOrders() {
           </div>
         </div>
         {loading ? (
-          <LoadingState label="Loading customer orders..." compact />
+          <LoadingState label="Loading customer orders..." compact variant="table" />
         ) : (
           <div className="customer-admin-order-list" tabIndex="0" role="region" aria-label="Scrollable customer order queue">
             {orders.map((order) => {
@@ -127,19 +124,27 @@ export default function CustomerOrders() {
                     <strong>{statusText(order.status)}</strong>
                     {order.status === 'pending' && (
                       <>
-                        <Button color="primary" size="sm" disabled={updating === order.id} onClick={() => updateStatus(order, 'accepted')}>Accept</Button>
-                        <Button color="success" size="sm" disabled={updating === order.id} onClick={() => updateStatus(order, 'delivered')}>Delivered</Button>
-                        <Button color="danger" outline size="sm" disabled={updating === order.id} onClick={() => updateStatus(order, 'rejected')}>Reject</Button>
+                        <Button variant="contained" color="primary" size="small" disabled={updating === order.id} onClick={() => updateStatus(order, 'accepted')}>Accept</Button>
+                        <Button variant="outlined" color="error" size="small" disabled={updating === order.id} onClick={() => updateStatus(order, 'rejected')}>Reject</Button>
                       </>
                     )}
                     {order.status === 'accepted' && (
-                      <Button color="success" size="sm" disabled={updating === order.id} onClick={() => updateStatus(order, 'delivered')}>Mark delivered</Button>
+                      <Button
+                        component={Link}
+                        to="/app/rider-tracking"
+                        variant="contained"
+                        color="primary"
+                        size="small"
+                        startIcon={<RouteRoundedIcon />}
+                      >
+                        Open route
+                      </Button>
                     )}
                   </div>
                 </article>
               );
             })}
-            {!orders.length && <p className="p-4 mb-0">No customer orders yet.</p>}
+            {!orders.length && <p style={{ margin: 0, padding: '1.5rem' }}>No customer orders yet.</p>}
           </div>
         )}
       </motion.section>

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useCallback } from 'react';
-import { v4 as uuidv4 } from 'uuid';
 import { useCustomers } from './CustomerContext';
+import { createId } from '../utils/id';
 
 const SalesContext = createContext(null);
 
@@ -11,7 +11,7 @@ export function SalesProvider({ children }) {
     const qty = Number(quantity);
     const price = Number(pricePerBottle);
     const transaction = {
-      id: uuidv4(),
+      id: createId(),
       date: new Date().toISOString(),
       bottleType,
       quantity: qty,

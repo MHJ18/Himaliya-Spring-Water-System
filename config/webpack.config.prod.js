@@ -1,6 +1,5 @@
 "use strict";
 
-const fs = require("fs");
 const path = require("path");
 const webpack = require("webpack");
 const PnpWebpackPlugin = require("pnp-webpack-plugin");
@@ -12,7 +11,6 @@ const OptimizeCSSAssetsPlugin = require("optimize-css-assets-webpack-plugin");
 const safePostCssParser = require("postcss-safe-parser");
 const ManifestPlugin = require("webpack-manifest-plugin");
 const InterpolateHtmlPlugin = require("react-dev-utils/InterpolateHtmlPlugin");
-const WorkboxWebpackPlugin = require("workbox-webpack-plugin");
 const ModuleScopePlugin = require("react-dev-utils/ModuleScopePlugin");
 const getCSSModuleLocalIdent = require("react-dev-utils/getCSSModuleLocalIdent");
 const paths = require("./paths");
@@ -97,10 +95,6 @@ const getStyleLoaders = (cssOptions, preProcessor) => {
 };
 
 const transpileIncludes = [paths.appSrc];
-const fastPngPath = path.join(paths.appNodeModules, "fast-png");
-if (fs.existsSync(fastPngPath)) {
-  transpileIncludes.push(fastPngPath);
-}
 
 // This is the production configuration.
 // It compiles slowly and is focused on producing a fast and minimal bundle.
@@ -168,9 +162,8 @@ module.exports = {
             ascii_only: true,
           },
         },
-        // Use multi-process parallel running to improve the build speed
-        // Default number of concurrent runs: os.cpus().length - 1
-        parallel: true,
+        // Keep production builds stable on high-core Windows/CI hosts.
+        parallel: 2,
         // Enable file caching
         cache: true,
         sourceMap: shouldUseSourceMap,
@@ -477,26 +470,6 @@ module.exports = {
     new ManifestPlugin({
       fileName: "asset-manifest.json",
       publicPath: publicPath,
-    }),
-    // Moment.js is an extremely popular library that bundles large locale files
-    // by default due to how Webpack interprets its code. This is a practical
-    // solution that requires the user to opt into importing specific locales.
-    // https://github.com/jmblog/how-to-optimize-momentjs-with-webpack
-    // You can remove this if you don't use Moment.js:
-    new webpack.IgnorePlugin(/^\.\/locale$/, /moment$/),
-    // Generate a service worker script that will precache, and keep up to date,
-    // the HTML & assets that are part of the Webpack build.
-    new WorkboxWebpackPlugin.GenerateSW({
-      clientsClaim: true,
-      exclude: [/\.map$/, /asset-manifest\.json$/],
-      navigateFallback: publicUrl + "/index.html",
-      navigateFallbackDenylist: [
-        // Exclude URLs starting with /_, as they're likely an API call
-        new RegExp("^/_"),
-        // Exclude URLs containing a dot, as they're likely a resource in
-        // public/ and not a SPA route
-        new RegExp("/[^/]+\\.[^/]+$"),
-      ],
     }),
   ].filter(Boolean),
   // Some libraries import Node modules but don't use them in the browser.

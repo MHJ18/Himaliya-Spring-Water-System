@@ -162,7 +162,7 @@ export async function dbRequest(path, options = {}) {
     });
     return await parseResponse(response);
   } catch (error) {
-    if (error.status === 401) notifySessionExpired();
+    if (error.status === 401 && options.useUserToken !== false) notifySessionExpired();
     throw error;
   }
 }
@@ -224,6 +224,19 @@ export async function adminResetCustomerPassword(customerId, newPassword, ownerP
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ customerId, password: newPassword, ownerPassword }),
+  });
+  return parseResponse(response);
+}
+
+export async function adminCreateUser(admin) {
+  const session = await getFreshSession();
+  const response = await fetch('/.netlify/functions/admin-create-user', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${session.access_token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(admin),
   });
   return parseResponse(response);
 }

@@ -1,8 +1,37 @@
 const json = (statusCode, body) => ({
   statusCode,
-  headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+  headers: {
+    'Content-Type': 'application/json',
+    'Cache-Control': 'no-store',
+    'Content-Security-Policy': "default-src 'none'; base-uri 'none'; frame-ancestors 'none'",
+    'Cross-Origin-Resource-Policy': 'same-origin',
+    'X-Frame-Options': 'DENY',
+    'X-Content-Type-Options': 'nosniff',
+  },
   body: JSON.stringify(body),
 });
+
+const attempts = new Map();
+const WINDOW_MS = 15 * 60 * 1000;
+const MAX_ATTEMPTS = 5;
+
+const clientAddress = (event) => (
+  event.headers['x-nf-client-connection-ip']
+  || String(event.headers['x-forwarded-for'] || '').split(',')[0].trim()
+  || 'unknown'
+);
+
+const isRateLimited = (key) => {
+  const now = Date.now();
+  const current = attempts.get(key);
+  if (!current || current.resetAt <= now) {
+    attempts.set(key, { count: 1, resetAt: now + WINDOW_MS });
+    return false;
+  }
+  current.count += 1;
+  attempts.set(key, current);
+  return current.count > MAX_ATTEMPTS;
+};
 
 async function supabaseRequest(url, serviceKey, path, options = {}) {
   const response = await fetch(`${url.replace(/\/$/, '')}${path}`, {
@@ -22,6 +51,10 @@ async function supabaseRequest(url, serviceKey, path, options = {}) {
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') return json(405, { message: 'Method not allowed.' });
+  if (Buffer.byteLength(event.body || '', 'utf8') > 4096) return json(413, { message: 'Request is too large.' });
+  if (isRateLimited(clientAddress(event))) {
+    return json(429, { message: 'Too many password reset attempts. Please wait 15 minutes and try again.' });
+  }
   const supabaseUrl = process.env.SUPABASE_URL || process.env.REACT_APP_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!supabaseUrl || !serviceKey) return json(503, { message: 'Secure password administration is not configured.' });
@@ -56,6 +89,12 @@ exports.handler = async (event) => {
     });
     return json(200, { success: true, customerName: customer.name });
   } catch (error) {
-    return json(error.status === 400 || error.status === 401 ? 401 : 500, { message: error.status === 400 ? 'Owner password is incorrect.' : error.message || 'Password reset failed.' });
+    if (error.status === 400 || error.status === 401) {
+      return json(401, { message: 'Owner password is incorrect.' });
+    }
+    if (error.status === 403 || error.status === 404) {
+      return json(error.status, { message: error.message });
+    }
+    return json(500, { message: 'Password reset failed. Please try again.' });
   }
 };

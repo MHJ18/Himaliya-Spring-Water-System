@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="reservoir" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#073B4C"/>
+      <stop offset=".55" stop-color="#0B6F78"/>
+      <stop offset="1" stop-color="#073B4C"/>
+    </linearGradient>
+    <radialGradient id="glacier" cx=".5" cy=".5" r=".5">
+      <stop offset="0" stop-color="#65C8D0" stop-opacity=".88"/>
+      <stop offset=".48" stop-color="#65C8D0" stop-opacity=".28"/>
+      <stop offset="1" stop-color="#65C8D0" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="mist" cx=".5" cy=".5" r=".5">
+      <stop offset="0" stop-color="#F3FAF9" stop-opacity=".52"/>
+      <stop offset=".38" stop-color="#F3FAF9" stop-opacity=".13"/>
+      <stop offset="1" stop-color="#F3FAF9" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="44"/>
+    </filter>
+  </defs>
+  <rect width="1600" height="1000" fill="url(#reservoir)"/>
+  <g filter="url(#soft)">
+    <ellipse cx="420" cy="230" rx="430" ry="260" fill="url(#glacier)" transform="rotate(-14 420 230)"/>
+    <ellipse cx="1220" cy="690" rx="500" ry="300" fill="url(#glacier)" transform="rotate(18 1220 690)"/>
+    <ellipse cx="860" cy="410" rx="300" ry="210" fill="url(#mist)" transform="rotate(-28 860 410)"/>
+    <ellipse cx="250" cy="840" rx="320" ry="180" fill="url(#mist)" transform="rotate(15 250 840)"/>
+  </g>
+  <path d="M-80 600C180 430 350 710 610 560S1040 400 1270 540s330 125 470 30" fill="none" stroke="#F3FAF9" stroke-opacity=".08" stroke-width="70"/>
+  <path d="M-80 660C180 490 380 760 640 610s410-140 650-5 320 115 450 20" fill="none" stroke="#65C8D0" stroke-opacity=".16" stroke-width="24"/>
+</svg>

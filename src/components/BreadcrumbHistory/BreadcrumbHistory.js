@@ -1,40 +1,61 @@
-import React, { Component } from 'react'
-import { Breadcrumb, BreadcrumbItem } from 'reactstrap';
-import { v4 as uuid } from 'uuid'
+import React from 'react';
+import PropTypes from 'prop-types';
+import { Box, Breadcrumbs, Typography } from '@mui/material';
+import NavigateNextRoundedIcon from '@mui/icons-material/NavigateNextRounded';
 
-class BreadcrumbHistory extends Component {
-
-  renderBreadCrumbs = () => {
-    
-    let route = this.props.url.split('/')
-    .slice(1)
-    .map(route => route
-      .split('-')
-      .map(word => word[0].toUpperCase() + word.slice(1))
-      .join(' ')
-    )
-    const length = route.length;
-    return route.map((item,index) => (
-      length === index + 1 ? 
-      <BreadcrumbItem key={uuid()} className="active"><strong>{item}</strong></BreadcrumbItem> : 
-      <BreadcrumbItem key={uuid()}>{item}</BreadcrumbItem>
-    ))
-  }
-  
-  render() {
-    return (
-      <>
-        { this.props.url !== '/app/chat' ?
-          <div className="breadcrumb-compact">
-            <Breadcrumb tag="nav" listTag="div">
-              <BreadcrumbItem>YOU ARE HERE</BreadcrumbItem>
-              {this.renderBreadCrumbs()}
-            </Breadcrumb>
-          </div>
-        :null}
-      </>
-    )
-  };
+const friendlyNames = {
+  app: 'Admin',
+  main: 'Workspace',
+  dashboard: 'Dashboard',
+  customers: 'Customers',
+  invoice: 'Invoice center',
+  'daily-sales': 'Daily sales',
+  analytics: 'Analytics',
+  'customer-orders': 'Customer orders',
+  'rider-tracking': 'Delivery tracker',
+  history: 'Entry history',
+  users: 'All users',
+  settings: 'Settings',
+  messages: 'Messages',
+  notifications: 'Notifications',
+  profile: 'Profile',
 };
 
-export default BreadcrumbHistory;
+export default function BreadcrumbHistory({ url }) {
+  const route = url
+    .split('/')
+    .filter(Boolean)
+    .filter((part) => part !== 'app' && part !== 'main')
+    .map((part) => friendlyNames[part] || part
+      .split('-')
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' '));
+
+  if (!route.length) return null;
+
+  return (
+    <Box
+      component="nav"
+      aria-label="Breadcrumb"
+      sx={{ display: { xs: 'none', md: 'block' }, mb: 1.5 }}
+    >
+      <Breadcrumbs separator={<NavigateNextRoundedIcon sx={{ fontSize: 14 }} />} aria-label="Page location">
+        <Typography variant="caption" color="text.secondary">Workspace</Typography>
+        {route.map((item, index) => (
+          <Typography
+            key={`${item}-${index}`}
+            variant="caption"
+            color={index === route.length - 1 ? 'text.primary' : 'text.secondary'}
+            fontWeight={index === route.length - 1 ? 700 : 500}
+          >
+            {item}
+          </Typography>
+        ))}
+      </Breadcrumbs>
+    </Box>
+  );
+}
+
+BreadcrumbHistory.propTypes = {
+  url: PropTypes.string.isRequired,
+};

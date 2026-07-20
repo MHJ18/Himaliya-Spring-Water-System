@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Himaliya Spring Water — System Operating Guide</title>
+  <style>
+    :root{--bg:#06131f;--panel:#0b2436;--card:#071b29;--blue:#42cbed;--cyan:#92edff;--green:#5cdda9;--amber:#ffc968;--red:#ff7d89;--text:#f7fbff;--muted:#b5cddb;--line:#35637a}
+    *{box-sizing:border-box}html{background:var(--bg);color-scheme:dark}body{margin:0;background:radial-gradient(circle at 85% 0,#12425a 0,transparent 35rem),var(--bg);color:var(--text);font-family:Inter,"Segoe UI",Arial,sans-serif;line-height:1.5}main{width:min(1180px,calc(100% - 30px));margin:auto;padding:40px 0 70px}.cover,section{border:1px solid #ffffff18;border-radius:28px;background:linear-gradient(145deg,#0d2a3f,#071a28);box-shadow:0 24px 70px #0005}.cover{min-height:390px;display:grid;place-content:center;text-align:center;padding:55px}.drop{width:76px;height:76px;display:grid;place-items:center;margin:0 auto 20px;border-radius:24px;background:#42cbed20;color:var(--cyan);font-size:40px}.kicker{color:var(--cyan);font-weight:900;text-transform:uppercase;letter-spacing:.16em;font-size:12px}h1{max-width:900px;margin:10px auto 16px;font-size:clamp(38px,6vw,68px);line-height:1.04;letter-spacing:-.045em}.cover p{max-width:760px;margin:auto;color:var(--muted);font-size:clamp(17px,2vw,21px)}.tip{margin:26px auto 0;padding:11px 16px;border-radius:999px;background:#ffffff0b;border:1px solid #ffffff18;color:var(--muted);font-size:13px}section{margin-top:26px;padding:30px;break-inside:avoid}.head{display:flex;gap:16px;align-items:flex-start;margin-bottom:25px}.num{flex:0 0 46px;height:46px;display:grid;place-items:center;border-radius:15px;background:var(--blue);color:#032233;font-size:20px;font-weight:900}h2{margin:0;font-size:clamp(24px,3vw,35px);letter-spacing:-.03em}.head p{margin:4px 0 0;color:var(--muted)}.path{display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin-bottom:22px;padding:12px 16px;border-radius:15px;background:#42cbed12;border:1px solid #42cbed35}.path b{padding:7px 11px;border-radius:9px;background:#42cbed1c;color:var(--cyan);font-size:13px}.path i{color:var(--cyan);font-style:normal;font-weight:900}.flow{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:24px}.flow.four{grid-template-columns:repeat(4,minmax(0,1fr))}.step{position:relative;min-height:155px;padding:18px;border-radius:19px;background:var(--card);border:1px solid var(--line)}.step:not(:last-child)::after{content:"→";position:absolute;right:-21px;top:50%;transform:translateY(-50%);color:var(--cyan);font-size:25px;font-weight:900}.icon{width:40px;height:40px;display:grid;place-items:center;margin-bottom:13px;border-radius:12px;background:#42cbed1c;font-size:20px}.step h3{margin:0 0 6px;font-size:16px}.step p{margin:0;color:var(--muted);font-size:13px}.step strong{color:var(--text)}.warn{border-color:#ffc96885}.ok{border-color:#5cdda985}.danger{border-color:#ff7d8985}.callout{margin-top:20px;padding:15px 18px;border-left:4px solid var(--blue);border-radius:8px 14px 14px 8px;background:#42cbed12;color:var(--muted)}.callout.warning{border-left-color:var(--amber);background:#ffc96810}.callout strong{color:var(--text)}.two{display:grid;grid-template-columns:1fr 1fr;gap:18px}.box{padding:21px;border-radius:18px;background:var(--card);border:1px solid var(--line)}.box h3{margin:0 0 12px;color:var(--cyan)}.box ol,.box ul{margin:0;padding-left:21px;color:var(--muted)}.box li{margin:9px 0}.box strong{color:var(--text)}.status{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:10px;padding:10px}.pill{padding:9px 14px;border-radius:999px;border:1px solid #ffffff24;background:#ffffff09;font-weight:800;font-size:13px}.pending{color:var(--amber)}.accepted{color:var(--blue)}.delivered{color:var(--green)}.rejected{color:var(--red)}.route-table{width:100%;border-collapse:separate;border-spacing:0 8px}.route-table td{padding:13px;background:var(--card);color:var(--muted)}.route-table td:first-child{border-radius:12px 0 0 12px;color:var(--text);font-weight:800}.route-table td:last-child{border-radius:0 12px 12px 0}.route-table code{color:var(--cyan);font-family:inherit}.check{color:var(--green);font-weight:900}.no{color:var(--red);font-weight:900}footer{text-align:center;padding:35px 10px 0;color:#8eafc0;font-size:13px}
+    @media(max-width:900px){.flow,.flow.four{grid-template-columns:1fr 1fr}.step:not(:last-child)::after{display:none}.two{grid-template-columns:1fr}}
+    @media(max-width:560px){main{width:calc(100% - 18px);padding-top:9px}.cover,section{padding:23px;border-radius:21px}.cover{min-height:360px}.flow,.flow.four{grid-template-columns:1fr}.head{align-items:center}.path{align-items:flex-start}.route-table,.route-table tbody,.route-table tr,.route-table td{display:block}.route-table tr{margin-bottom:10px}.route-table td{border-radius:0!important}.route-table td:first-child{border-radius:12px 12px 0 0!important}.route-table td:last-child{border-radius:0 0 12px 12px!important}}
+    @media print{@page{size:A4 landscape;margin:10mm}html,body{background:#fff;color:#112b3b}main{width:100%;padding:0}.cover,section{min-height:180mm;margin:0 0 10mm;padding:13mm;color:#112b3b;background:#f3fbff;border-color:#9fc9d9;box-shadow:none;page-break-after:always}.cover p,.head p,.step p,.box ol,.box ul,.callout,.route-table td{color:#405e6d}.step,.box,.route-table td{background:#fff;border-color:#9fc9d9}.step h3,.box strong,.callout strong,.route-table td:first-child{color:#112b3b}.cover:last-child,section:last-of-type{page-break-after:auto}}
+  </style>
+</head>
+<body><main>
+  <header class="cover">
+    <div class="drop">💧</div><div class="kicker">Non-technical operating manual</div>
+    <h1>How to operate the Himaliya system</h1>
+    <p>Click-by-click diagrams for signing in, managing customers, recording sales, processing orders, generating invoices and controlling payments.</p>
+    <div class="tip">Desktop: use the left sidebar · Mobile: tap the menu icon first</div>
+  </header>
+
+  <section>
+    <div class="head"><div class="num">1</div><div><h2>How to access the system</h2><p>Admin and customer access are separate.</p></div></div>
+    <div class="two">
+      <div class="box"><h3>Admin access</h3><ol><li>Open the website landing page.</li><li>Choose <strong>Admin Sign In</strong>.</li><li>Enter the admin email and password.</li><li>The system opens the <strong>Dashboard</strong>.</li></ol></div>
+      <div class="box"><h3>Customer access</h3><ol><li>Open the website landing page.</li><li>Choose <strong>Order Water</strong>.</li><li>Sign in, or switch to <strong>Create Account</strong>.</li><li>The system opens the customer ordering portal.</li></ol></div>
+    </div>
+    <div class="callout warning"><strong>If a session expires:</strong> the user is returned to the correct sign-in page. Use “Forgot password?” if access cannot be restored.</div>
+  </section>
+
+  <section>
+    <div class="head"><div class="num">2</div><div><h2>Add and find a customer</h2><p>Create a customer manually or locate an existing portal signup.</p></div></div>
+    <div class="path"><b>Admin dashboard</b><i>→</i><b>Sidebar</b><i>→</i><b>Add Customer</b></div>
+    <div class="flow four">
+      <article class="step"><div class="icon">＋</div><h3>Open Add Customer</h3><p>Use the customer section in the sidebar.</p></article>
+      <article class="step"><div class="icon">✍️</div><h3>Enter details</h3><p>Name, phone and address are required. Email is optional.</p></article>
+      <article class="step"><div class="icon">💾</div><h3>Save customer</h3><p>Select <strong>Add Customer</strong>. The record is stored in the cloud.</p></article>
+      <article class="step ok"><div class="icon">🔎</div><h3>Find or edit later</h3><p>Use <strong>Existing Customers</strong> or open <strong>Customer Records</strong>.</p></article>
+    </div>
+    <div class="callout">Customers created by the admin and customers who register themselves are shown together. The source label explains how each record was created.</div>
+  </section>
+
+  <section>
+    <div class="head"><div class="num">3</div><div><h2>Record a daily sale</h2><p>Add the delivery to the correct customer’s purchase history.</p></div></div>
+    <div class="path"><b>Sidebar</b><i>→</i><b>Daily Sales Entry</b></div>
+    <div class="flow">
+      <article class="step"><div class="icon">🔎</div><h3>Search customer</h3><p>Enter the customer name or phone and choose <strong>Search Customer</strong>.</p></article>
+      <article class="step"><div class="icon">👤</div><h3>Select correct record</h3><p>Choose the customer card from the results.</p></article>
+      <article class="step"><div class="icon">💧</div><h3>Enter sale</h3><p>Choose bottle type, quantity and unit price in <strong>Record Purchase</strong>.</p></article>
+      <article class="step warn"><div class="icon">🧮</div><h3>Check total</h3><p>Confirm the calculated total amount before submitting.</p></article>
+      <article class="step ok"><div class="icon">✓</div><h3>Save</h3><p>The sale enters purchase history and updates reporting/inventory.</p></article>
+    </div>
+  </section>
+
+  <section>
+    <div class="head"><div class="num">4</div><div><h2>Generate and download an invoice</h2><p>This is the main invoice-generation procedure.</p></div></div>
+    <div class="path"><b>Sidebar</b><i>→</i><b>Customer Records</b><i>→</i><b>Select customer</b><i>→</i><b>Filter &amp; Export</b></div>
+    <div class="flow">
+      <article class="step"><div class="icon">🔎</div><h3>Find customer</h3><p>Search by name, phone or email, then click the customer.</p></article>
+      <article class="step"><div class="icon">📅</div><h3>Select period</h3><p>Choose the required purchase-history period using the filter buttons.</p></article>
+      <article class="step warn"><div class="icon">👁️</div><h3>Review figures</h3><p>Check orders, bottles, revenue and the purchase-history rows.</p></article>
+      <article class="step"><div class="icon">🧾</div><h3>Choose Export PDF</h3><p>The system creates an invoice number, saves the invoice and downloads the PDF.</p></article>
+      <article class="step ok"><div class="icon">☁️</div><h3>Invoice is registered</h3><p>It appears under <strong>Customer Invoices</strong> and in the <strong>Invoice Register</strong>.</p></article>
+    </div>
+    <div class="callout warning"><strong>Important:</strong> exporting the PDF does not mark the invoice as paid. A newly generated invoice remains unpaid until an admin performs the payment action.</div>
+  </section>
+
+  <section>
+    <div class="head"><div class="num">5</div><div><h2>Mark an invoice paid or validate it</h2><p>Payment and validation are deliberate admin actions.</p></div></div>
+    <div class="two">
+      <div class="box"><h3>Method A — Customer Records</h3><ol><li>Open <strong>Customer Records</strong>.</li><li>Select the customer.</li><li>Scroll to <strong>Customer Invoices</strong>.</li><li>Choose <strong>Mark paid</strong> or <strong>Validate</strong>.</li></ol></div>
+      <div class="box"><h3>Method B — Invoice Lookup</h3><ol><li>Open <strong>Invoice Lookup</strong>.</li><li>Enter the complete invoice number.</li><li>Choose <strong>Find invoice</strong>.</li><li>Use <strong>Mark paid</strong>, <strong>Mark unpaid</strong>, <strong>Validate</strong> or <strong>Public view</strong>.</li></ol></div>
+    </div>
+    <div class="status"><span class="pill pending">Generated: Unpaid</span><b>→</b><span class="pill accepted">Admin confirms payment</span><b>→</b><span class="pill delivered">Paid</span></div>
+    <div class="callout"><strong>PDF download ≠ payment.</strong> Only the Mark paid button changes the payment status. Mark unpaid can reverse an incorrect payment entry.</div>
+  </section>
+
+  <section>
+    <div class="head"><div class="num">6</div><div><h2>Process a customer order</h2><p>Move a portal request through the delivery queue.</p></div></div>
+    <div class="path"><b>Header notification</b><span>or</span><b>Sidebar</b><i>→</i><b>Customer Orders</b></div>
+    <div class="flow four">
+      <article class="step"><div class="icon">🔔</div><h3>Open new order</h3><p>The queue shows customer, quantity, total, address and request time.</p></article>
+      <article class="step warn"><div class="icon">👁️</div><h3>Review details</h3><p>Confirm the customer, delivery address and total amount.</p></article>
+      <article class="step"><div class="icon">✓</div><h3>Choose action</h3><p>Select <strong>Accept</strong>, <strong>Delivered</strong> or <strong>Reject</strong>.</p></article>
+      <article class="step ok"><div class="icon">📲</div><h3>Customer updates</h3><p>The new status and notification appear in the customer portal.</p></article>
+    </div>
+    <div class="status"><span class="pill pending">Pending</span><b>→</b><span class="pill accepted">Accepted</span><b>→</b><span class="pill delivered">Delivered</span></div>
+    <div class="status"><span class="pill pending">Pending</span><b>→</b><span class="pill rejected">Rejected</span></div>
+  </section>
+
+  <section>
+    <div class="head"><div class="num">7</div><div><h2>Set prices, stock and order rules</h2><p>These settings control customer totals and daily workflow.</p></div></div>
+    <div class="path"><b>Sidebar</b><i>→</i><b>Settings</b></div>
+    <div class="flow four">
+      <article class="step"><div class="icon">₨</div><h3>Fixed Bottle Prices</h3><p>Enter PKR per unit for each bottle type, then choose <strong>Save Bottle Prices</strong>.</p></article>
+      <article class="step"><div class="icon">📦</div><h3>Live Bottle Inventory</h3><p>Enter available units and choose <strong>Save Inventory</strong>.</p></article>
+      <article class="step"><div class="icon">⚙️</div><h3>Order Workflow</h3><p>Configure auto-accept, notifications, delivery confirmation, cancellation and cutoff time.</p></article>
+      <article class="step ok"><div class="icon">💾</div><h3>Save each section</h3><p>Each settings card has its own save button; complete it before leaving.</p></article>
+    </div>
+    <div class="callout warning">If a customer sees a zero price, return to <strong>Settings → Fixed Bottle Prices</strong>, enter every required price and save again.</div>
+  </section>
+
+  <section>
+    <div class="head"><div class="num">8</div><div><h2>Manage users and passwords</h2><p>Owner-controlled account administration.</p></div></div>
+    <div class="path"><b>Sidebar</b><i>→</i><b>All Users</b></div>
+    <div class="two">
+      <div class="box"><h3>Create an admin</h3><ol><li>Complete <strong>New Admin</strong>.</li><li>Enter name, email and password.</li><li>Select Admin, Manager or Owner.</li><li>Choose <strong>Create Admin</strong>.</li></ol></div>
+      <div class="box"><h3>Reset a customer password</h3><ol><li>Find the user under <strong>All Customer Users</strong>.</li><li>Choose <strong>Reset password</strong>.</li><li>Enter or generate a temporary password.</li><li>Enter the owner password and choose <strong>Set password</strong>.</li></ol></div>
+    </div>
+    <div class="callout warning">Share temporary passwords privately. Removing an admin requires the owner password; removing a customer requires typing DELETE.</div>
+  </section>
+
+  <section>
+    <div class="head"><div class="num">9</div><div><h2>Customer’s ordering procedure</h2><p>What to explain when onboarding a customer.</p></div></div>
+    <div class="path"><b>Landing page</b><i>→</i><b>Order Water</b><i>→</i><b>Customer portal</b></div>
+    <div class="flow">
+      <article class="step"><div class="icon">🔐</div><h3>Sign in</h3><p>Use the registered customer email and password.</p></article>
+      <article class="step"><div class="icon">💧</div><h3>Select bottle</h3><p>Choose bottle type and quantity. The saved admin price is displayed.</p></article>
+      <article class="step"><div class="icon">📍</div><h3>Confirm delivery</h3><p>Check the pre-filled address, date and optional notes.</p></article>
+      <article class="step"><div class="icon">📤</div><h3>Place order</h3><p>Submit and wait for admin acceptance or rejection.</p></article>
+      <article class="step ok"><div class="icon">🧾</div><h3>Track records</h3><p>Review order status, notifications and linked invoices.</p></article>
+    </div>
+  </section>
+
+  <section>
+    <div class="head"><div class="num">10</div><div><h2>Quick screen directory</h2><p>Where each operational task is located.</p></div></div>
+    <table class="route-table"><tbody>
+      <tr><td>Business overview</td><td><code>Dashboard</code> — figures, customer activity and map</td></tr>
+      <tr><td>Create customer</td><td><code>Add Customer</code></td></tr>
+      <tr><td>Edit customer / invoice generation</td><td><code>Customer Records</code></td></tr>
+      <tr><td>Search and update an invoice</td><td><code>Invoice Lookup</code></td></tr>
+      <tr><td>Record a delivery sale</td><td><code>Daily Sales Entry</code></td></tr>
+      <tr><td>Accept or reject portal orders</td><td><code>Customer Orders</code></td></tr>
+      <tr><td>Business charts</td><td><code>Monthly Analytics</code></td></tr>
+      <tr><td>Admins and customer access</td><td><code>All Users</code></td></tr>
+      <tr><td>Prices, inventory and workflow</td><td><code>Settings</code></td></tr>
+      <tr><td>Messages and notifications</td><td>Use the icons in the top header</td></tr>
+    </tbody></table>
+    <div class="callout"><span class="check">✓ Saved to Supabase:</span> customers, orders, sales, invoices, prices, settings and users. <span class="no">✕ Local downloads only:</span> exported PDF and CSV copies.</div>
+  </section>
+
+  <footer>Himaliya Spring Water · Sialkot Cantt. · System operating guide</footer>
+</main></body></html>

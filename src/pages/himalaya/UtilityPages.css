@@ -79,16 +79,28 @@
 .chat-compose input { min-width: 0; min-height: 2.75rem; flex: 1; padding: 0 0.9rem; color: #effaff; background: rgba(255, 255, 255, 0.07); border: 1px solid rgba(151, 221, 255, 0.18); border-radius: 0.75rem; outline: none; }
 .chat-compose input:focus { border-color: #68d7ff; box-shadow: 0 0 0 0.2rem rgba(80, 194, 255, 0.14); }
 
-.notification-item { position: relative; display: grid; grid-template-columns: 3rem minmax(0, 1fr) auto; gap: 1rem; padding: 1.15rem 1.5rem; border-bottom: 1px solid rgba(151, 221, 255, 0.1); transition: background-color 160ms ease; }
-.notification-item:hover { background: rgba(66, 172, 255, 0.07); }
-.notification-item.is-read { opacity: 0.68; }
-.notification-icon { display: grid; width: 3rem; height: 3rem; place-items: center; color: #8feaff; font-size: 0.75rem; font-weight: 800; background: rgba(46, 160, 255, 0.15); border-radius: 0.85rem; }
-.notification-icon--payment { color: #9df6c8; background: rgba(26, 186, 111, 0.15); }
-.notification-icon--stock { color: #ffd48a; background: rgba(238, 166, 44, 0.15); }
-.notification-item h3 { margin: 0; color: #fff; font-size: 1rem; }
-.notification-item p { margin: 0.3rem 0; color: #b9cddd; }
+.notification-item { position: relative; display: grid; grid-template-columns: 3.1rem minmax(0, 1fr) auto; gap: 1rem; align-items: start; padding: 1.15rem 1.5rem; border-bottom: 1px solid rgba(151, 221, 255, 0.1); transition: background-color 160ms ease, transform 160ms ease; }
+.notification-item:hover { background: rgba(66, 172, 255, 0.07); transform: translateY(-1px); }
+.notification-item.is-read { opacity: 0.72; }
+.notification-icon { display: grid; width: 3.1rem; height: 3.1rem; place-items: center; color: #8feaff; background: linear-gradient(180deg, rgba(46, 160, 255, 0.2), rgba(46, 160, 255, 0.1)); border: 1px solid rgba(143, 234, 255, 0.18); border-radius: 1rem; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08); }
+.notification-icon--order { color: #8feaff; background: linear-gradient(180deg, rgba(46, 160, 255, 0.22), rgba(46, 160, 255, 0.1)); }
+.notification-icon--tracking { color: #9be7f7; background: linear-gradient(180deg, rgba(10, 160, 194, 0.22), rgba(10, 160, 194, 0.1)); border-color: rgba(155, 231, 247, 0.18); }
+.notification-icon--payment { color: #9df6c8; background: linear-gradient(180deg, rgba(26, 186, 111, 0.22), rgba(26, 186, 111, 0.1)); border-color: rgba(157, 246, 200, 0.18); }
+.notification-icon--message { color: #c4b5ff; background: linear-gradient(180deg, rgba(124, 98, 255, 0.22), rgba(124, 98, 255, 0.1)); border-color: rgba(196, 181, 255, 0.18); }
+.notification-type-badge--message { color: #ddd2ff; background: rgba(124, 98, 255, 0.12); border-color: rgba(196, 181, 255, 0.18); }
+.notification-item__copy { min-width: 0; }
+.notification-item__title-row { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; }
+.notification-item h3 { margin: 0; color: #fff; font-size: 1rem; line-height: 1.35; }
+.notification-item p { margin: 0.35rem 0; color: #b9cddd; line-height: 1.45; }
 .notification-item time { color: #8ea9bd; font-size: 0.78rem; }
-.notification-unread { width: 0.55rem; height: 0.55rem; margin-top: 0.5rem; background: #63d8ff; border-radius: 50%; box-shadow: 0 0 0 0.25rem rgba(99, 216, 255, 0.12); }
+.notification-type-badge { display: inline-flex; min-height: 1.45rem; flex: 0 0 auto; align-items: center; padding: 0 0.55rem; color: #dff7ff; font-size: 0.62rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(151, 221, 255, 0.14); border-radius: 999px; }
+.notification-type-badge--order { color: #b8ebff; background: rgba(46, 160, 255, 0.12); border-color: rgba(143, 234, 255, 0.18); }
+.notification-type-badge--tracking { color: #b8f4ff; background: rgba(10, 160, 194, 0.12); border-color: rgba(155, 231, 247, 0.18); }
+.notification-type-badge--payment { color: #c8ffe4; background: rgba(26, 186, 111, 0.12); border-color: rgba(157, 246, 200, 0.18); }
+.notification-type-badge--stock { color: #ffe7b8; background: rgba(238, 166, 44, 0.12); border-color: rgba(255, 212, 138, 0.18); }
+.notification-type-badge--message { color: #ddd2ff; background: rgba(124, 98, 255, 0.12); border-color: rgba(196, 181, 255, 0.18); }
+.notification-count-badge { display: inline-flex; min-height: 1.65rem; align-items: center; margin-left: 0.7rem; padding: 0 0.7rem; color: #fff; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; vertical-align: middle; background: linear-gradient(135deg, #ff6b7f, #ff3d5a); border-radius: 999px; box-shadow: 0 0.35rem 1rem rgba(255, 61, 90, 0.22); }
+.notification-unread { width: 0.62rem; height: 0.62rem; margin-top: 0.45rem; background: linear-gradient(135deg, #63d8ff, #2f9cff); border-radius: 50%; box-shadow: 0 0 0 0.28rem rgba(99, 216, 255, 0.14), 0 0 0.55rem rgba(47, 156, 255, 0.22); }
 
 .profile-grid { display: grid; grid-template-columns: minmax(15rem, 19rem) minmax(0, 1fr); gap: 1.25rem; }
 .profile-card { overflow: hidden; }
@@ -120,6 +132,8 @@
   .profile-grid { grid-template-columns: 1fr; }
   .notification-item { grid-template-columns: 2.7rem minmax(0, 1fr) auto; padding: 1rem; }
   .notification-icon { width: 2.7rem; height: 2.7rem; }
+  .notification-item__title-row { align-items: flex-start; flex-direction: column; gap: 0.35rem; }
+  .notification-type-badge { align-self: flex-start; }
 }
 
 @media (max-width: 520px) {
@@ -335,7 +349,7 @@ body.dashboard-dark .profile-business p {
 .notification-item { cursor: pointer; border-color: var(--utility-border); outline: none; }
 .notification-item:last-child { border-bottom: 0; }
 .notification-item:focus-visible { box-shadow: inset 0 0 0 2px var(--utility-accent); }
-.notification-unread { background: #2388ff; box-shadow: 0 0 0 0.2rem rgba(35, 136, 255, 0.14); }
+.notification-unread { background: linear-gradient(135deg, #3b9eff, #2f7dff); box-shadow: 0 0 0 0.22rem rgba(35, 136, 255, 0.14), 0 0 0.45rem rgba(47, 125, 255, 0.18); }
 .profile-details > div { border-color: var(--utility-border); }
 .profile-business { background: var(--utility-surface-soft); }
 
@@ -536,7 +550,7 @@ body.dashboard-dark .profile-business p {
   .customer-admin-order--delivered .customer-admin-order__main h3,
   .customer-admin-order--rejected .customer-admin-order__main h3,
   .customer-admin-order--canceled .customer-admin-order__main h3 { margin: .08rem 0 0; font-size: .78rem; }
-  .customer-admin-order__actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .customer-admin-order__actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .customer-admin-order__actions strong { grid-column: 1 / -1; text-align: left; }
   .customer-admin-order--accepted .customer-admin-order__actions,
   .customer-admin-order--delivered .customer-admin-order__actions,

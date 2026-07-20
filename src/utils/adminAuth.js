@@ -1,11 +1,11 @@
 import {
+  adminCreateUser,
   clearStoredSession,
   dbRequest,
   getStoredSession,
   isSupabaseConfigured,
   signInWithPassword,
   signOut,
-  signUpWithPassword,
   storeSession,
   verifyPassword,
 } from '../services/cloud/supabaseClient';
@@ -39,13 +39,18 @@ export async function findAdminByCredentials(email, password) {
 
   const session = await signInWithPassword(email.trim().toLowerCase(), password, 'admin');
   const userId = session.user && session.user.id;
-  const rows = await dbRequest(
-    `/admin_profiles?auth_user_id=eq.${userId}&active=eq.true&select=*&limit=1`
-  );
+  const [rows, customerRows] = await Promise.all([
+    dbRequest(`/admin_profiles?auth_user_id=eq.${userId}&active=eq.true&select=*&limit=1`),
+    dbRequest(`/customers?auth_user_id=eq.${userId}&select=id&limit=1`),
+  ]);
   const admin = rows && rows[0] ? toAdmin(rows[0]) : null;
-  if (!admin) {
+  if (!admin || (customerRows && customerRows.length)) {
     await signOut();
-    throw new Error('Your account is not allowed to access this dashboard.');
+    throw new Error(
+      customerRows && customerRows.length
+        ? 'Customer accounts cannot access the administrator dashboard.'
+        : 'Your account is not allowed to access this dashboard.'
+    );
   }
   setCurrentAdmin(admin);
   ['authenticated', 'hs_admin_users', 'hs_current_admin'].forEach((key) => localStorage.removeItem(key));
@@ -54,24 +59,13 @@ export async function findAdminByCredentials(email, password) {
 
 export async function createAdmin(admin) {
   requireCloud();
-
-  const email = admin.email.trim().toLowerCase();
-  const signUpResult = await signUpWithPassword(email, admin.password);
-  const authUserId = signUpResult.user && signUpResult.user.id;
-  if (!authUserId) throw new Error('Could not create Supabase auth user.');
-
-  const rows = await dbRequest('/admin_profiles?on_conflict=auth_user_id', {
-    method: 'POST',
-    prefer: 'resolution=merge-duplicates,return=representation',
-    body: JSON.stringify({
-      auth_user_id: authUserId,
-      name: admin.name.trim(),
-      email,
-      role: admin.role || 'Admin',
-      active: true,
-    }),
+  const result = await adminCreateUser({
+    name: admin.name.trim(),
+    email: admin.email.trim().toLowerCase(),
+    password: admin.password,
+    role: admin.role || 'Admin',
   });
-  return toAdmin(rows[0]);
+  return result.admin;
 }
 
 export async function deleteAdminWithOwnerPassword(adminId, ownerPassword) {

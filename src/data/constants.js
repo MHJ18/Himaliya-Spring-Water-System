@@ -19,6 +19,13 @@ export const FILTER_PERIODS = {
 
 export const DEFAULT_SETTINGS = {
   darkMode: false,
+  themeMode: 'light',
+  compactMode: false,
+  reduceMotion: false,
+  defaultPageSize: 10,
+  showDashboardMap: true,
+  sidebarPosition: 'left',
+  sidebarVisibility: 'show',
   businessName: 'Himaliya Spring Water',
   businessPhone: '+92 300 0000000',
   businessAddress: 'Sialkot Cantt',

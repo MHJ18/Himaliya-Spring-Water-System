@@ -47,7 +47,7 @@ export default function PublicInvoice({ match }) {
           <span>Invoice verification</span>
         </div>
 
-        {loading && <LoadingState label="Loading invoice..." compact />}
+        {loading && <LoadingState label="Loading invoice..." compact variant="table" />}
         {!loading && error && <p className="public-invoice-status public-invoice-status--error">{error}</p>}
         {!loading && invoice && <InvoiceView invoice={invoice} />}
       </div>

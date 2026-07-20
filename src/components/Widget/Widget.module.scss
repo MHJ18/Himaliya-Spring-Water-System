@@ -1,344 +1,143 @@
-@import '../../styles/app';
+.widget {
+  position: relative;
+  display: block;
+  min-width: 0;
+  margin-bottom: 24px;
+  color: var(--hs-page-muted, #9fb1c5);
+  background: var(--hs-widget-bg, #101d2d);
+  border: 1px solid var(--hs-card-border, rgba(168, 197, 222, 0.13));
+  border-radius: 18px;
+  box-shadow: var(--hs-widget-shadow, 0 18px 50px rgba(0, 0, 0, 0.2));
+}
+
+.widget:global(.bg-transparent) {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.header {
+  display: flex;
+  min-height: 58px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px 8px;
+}
 
 .title {
-  margin-top: 0;
-  color: $widget-title-color;
-  padding: 15px 20px 0;
-
-  @include clearfix();
+  min-width: 0;
+  color: var(--hs-page-text, #f3f8fc);
 }
 
-:global .h-100 {
-  height: 100%;
+.title h1,
+.title h2,
+.title h3,
+.title h4,
+.title h5,
+.title h6 {
+  margin: 0;
+  color: inherit;
 }
 
-.reloading {
-  min-height: 150px;
+.widgetControls {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 2px;
+  color: var(--hs-page-muted, #9fb1c5);
 }
 
-.widgetBackground {
-  position: fixed;
-  display: none;
-  top: 0px;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: radial-gradient(farthest-side ellipse at 10% 0, #333867 20%, #17193B);
-  background-repeat: no-repeat;
-  background-size: cover;
-  z-index: 55;
-}
-
-:global .fullscreened{
-  position: fixed!important;
-  top: 50%;
-  right: 0px;
-  bottom: 0px;
-  height: 60vh;
-  left: 50%;
-  margin: 0px;
-  z-index: 10000;
-  transform: translate(-50%, -50%)!important;
-}
-
-@media(max-width: 1400px) {
-  :global .fullscreened{
-    position: fixed!important;
-    top: 50%;
-    height: 70vh;
-    right: 0px;
-    bottom: 0px;
-    left: 50%;
-    margin: 0px;
-    z-index: 10000;
-    transform: translate(-50%, -50%)!important;
-  }
-}
-
-@media(max-width: 992px) {
-  :global .fullscreened{
-    position: fixed!important;
-    top: 50%;
-    height: 90vh;
-    width: 90vw;
-    right: 0px;
-    bottom: 0px;
-    left: 50%;
-    margin: 0px;
-    z-index: 10000;
-    transform: translate(-50%, -50%)!important;
-  }
-}
-
-:global .widget.collapsed {
-  > header {
-    transition: padding .3s linear;
-    transition-delay: 0.2s;
-    padding: $widget-padding-vertical $widget-padding-horizontal;
-  }
-  > h5 {
-    transition: padding .3s, margin-bottom .3s linear;
-    transition-delay: 0.2s;
-    padding: $widget-padding-vertical $widget-padding-horizontal;
-    margin-bottom: 0;
-  }
-}
-
-
-.widget {
-  color: var(--hs-page-muted, #{$content-color});
-  display: block;
-  position: relative;
-  margin-bottom: $grid-gutter-width;
-  border-radius: $widget-border-radius;
-  background: var(--hs-widget-bg, #{$widget-bg-color});
-  border: 1px solid var(--hs-card-border, transparent);
-  box-shadow: var(--hs-widget-shadow, #{$widget-shadow});
-  > header {
-    transition: padding .3s linear;
-    padding: $widget-padding-vertical $widget-padding-horizontal 0;
-    color: var(--hs-page-text, #{$text-color});
-    h1,
-    h2,
-    h3,
-    h4,
-    h5,
-    h6 {
-      margin: 0;
-      color: var(--hs-page-text, #{$text-color});
-    }
-  }
-
-  :global {
-    
-    .loader {
-      position: absolute;
-      top: 0;
-      bottom: 0;
-      left: 0;
-      right: 0;
-
-      .spinner {
-        position: absolute;
-        top: 50%;
-        width: 100%; //ie fix
-        margin-top: -10px;
-        font-size: 20px;
-        text-align: center;
-      }
-    }
-    .widget-body.undo_padding {
-      margin: $widget-padding-vertical (-$widget-padding-horizontal) (-$widget-padding-vertical);
-      
-
-      + footer {
-        margin-top: $widget-padding-vertical;
-      }
-    }
-
-  }
-
-  &:global.bg-transparent {
-    background: transparent;
-    border-color: transparent;
-    box-shadow: none;
-  }
-}
-.widget {
-  &:global.p-0 .widget-body {
-      padding: 0!important;
-  }  
+.widgetControls :global(.MuiIconButton-root) {
+  width: 36px;
+  height: 36px;
+  color: inherit;
 }
 
 .widgetBody {
-  @include clearfix();
-  padding: $widget-padding-vertical $widget-padding-horizontal;
-
-  > footer {
-    margin: $spacer/2 (-$widget-padding-horizontal) (-$widget-padding-vertical);
-    padding: 10px 20px;
-    border-bottom-left-radius: $widget-border-radius;
-    border-bottom-right-radius: $widget-border-radius;
-  }
-}
-
-.widgetControls + .widgetBody {
-  margin-top: $widget-padding-vertical;
-}
-
-.widgetControls + .widgetBody.widgetCollapsing {
-  margin-top: 0;
-}
-
-.customControlItem {
-  cursor: pointer;
-}
-
-.widgetControls,
-:global(.widget-controls) {
-  position: absolute;
-  z-index: 50;
-  top: 0;
-  right: 0;
-  display: flex;
-  padding: 14px;
-  font-size: $font-size-sm;
-
-  & > div {
-    display: flex;
-  }
-
-  button {
-    display: flex;
-    padding: 1px 4px;
-    border-radius: 4px;
-    color: $white;
-    background: transparent;
-    border: none;
-    cursor: pointer;
-
-    @include transition(color 0.15s ease-in-out);
-
-    &:hover {
-      color: rgba($white, 0.75);
-      text-decoration: none;
-    }
-
-    &:active,
-    &:focus {
-      outline: none;
-    }
-
-    :global {
-      .la {
-        position: relative;
-        top: 2px;
-      }
-
-      .glyphicon {
-        font-size: 0.7rem;
-      }
-    }
-  }
-}
-
-.inverse {
-  top: 2px;
   position: relative;
-  margin-left: 3px;
-
-  :global {
-    .glyphicon {
-      vertical-align: baseline;
-    }
-  }
+  min-width: 0;
+  padding: 14px 18px 18px;
 }
 
-:global {
-  .widget-image {
-    position: relative;
-    overflow: hidden;
-    margin: (-$widget-padding-vertical) (-$widget-padding-horizontal);
-    border-radius: $border-radius;
-
-    > img {
-      max-width: 100%;
-      border-radius: $border-radius $border-radius 0 0;
-      transition: transform 0.15s ease;
-    }
-
-    &:hover > img {
-      transform: scale(1.1, 1.1);
-    }
-
-    .title {
-      position: absolute;
-      top: 0;
-      left: 0;
-      margin: 20px;
-    }
-
-    .info {
-      position: absolute;
-      top: 0;
-      right: 0;
-      margin: 20px;
-    }
-  }
-
-  .widget-footer-bottom {
-    position: absolute;
-    bottom: 0;
-    width: 100%;
-  }
-
-  .widget-sm {
-    height: 230px;
-  }
-
-  .widget-md {
-    height: 373px;
-  }
-
-  .widget-padding-md {
-    padding: $widget-padding-vertical $widget-padding-horizontal;
-  }
-
-  .widget-padding-lg {
-    padding: $widget-padding-vertical*2 $widget-padding-horizontal*2;
-  }
-
-  .widget-body-container {
-    // position: relative;
-    height: 100%;
-  }
-
-  .widget-top-overflow,
-  .widget-middle-overflow {
-    position: relative;
-    margin: 0 (-$widget-padding-horizontal);
-
-    > img {
-      max-width: 100%;
-    }
-  }
-
-  .widget-top-overflow {
-    margin-top: (-$widget-padding-vertical);
-    border-top-left-radius: $widget-border-radius;
-    border-top-right-radius: $widget-border-radius;
-    overflow: hidden;
-
-    > img {
-      border-top-left-radius: $widget-border-radius;
-      border-top-right-radius: $widget-border-radius;
-    }
-
-    > .btn-toolbar {
-      position: absolute;
-      top: 0;
-      right: 0;
-      z-index: 1;
-      margin-right: $widget-padding-horizontal;
-
-      @include media-breakpoint-up(md) {
-        top: auto;
-        bottom: 0;
-      }
-    }
-  }
-
-  .widget-icon {
-    opacity: 0.5;
-    font-size: 42px;
-    height: 60px;
-    line-height: 45px;
-    display: inline-block;
-  }
+.widget:global(.p-0) .widgetBody,
+.widgetBody:global(.p-0) {
+  padding: 0 !important;
 }
 
-.widgetLoader {
+.reloading {
+  min-height: 140px;
+}
+
+.reloading .widgetBody > *:not(.loadingOverlay) {
+  opacity: 0.32;
+  pointer-events: none;
+}
+
+.loadingOverlay {
   position: absolute;
-  top: 0;
-  left: 0;
+  z-index: 4;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 10px;
+  color: var(--hs-page-muted, #9fb1c5);
+  font-size: 0.75rem;
+  background: rgba(7, 17, 31, 0.35);
+  border-radius: inherit;
+  backdrop-filter: blur(2px);
+}
+
+.fullscreened {
+  position: fixed !important;
+  z-index: 1600;
+  inset: 5vh 5vw !important;
+  display: flex;
+  overflow: auto;
+  flex-direction: column;
+  margin: 0 !important;
+  background: var(--hs-widget-bg, #101d2d) !important;
+}
+
+.fullscreened > :global(.MuiCollapse-root) {
+  flex: 1;
+}
+
+.widgetBackdrop {
+  position: fixed;
+  z-index: 1590;
+  inset: 0;
+  background: rgba(2, 9, 17, 0.72);
+  backdrop-filter: blur(8px);
+}
+
+@media (max-width: 600px) {
+  .widget {
+    margin-bottom: 16px;
+    border-radius: 15px;
+  }
+
+  .header {
+    min-height: 52px;
+    padding: 12px 14px 6px;
+  }
+
+  .widgetBody {
+    padding: 12px 14px 15px;
+  }
+
+  .fullscreened {
+    inset: 10px !important;
+  }
+}
+
+@media print {
+  .widgetControls {
+    display: none;
+  }
+
+  .widget {
+    box-shadow: none;
+  }
 }

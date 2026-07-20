@@ -1,0 +1,444 @@
+.admin-login-page {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: clamp(22px, 4vw, 50px) clamp(16px, 4vw, 34px);
+  background:
+    linear-gradient(rgba(131, 219, 237, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(131, 219, 237, 0.035) 1px, transparent 1px),
+    radial-gradient(circle at 10% 8%, rgba(15, 186, 211, 0.2), transparent 28rem),
+    radial-gradient(circle at 90% 86%, rgba(37, 91, 181, 0.18), transparent 31rem),
+    linear-gradient(145deg, #061522 0%, #06111c 58%, #02070c 100%);
+  background-size: 54px 54px, 54px 54px, auto, auto, auto;
+}
+
+.admin-login-page::before,
+.admin-login-page::after {
+  position: fixed;
+  z-index: -1;
+  content: '';
+  pointer-events: none;
+}
+
+.admin-login-page::before {
+  top: -22rem;
+  right: -22rem;
+  width: 44rem;
+  height: 44rem;
+  border: 1px solid rgba(111, 230, 248, 0.1);
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 5rem rgba(111, 230, 248, 0.02),
+    0 0 0 10rem rgba(111, 230, 248, 0.015);
+}
+
+.admin-login-page::after {
+  bottom: 0;
+  left: 7%;
+  width: 34%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(104, 226, 244, 0.34), transparent);
+}
+
+.admin-login-shell {
+  grid-template-columns: minmax(0, 1fr) minmax(330px, 442px);
+  gap: clamp(42px, 8vw, 112px);
+  max-width: 1210px;
+}
+
+.admin-login-copy {
+  position: relative;
+}
+
+.admin-login-copy .water-login-badge {
+  gap: 9px;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 13px;
+  margin-bottom: 24px;
+  color: #a4f3fb;
+  font-size: 0.66rem;
+  background: rgba(81, 216, 234, 0.07);
+  border-color: rgba(116, 231, 246, 0.16);
+}
+
+.admin-login-copy .water-login-badge i {
+  width: 7px;
+  height: 7px;
+  background: #5ce2b5;
+  border-radius: 50%;
+  box-shadow: 0 0 0 5px rgba(92, 226, 181, 0.1);
+}
+
+.admin-login-copy h1 {
+  max-width: 700px;
+  margin-bottom: 22px;
+  font-size: clamp(2.6rem, 5.7vw, 5.4rem);
+  font-weight: 850;
+  letter-spacing: -0.055em;
+  line-height: 0.94;
+}
+
+.admin-login-copy > p {
+  max-width: 610px;
+  color: #b8cfda;
+  font-size: 0.98rem;
+  font-weight: 500;
+  line-height: 1.75;
+}
+
+.admin-login-flow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(44px, 0.35fr) minmax(0, 1fr) minmax(44px, 0.35fr) minmax(0, 1fr);
+  align-items: center;
+  max-width: 650px;
+  margin-top: 34px;
+  overflow: hidden;
+  background: rgba(151, 222, 235, 0.1);
+  border: 1px solid rgba(131, 223, 240, 0.13);
+  border-radius: 20px;
+}
+
+.admin-login-flow > div {
+  display: grid;
+  min-height: 126px;
+  align-content: center;
+  justify-items: start;
+  padding: 18px;
+  background: rgba(3, 18, 29, 0.72);
+}
+
+.admin-login-flow > div > span {
+  display: grid;
+  width: 35px;
+  height: 35px;
+  margin-bottom: 13px;
+  place-items: center;
+  color: #82ebf7;
+  background: rgba(78, 204, 225, 0.1);
+  border: 1px solid rgba(112, 225, 241, 0.12);
+  border-radius: 11px;
+}
+
+.admin-login-flow strong {
+  color: #f2fcff;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.admin-login-flow small {
+  margin-top: 3px;
+  color: #799aaa;
+  font-size: 0.63rem;
+  font-weight: 650;
+}
+
+.admin-login-flow > i {
+  position: relative;
+  display: block;
+  height: 1px;
+  background: rgba(115, 226, 243, 0.2);
+}
+
+.admin-login-flow > i > b {
+  position: absolute;
+  top: -3px;
+  left: 0;
+  width: 7px;
+  height: 7px;
+  background: #65e3f2;
+  border-radius: 50%;
+  box-shadow: 0 0 0 4px rgba(101, 227, 242, 0.08);
+  animation: admin-login-route 2.8s ease-in-out infinite;
+}
+
+.admin-login-flow > i:nth-of-type(2) > b {
+  animation-delay: 1.4s;
+}
+
+.admin-login-footnote {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 21px;
+  color: #83a7b7;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.admin-login-footnote svg {
+  color: #5bd4e7;
+}
+
+.admin-login-card {
+  max-width: 442px;
+  min-height: 610px;
+  padding: clamp(27px, 3.7vw, 38px);
+  background:
+    linear-gradient(145deg, rgba(232, 252, 255, 0.055), rgba(93, 191, 211, 0.018)),
+    rgba(4, 18, 29, 0.93);
+  border-color: rgba(134, 223, 238, 0.17);
+  border-radius: 28px;
+  box-shadow:
+    0 34px 90px rgba(0, 0, 0, 0.44),
+    inset 0 1px 0 rgba(236, 253, 255, 0.035);
+  backdrop-filter: blur(22px);
+}
+
+.admin-login-card::before {
+  top: -9rem;
+  right: -7rem;
+  width: 19rem;
+  height: 19rem;
+  background: radial-gradient(circle, rgba(54, 201, 222, 0.15), transparent 68%);
+}
+
+.admin-login-card .water-login-logo {
+  margin-bottom: 39px;
+}
+
+.admin-login-card .water-login-logo-mark,
+.admin-login-page .water-login-mobile-brand .water-login-logo-mark {
+  width: 48px;
+  height: 48px;
+  color: #e8fcff;
+  background: linear-gradient(145deg, #086e8c, #0aaabd);
+  border: 1px solid rgba(138, 235, 247, 0.26);
+  border-radius: 15px;
+  box-shadow: 0 12px 32px rgba(6, 137, 161, 0.22);
+}
+
+.admin-login-card .water-login-logo h2 {
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.admin-login-card .water-login-logo p {
+  color: #84a5b4;
+  font-size: 0.72rem;
+}
+
+.admin-login-heading {
+  position: relative;
+  margin-bottom: 25px;
+}
+
+.admin-login-heading > span {
+  color: #69dceb;
+  font-size: 0.63rem;
+  font-weight: 850;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.admin-login-heading h2 {
+  margin: 7px 0 5px;
+  color: #fff !important;
+  font-size: 1.8rem;
+  font-weight: 850;
+  letter-spacing: -0.035em;
+}
+
+.admin-login-heading p {
+  margin: 0;
+  color: #91adba;
+  font-size: 0.78rem;
+  font-weight: 550;
+}
+
+.admin-login-card .water-login-label {
+  margin-bottom: 7px;
+  color: #cde0e7;
+  font-size: 0.7rem;
+  font-weight: 750;
+}
+
+.admin-login-card .water-login-label + .water-login-input-wrap {
+  margin-bottom: 16px;
+}
+
+.admin-login-card .water-login-input-wrap {
+  min-height: 54px;
+  background: rgba(218, 249, 255, 0.04);
+  border-color: rgba(144, 221, 233, 0.14);
+  border-radius: 16px;
+}
+
+.admin-login-card .water-login-input-wrap:hover {
+  border-color: rgba(144, 221, 233, 0.25);
+}
+
+.admin-login-card .water-login-input-wrap:focus-within {
+  background: rgba(218, 249, 255, 0.06);
+  border-color: rgba(93, 222, 239, 0.55);
+  box-shadow: 0 0 0 4px rgba(42, 184, 207, 0.1);
+}
+
+.admin-login-card .water-login-input-icon {
+  width: 50px;
+  color: #66d9e8;
+}
+
+.admin-login-card .water-login-input {
+  min-height: 54px;
+  color: #ecfbff;
+  font-size: 0.88rem;
+}
+
+.admin-login-card .water-login-input::placeholder {
+  color: #617f8d;
+}
+
+.admin-login-card .water-login-input:-webkit-autofill,
+.admin-login-card .water-login-input:-webkit-autofill:hover,
+.admin-login-card .water-login-input:-webkit-autofill:focus,
+.admin-login-card .water-login-input:-webkit-autofill:active,
+.admin-login-card .water-login-input:autofill {
+  -webkit-text-fill-color: #ecfbff !important;
+  caret-color: #ecfbff;
+  color: #ecfbff !important;
+  background-color: #0b2734 !important;
+  -webkit-box-shadow: 0 0 0 1000px #0b2734 inset !important;
+  box-shadow: 0 0 0 1000px #0b2734 inset !important;
+}
+
+.admin-login-card .water-login-submit {
+  display: flex;
+  min-height: 56px;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 7px;
+  padding: 0 20px 0 22px;
+  color: #f3fdff;
+  font-size: 0.82rem;
+  font-weight: 800;
+  background: linear-gradient(105deg, #087c9e, #07a9bc);
+  border: 1px solid rgba(151, 239, 249, 0.19);
+  border-radius: 999px;
+  box-shadow: 0 15px 34px rgba(6, 132, 157, 0.21);
+}
+
+.admin-login-card .water-login-submit:hover:not(:disabled) {
+  box-shadow: 0 19px 39px rgba(6, 132, 157, 0.29);
+  transform: translateY(-2px);
+}
+
+.admin-login-form-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 15px;
+}
+
+.admin-login-card .water-login-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  color: #7696a4;
+  font-size: 0.62rem;
+  text-align: left;
+}
+
+.admin-login-card .water-login-note svg {
+  color: #50cbdc;
+}
+
+.admin-login-card .water-login-forgot {
+  flex: 0 0 auto;
+  margin: 0;
+  color: #74dfec;
+  font-size: 0.65rem;
+  text-decoration: none;
+}
+
+.admin-login-card .water-login-back {
+  align-items: center;
+  gap: 7px;
+  margin-top: 28px;
+  color: #748f9d;
+  font-size: 0.68rem;
+  text-decoration: none;
+}
+
+.admin-login-card .water-login-back svg {
+  transform: rotate(180deg);
+}
+
+.admin-login-card .water-login-back:hover {
+  color: #a3eaf3;
+}
+
+@keyframes admin-login-route {
+  0%, 12% { left: 0; opacity: 0; }
+  28% { opacity: 1; }
+  82% { opacity: 1; }
+  100% { left: calc(100% - 7px); opacity: 0; }
+}
+
+@media (max-width: 900px) {
+  .admin-login-shell {
+    width: min(100%, 442px);
+    gap: 14px;
+  }
+
+  .admin-login-page .water-login-mobile-brand {
+    max-width: 442px;
+    min-height: 74px;
+    padding: 12px 16px;
+    background: rgba(4, 18, 29, 0.8);
+    border-color: rgba(134, 223, 238, 0.15);
+    border-radius: 20px;
+  }
+
+  .admin-login-page .water-login-mobile-brand h1 {
+    font-size: 0.92rem;
+  }
+
+  .admin-login-page .water-login-mobile-brand p {
+    color: #82a0ae;
+    font-size: 0.68rem;
+  }
+
+  .admin-login-card {
+    max-width: 442px;
+    min-height: 560px;
+  }
+
+  .admin-login-heading {
+    margin-top: 3px;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-login-page {
+    padding: 14px 12px 20px;
+  }
+
+  .admin-login-card {
+    min-height: 548px;
+    padding: 25px 20px;
+    border-radius: 23px;
+  }
+
+  .admin-login-heading h2 {
+    font-size: 1.55rem;
+  }
+
+  .admin-login-form-meta {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 9px;
+  }
+
+  .admin-login-card .water-login-forgot {
+    font-size: 0.68rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-login-flow > i > b {
+    animation: none;
+  }
+}

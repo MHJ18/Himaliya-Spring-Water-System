@@ -60,10 +60,29 @@ export function buildSalesCsv(customers) {
   return rowsToCsv(headers, rows);
 }
 
+export function buildEntryHistoryCsv(transactions) {
+  const headers = ['Entry ID', 'Date', 'Customer', 'Bottle Type', 'Quantity', 'Price', 'Total', 'Notes'];
+  const rows = transactions.map((transaction) => [
+    transaction.id,
+    formatDate(transaction.date),
+    transaction.customerName || '',
+    transaction.bottleType,
+    transaction.quantity,
+    transaction.pricePerBottle,
+    transaction.totalAmount,
+    transaction.notes || '',
+  ]);
+  return rowsToCsv(headers, rows);
+}
+
 export function exportSalesToCsv(customers) {
   downloadCsv(buildSalesCsv(customers), `sales-${new Date().toISOString().slice(0, 10)}.csv`);
 }
 
 export function exportCustomersToCsv(customers) {
   downloadCsv(buildCustomersCsv(customers), `customers-${new Date().toISOString().slice(0, 10)}.csv`);
+}
+
+export function exportEntryHistoryToCsv(transactions) {
+  downloadCsv(buildEntryHistoryCsv(transactions), `entry-history-${new Date().toISOString().slice(0, 10)}.csv`);
 }

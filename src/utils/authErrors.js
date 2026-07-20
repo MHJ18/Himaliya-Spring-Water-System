@@ -21,6 +21,10 @@ export function mapLoginError(error) {
     return 'This account does not have admin access to the dashboard.';
   }
 
+  if (normalized.includes('database error querying schema')) {
+    return 'Sign-in is temporarily unavailable while the account database is repaired.';
+  }
+
   if (normalized.includes('supabase is not configured') || normalized.includes('configuration is required')) {
     return 'Sign-in is unavailable because Supabase is not configured for this app.';
   }

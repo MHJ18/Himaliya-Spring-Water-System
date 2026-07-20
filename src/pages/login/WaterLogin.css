@@ -233,13 +233,17 @@
 .water-login-input:-webkit-autofill,
 .water-login-input:-webkit-autofill:hover,
 .water-login-input:-webkit-autofill:focus,
-.water-login-input:-webkit-autofill:active {
+.water-login-input:-webkit-autofill:active,
+.water-login-input:autofill {
   -webkit-text-fill-color: #eaf8ff !important;
   caret-color: #eaf8ff;
+  color: #eaf8ff !important;
+  background-color: #10283a !important;
   border: 0;
-  -webkit-box-shadow: 0 0 0 1000px rgba(255, 255, 255, 0.06) inset !important;
-  box-shadow: 0 0 0 1000px rgba(255, 255, 255, 0.06) inset !important;
-  transition: background-color 9999s ease-out 0s, color 9999s ease-out 0s;
+  border-radius: 0 13px 13px 0;
+  -webkit-box-shadow: 0 0 0 1000px #10283a inset !important;
+  box-shadow: 0 0 0 1000px #10283a inset !important;
+  transition: background-color 600000s 0s, color 600000s 0s;
 }
 
 .water-login-alert {

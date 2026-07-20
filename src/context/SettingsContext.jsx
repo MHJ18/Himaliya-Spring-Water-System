@@ -21,11 +21,15 @@ export function SettingsProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    document.body.classList.toggle('dashboard-dark', settings.darkMode);
-    document.body.classList.toggle('dashboard-light', !settings.darkMode);
-    document.documentElement.classList.toggle('dark', settings.darkMode);
-    document.documentElement.classList.toggle('light', !settings.darkMode);
-    document.documentElement.style.colorScheme = settings.darkMode ? 'dark' : 'light';
+    const systemDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const isDark = settings.themeMode === 'system' ? systemDark : settings.themeMode === 'dark' || settings.darkMode;
+    document.body.classList.toggle('dashboard-dark', isDark);
+    document.body.classList.toggle('dashboard-light', !isDark);
+    document.body.classList.toggle('dashboard-compact', Boolean(settings.compactMode));
+    document.documentElement.classList.toggle('dark', isDark);
+    document.documentElement.classList.toggle('light', !isDark);
+    document.documentElement.classList.toggle('reduce-motion', Boolean(settings.reduceMotion));
+    document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
   }, [settings]);
 
   const toggleDarkMode = useCallback(() => {
@@ -33,6 +37,7 @@ export function SettingsProvider({ children }) {
     window.setTimeout(() => document.documentElement.classList.remove('theme-transitioning'), 500);
     setSettings((prev) => {
       const next = { ...prev, darkMode: !prev.darkMode };
+      next.themeMode = next.darkMode ? 'dark' : 'light';
       settingsApi.save(next).catch(() => setSettings(prev));
       return next;
     });

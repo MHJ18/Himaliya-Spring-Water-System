@@ -1,9 +1,9 @@
 import React, {
-  createContext, useContext, useReducer, useEffect, useCallback, useMemo,
+  createContext, useContext, useReducer, useEffect, useCallback, useMemo, useRef,
 } from 'react';
-import { v4 as uuidv4 } from 'uuid';
 import { customerApi } from '../services/api/customerApi';
 import { normalizePhone } from '../utils/validation';
+import { createId } from '../utils/id';
 import { getSessionReadyEventName, hasStoredSessionType } from '../services/cloud/supabaseClient';
 
 const CustomerContext = createContext(null);
@@ -56,30 +56,41 @@ function reducer(state, action) {
 
 export function CustomerProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, initialState);
+  const customerRequest = useRef(null);
 
   const loadCustomers = useCallback((options = {}) => {
     if (!hasStoredSessionType('admin')) {
       dispatch({ type: 'LOAD', payload: [] });
       return Promise.resolve();
     }
-    return customerApi.getAll()
+    if (options.silent && customerRequest.current) return customerRequest.current;
+    const request = customerApi.getAll()
       .then((data) => {
         const payload = buildCustomerCollections(data || []);
         dispatch({ type: options.silent ? 'SET' : 'LOAD', payload });
       })
-      .catch((error) => dispatch({ type: 'ERROR', payload: error.message || 'Could not load cloud data.' }));
+      .catch((error) => dispatch({ type: 'ERROR', payload: error.message || 'Could not load cloud data.' }))
+      .finally(() => {
+        if (customerRequest.current === request) customerRequest.current = null;
+      });
+    customerRequest.current = request;
+    return request;
   }, []);
 
   useEffect(() => {
     loadCustomers();
-    const silentRefresh = () => loadCustomers({ silent: true });
+    const silentRefresh = () => {
+      if (!document.hidden) loadCustomers({ silent: true });
+    };
     window.addEventListener(getSessionReadyEventName(), loadCustomers);
-    window.addEventListener('focus', silentRefresh);
     const intervalId = window.setInterval(silentRefresh, 45000);
+    document.addEventListener('visibilitychange', silentRefresh);
+    window.addEventListener('online', silentRefresh);
     return () => {
       window.removeEventListener(getSessionReadyEventName(), loadCustomers);
-      window.removeEventListener('focus', silentRefresh);
       window.clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', silentRefresh);
+      window.removeEventListener('online', silentRefresh);
     };
   }, [loadCustomers]);
 
@@ -94,7 +105,7 @@ export function CustomerProvider({ children }) {
       throw new Error('A customer with this phone number already exists');
     }
     const customer = {
-      id: uuidv4(),
+      id: createId(),
       name: form.name.trim(),
       phone,
       address: form.address.trim(),
@@ -168,6 +179,28 @@ export function CustomerProvider({ children }) {
     return transaction;
   }, [state.customers, persist]);
 
+  const deleteTransaction = useCallback(async (customerId, transactionId) => {
+    const currentCustomer = state.customers.find((customer) => customer.id === customerId);
+    if (!currentCustomer) throw new Error('Customer not found');
+    if (!(currentCustomer.purchaseHistory || []).some((transaction) => transaction.id === transactionId)) {
+      throw new Error('Sale entry not found');
+    }
+    await customerApi.deleteTransaction(transactionId);
+    dispatch({
+      type: 'SET',
+      payload: state.customers.map((customer) => (
+        customer.id === customerId
+          ? {
+            ...customer,
+            purchaseHistory: (customer.purchaseHistory || []).filter((transaction) => (
+              transaction.id !== transactionId
+            )),
+          }
+          : customer
+      )),
+    });
+  }, [state.customers]);
+
   const refresh = useCallback(() => loadCustomers(), [loadCustomers]);
 
   const value = useMemo(() => ({
@@ -182,8 +215,9 @@ export function CustomerProvider({ children }) {
     findByPhone,
     searchCustomers,
     addTransaction,
+    deleteTransaction,
     refresh,
-  }), [state, addCustomer, updateCustomer, deleteCustomer, findByPhone, searchCustomers, addTransaction, refresh]);
+  }), [state, addCustomer, updateCustomer, deleteCustomer, findByPhone, searchCustomers, addTransaction, deleteTransaction, refresh]);
 
   return <CustomerContext.Provider value={value}>{children}</CustomerContext.Provider>;
 }

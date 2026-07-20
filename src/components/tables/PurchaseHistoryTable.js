@@ -1,36 +1,73 @@
 import React from 'react';
-import { Table } from 'reactstrap';
+import {
+  IconButton,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Tooltip,
+  Typography,
+} from '@mui/material';
+import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
 import { formatCurrency, formatDate } from '../../utils/formatters';
-import s from '../../pages/dashboard/Dashboard.module.scss';
+import { mobileOptionalCellSx, responsiveTableContainerSx } from './tableStyles';
 
-export default function PurchaseHistoryTable({ transactions }) {
-  if (!transactions?.length) {
-    return <p className="text-muted mb-0 py-2">No purchases in this period.</p>;
+export default function PurchaseHistoryTable({ transactions, onDelete, deletingTransactionId }) {
+  if (!transactions || !transactions.length) {
+    return <Typography variant="body2" color="text.secondary">No purchases in this period.</Typography>;
   }
+
+  const showActions = typeof onDelete === 'function';
+
   return (
-    <div className={`widget-table-overflow ${s.table || ''}`}>
-      <Table striped size="sm" className="mb-0">
-        <thead className="no-bd">
-          <tr>
-            <th>Date</th>
-            <th>Bottle Type</th>
-            <th>Qty</th>
-            <th>Price</th>
-            <th className="text-align-right">Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          {transactions.map((t) => (
-            <tr key={t.id}>
-              <td className="text-nowrap">{formatDate(t.date)}</td>
-              <td>{t.bottleType}</td>
-              <td>{t.quantity}</td>
-              <td>{formatCurrency(t.pricePerBottle)}</td>
-              <td className="text-align-right fw-semi-bold">{formatCurrency(t.totalAmount)}</td>
-            </tr>
+    <TableContainer
+      role="region"
+      tabIndex={0}
+      aria-label="Scrollable customer purchase history"
+      sx={{ ...responsiveTableContainerSx, maxHeight: 440 }}
+    >
+      <Table stickyHeader size="small" aria-label="Customer purchase history" sx={{ minWidth: { xs: 490, sm: 620 } }}>
+        <TableHead>
+          <TableRow>
+            <TableCell>Date</TableCell>
+            <TableCell>Bottle type</TableCell>
+            <TableCell align="right">Quantity</TableCell>
+            <TableCell align="right" sx={mobileOptionalCellSx}>Unit price</TableCell>
+            <TableCell align="right">Total</TableCell>
+            {showActions && <TableCell align="right">Actions</TableCell>}
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {transactions.map((transaction) => (
+            <TableRow key={transaction.id} hover>
+              <TableCell sx={{ whiteSpace: 'nowrap' }}>{formatDate(transaction.date)}</TableCell>
+              <TableCell>{transaction.bottleType}</TableCell>
+              <TableCell align="right">{transaction.quantity}</TableCell>
+              <TableCell align="right" sx={mobileOptionalCellSx}>{formatCurrency(transaction.pricePerBottle)}</TableCell>
+              <TableCell align="right" sx={{ fontWeight: 800 }}>{formatCurrency(transaction.totalAmount)}</TableCell>
+              {showActions && (
+                <TableCell align="right">
+                  <Tooltip title="Delete sale entry">
+                    <span>
+                      <IconButton
+                        size="small"
+                        color="error"
+                        aria-label={`Delete sale entry from ${formatDate(transaction.date)}`}
+                        disabled={deletingTransactionId === transaction.id}
+                        onClick={() => onDelete(transaction)}
+                      >
+                        <DeleteOutlineRoundedIcon fontSize="small" />
+                      </IconButton>
+                    </span>
+                  </Tooltip>
+                </TableCell>
+              )}
+            </TableRow>
           ))}
-        </tbody>
+        </TableBody>
       </Table>
-    </div>
+    </TableContainer>
   );
 }

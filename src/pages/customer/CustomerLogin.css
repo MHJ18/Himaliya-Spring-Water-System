@@ -1,0 +1,518 @@
+.customer-login-page {
+  --customer-bg: #030b13;
+  --customer-surface: #081827;
+  --customer-surface-strong: #0d2434;
+  --customer-border: rgba(139, 226, 242, 0.18);
+  --customer-cyan: #72e8f5;
+  --customer-blue: #5b9cff;
+  --customer-text: #f6fcff;
+  --customer-muted: #bed5de;
+  position: relative;
+  align-items: flex-start;
+  overflow-x: hidden;
+  overflow-y: auto;
+  color-scheme: dark;
+  font-family: 'Source Sans 3', 'Segoe UI', system-ui, sans-serif;
+  background:
+    radial-gradient(circle at 12% 10%, rgba(42, 195, 224, 0.22), transparent 27rem),
+    radial-gradient(circle at 88% 82%, rgba(64, 111, 255, 0.18), transparent 31rem),
+    linear-gradient(145deg, #061827 0%, var(--customer-bg) 62%, #02070d 100%);
+  isolation: isolate;
+}
+
+.customer-login-page::before {
+  position: absolute;
+  z-index: -2;
+  inset: 0;
+  pointer-events: none;
+  content: '';
+  opacity: 0.42;
+  background-image:
+    linear-gradient(rgba(164, 231, 244, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(164, 231, 244, 0.045) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: linear-gradient(90deg, #000, rgba(0, 0, 0, 0.72) 55%, transparent 92%);
+}
+
+.customer-login-page::after {
+  position: absolute;
+  z-index: -1;
+  right: -17rem;
+  bottom: -24rem;
+  width: 56rem;
+  height: 56rem;
+  pointer-events: none;
+  border: 1px solid rgba(139, 226, 242, 0.17);
+  border-radius: 50%;
+  content: '';
+  box-shadow:
+    0 0 0 5rem rgba(114, 232, 245, 0.025),
+    0 0 0 10rem rgba(114, 232, 245, 0.016);
+}
+
+.customer-login-page .water-login-shell {
+  grid-template-columns: minmax(0, 1fr) minmax(26rem, 31rem);
+  align-items: start;
+  gap: clamp(3rem, 7vw, 7.5rem);
+  max-width: 1220px;
+}
+
+.customer-login-page .water-login-copy {
+  position: relative;
+  max-width: 650px;
+  padding: clamp(3rem, 9vh, 6.5rem) 0 2rem;
+}
+
+.customer-login-page .water-login-badge {
+  min-height: 34px;
+  align-items: center;
+  padding: 0 14px;
+  margin-bottom: 24px;
+  color: #9af2fb;
+  font-size: 0.7rem;
+  font-weight: 850;
+  letter-spacing: 0.16em;
+  background: rgba(114, 232, 245, 0.07);
+  border-color: rgba(114, 232, 245, 0.19);
+}
+
+.customer-login-page .water-login-copy h1 {
+  max-width: 670px;
+  margin-bottom: 24px;
+  color: var(--customer-text) !important;
+  font-family: 'Barlow Semi Condensed', 'Arial Narrow', sans-serif;
+  font-size: clamp(3.4rem, 6.2vw, 5.9rem);
+  font-weight: 800;
+  line-height: 0.9;
+  letter-spacing: -0.045em;
+  text-transform: uppercase;
+  text-shadow: 0 10px 42px rgba(0, 0, 0, 0.38);
+  -webkit-text-fill-color: var(--customer-text) !important;
+}
+
+.customer-login-page .water-login-copy > p {
+  max-width: 560px;
+  color: #d7e8ee !important;
+  font-size: 1.05rem;
+  line-height: 1.65;
+  -webkit-text-fill-color: #d7e8ee !important;
+}
+
+.customer-login-page .water-login-stats {
+  gap: 0;
+  margin-top: 38px;
+  border: 1px solid var(--customer-border);
+  border-radius: 20px;
+}
+
+.customer-login-page .water-login-stats span {
+  min-height: 112px;
+  justify-content: center;
+  padding: 18px 20px;
+  color: var(--customer-muted) !important;
+  background: rgba(244, 252, 255, 0.035);
+  border: 0;
+  border-right: 1px solid var(--customer-border);
+  border-radius: 0;
+  -webkit-text-fill-color: var(--customer-muted) !important;
+}
+
+.customer-login-page .water-login-stats span:first-child {
+  border-radius: 19px 0 0 19px;
+}
+
+.customer-login-page .water-login-stats span:last-child {
+  border-right: 0;
+  border-radius: 0 19px 19px 0;
+}
+
+.customer-login-page .water-login-stats strong {
+  color: var(--customer-text) !important;
+  font-family: 'Barlow Semi Condensed', 'Arial Narrow', sans-serif;
+  font-size: 1.75rem;
+  text-transform: uppercase;
+  -webkit-text-fill-color: var(--customer-text) !important;
+}
+
+.customer-login-route {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin-top: 24px;
+}
+
+.customer-login-route > span {
+  position: relative;
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 9px;
+  align-items: center;
+  min-width: 0;
+  color: #72919d;
+}
+
+.customer-login-route > span:not(:last-child)::after {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  left: 70px;
+  height: 1px;
+  content: '';
+  background: rgba(136, 213, 230, 0.15);
+}
+
+.customer-login-route i {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  color: #9cb7c1;
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 850;
+  background: rgba(237, 250, 253, 0.045);
+  border: 1px solid rgba(142, 215, 231, 0.16);
+  border-radius: 50%;
+  place-items: center;
+}
+
+.customer-login-route b {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.customer-login-route .is-complete i,
+.customer-login-route .is-current i {
+  color: #04141f;
+  background: var(--customer-cyan);
+  border-color: var(--customer-cyan);
+  box-shadow: 0 0 0 5px rgba(114, 232, 245, 0.07);
+}
+
+.customer-login-route .is-complete b,
+.customer-login-route .is-current b {
+  color: #bceff5;
+}
+
+.customer-login-page .customer-login-card {
+  max-width: 31rem;
+  padding: clamp(1.65rem, 3vw, 2.1rem);
+  overflow: visible;
+  color: var(--customer-text);
+  background:
+    linear-gradient(145deg, rgba(242, 252, 255, 0.075), rgba(75, 182, 220, 0.025)),
+    rgba(6, 20, 33, 0.94);
+  border: 1px solid rgba(146, 225, 241, 0.2);
+  border-radius: 30px;
+  box-shadow:
+    0 34px 100px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.055);
+  backdrop-filter: blur(22px);
+}
+
+.customer-login-page .customer-login-card::before {
+  inset: -5rem -5rem auto auto;
+  width: 15rem;
+  height: 15rem;
+  opacity: 0.72;
+}
+
+.customer-login-page .water-login-logo {
+  margin-bottom: 18px;
+}
+
+.customer-login-page .water-login-logo-mark {
+  width: 50px;
+  height: 50px;
+  color: #04202c;
+  background: linear-gradient(145deg, #d8fbff, var(--customer-cyan));
+  border-radius: 16px;
+  box-shadow: 0 12px 32px rgba(49, 198, 228, 0.22);
+}
+
+.customer-login-page .water-login-logo h2 {
+  color: var(--customer-text) !important;
+  font-family: 'Barlow Semi Condensed', 'Arial Narrow', sans-serif;
+  font-size: 1.7rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  -webkit-text-fill-color: var(--customer-text) !important;
+}
+
+.customer-login-page .water-login-logo p {
+  color: var(--customer-muted) !important;
+  font-size: 0.85rem;
+  -webkit-text-fill-color: var(--customer-muted) !important;
+}
+
+.customer-login-page .customer-login-tabs {
+  gap: 5px;
+  margin: 1.1rem 0 1.45rem;
+  padding: 5px;
+  background: rgba(241, 252, 255, 0.045);
+  border: 1px solid rgba(136, 217, 233, 0.16);
+  border-radius: 16px;
+}
+
+.customer-login-page .customer-login-tabs button {
+  min-height: 46px;
+  color: #afcad3;
+  border-radius: 11px;
+  cursor: pointer;
+  transition: color 180ms ease, background 180ms ease, box-shadow 180ms ease;
+}
+
+.customer-login-page .customer-login-tabs button:hover {
+  color: var(--customer-text);
+  background: rgba(114, 232, 245, 0.055);
+  transform: none;
+}
+
+.customer-login-page .customer-login-tabs button.is-active {
+  color: #04141f;
+  background: linear-gradient(135deg, #c8f9ff, var(--customer-cyan) 54%, #75aaff);
+  box-shadow:
+    0 10px 28px rgba(38, 184, 218, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.customer-login-page .customer-login-tabs button:focus-visible {
+  outline: 3px solid rgba(121, 242, 197, 0.7);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+.customer-login-page .customer-login-form-shell {
+  overflow: visible;
+  transition: none;
+}
+
+.customer-signup-fields {
+  overflow: hidden;
+}
+
+.customer-signup-fields__inner {
+  display: grid;
+}
+
+.customer-login-page .water-login-label {
+  margin-bottom: 7px;
+  color: #e6f6fa !important;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  -webkit-text-fill-color: #e6f6fa !important;
+}
+
+.customer-login-page .water-login-label + .water-login-input-wrap {
+  margin-bottom: 15px;
+}
+
+.customer-login-page .water-login-input-wrap {
+  min-height: 54px;
+  overflow: hidden;
+  color-scheme: dark;
+  background: var(--customer-surface-strong);
+  border: 1px solid rgba(138, 213, 229, 0.17);
+  border-radius: 15px;
+}
+
+.customer-login-page .water-login-input-wrap:hover {
+  border-color: rgba(138, 213, 229, 0.3);
+}
+
+.customer-login-page .water-login-input-wrap:focus-within {
+  background: #102b3e;
+  border-color: rgba(114, 232, 245, 0.72);
+  box-shadow: 0 0 0 4px rgba(48, 184, 219, 0.12);
+}
+
+.customer-login-page .water-login-input-icon {
+  width: 50px;
+  color: #83e5f1;
+}
+
+.customer-login-page .water-login-input {
+  min-height: 54px;
+  color: var(--customer-text);
+  caret-color: var(--customer-cyan);
+}
+
+.customer-login-page .water-login-input::placeholder {
+  color: #829eaa;
+  opacity: 1;
+}
+
+.customer-login-page .water-login-input:-webkit-autofill,
+.customer-login-page .water-login-input:-webkit-autofill:hover,
+.customer-login-page .water-login-input:-webkit-autofill:focus,
+.customer-login-page .water-login-input:-webkit-autofill:active,
+.customer-login-page .water-login-input:autofill {
+  color: var(--customer-text) !important;
+  background-color: var(--customer-surface-strong) !important;
+  -webkit-text-fill-color: var(--customer-text) !important;
+  caret-color: var(--customer-text) !important;
+  -webkit-box-shadow: 0 0 0 1000px var(--customer-surface-strong) inset !important;
+  box-shadow: 0 0 0 1000px var(--customer-surface-strong) inset !important;
+  border-radius: 0 14px 14px 0;
+}
+
+.customer-login-page .water-login-submit {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 58px;
+  padding: 5px 6px 5px 22px;
+  margin-top: 4px;
+  color: #04141f;
+  background: linear-gradient(135deg, #c8f9ff, var(--customer-cyan) 52%, var(--customer-blue));
+  border: 1px solid rgba(255, 255, 255, 0.44);
+  border-radius: 999px;
+  box-shadow:
+    0 16px 42px rgba(40, 181, 217, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.customer-login-page .water-login-submit svg {
+  width: 46px;
+  height: 46px;
+  padding: 13px;
+  color: var(--customer-text);
+  background: rgba(4, 20, 31, 0.92);
+  border-radius: 50%;
+  transition: transform 180ms ease;
+}
+
+.customer-login-page .water-login-submit:hover:not(:disabled) {
+  box-shadow:
+    0 20px 48px rgba(40, 181, 217, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.78);
+  transform: translateY(-2px);
+}
+
+.customer-login-page .water-login-submit:hover:not(:disabled) svg {
+  transform: rotate(-22deg);
+}
+
+.customer-login-page .water-login-submit:focus-visible {
+  outline: 3px solid rgba(121, 242, 197, 0.7);
+  outline-offset: 3px;
+}
+
+.customer-login-page .water-login-note {
+  max-width: 29rem;
+  margin: 15px auto 0;
+  color: #9bb6c1 !important;
+  font-size: 0.76rem;
+  line-height: 1.5;
+  -webkit-text-fill-color: #9bb6c1 !important;
+}
+
+.customer-login-page .water-login-forgot,
+.customer-login-page .water-login-back {
+  min-height: 44px;
+  align-items: center;
+  color: #97e8f2 !important;
+  font-size: 0.78rem;
+  font-weight: 750;
+  -webkit-text-fill-color: #97e8f2 !important;
+}
+
+.customer-login-page .water-login-forgot:hover,
+.customer-login-page .water-login-back:hover {
+  color: var(--customer-text) !important;
+  -webkit-text-fill-color: var(--customer-text) !important;
+}
+
+.customer-login-page .customer-login-links {
+  align-items: center;
+  margin-top: 8px;
+  border-top: 1px solid rgba(138, 213, 229, 0.12);
+}
+
+@media (max-width: 900px) {
+  .customer-login-page {
+    align-items: flex-start;
+    overflow-y: auto;
+  }
+
+  .customer-login-page .water-login-shell {
+    grid-template-columns: 1fr;
+    width: min(100%, 31rem);
+    gap: 16px;
+  }
+
+  .customer-login-page .water-login-mobile-brand {
+    max-width: 31rem;
+    padding: 15px 18px;
+    background: rgba(6, 20, 33, 0.88);
+    border-color: rgba(146, 225, 241, 0.18);
+    border-radius: 20px;
+    backdrop-filter: blur(18px);
+  }
+
+  .customer-login-page .water-login-mobile-brand h1 {
+    font-family: 'Barlow Semi Condensed', 'Arial Narrow', sans-serif;
+    text-transform: uppercase;
+  }
+
+  .customer-login-page .water-login-card {
+    max-width: 31rem;
+  }
+
+  .customer-login-page .water-login-logo {
+    display: flex;
+  }
+
+  .customer-login-page .water-login-mobile-heading {
+    display: none;
+  }
+}
+
+@media (max-width: 520px) {
+  .customer-login-page {
+    padding: 16px 14px 22px;
+  }
+
+  .customer-login-page .water-login-mobile-brand {
+    padding: 12px 14px;
+  }
+
+  .customer-login-page .water-login-mobile-brand .water-login-logo-mark {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+  }
+
+  .customer-login-page .customer-login-card {
+    padding: 22px 18px;
+    border-radius: 24px;
+  }
+
+  .customer-login-page .customer-login-tabs {
+    margin-top: 0;
+  }
+
+  .customer-login-page .water-login-input,
+  .customer-login-page .water-login-submit {
+    font-size: 16px;
+  }
+
+  .customer-login-page .customer-login-links {
+    flex-direction: row;
+    gap: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .customer-login-page *,
+  .customer-login-page *::before,
+  .customer-login-page *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

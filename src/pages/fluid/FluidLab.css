@@ -1,0 +1,216 @@
+.fluid-lab {
+  --fluid-reservoir: #073b4c;
+  --fluid-mineral: #0b6f78;
+  --fluid-glacier: #65c8d0;
+  --fluid-condensation: #f3faf9;
+  --fluid-stone: #586a70;
+  --fluid-amber: #f2b544;
+  --fluid-border: rgba(243, 250, 249, 0.2);
+  position: relative;
+  display: grid;
+  min-height: 100dvh;
+  overflow: hidden;
+  color: var(--fluid-condensation);
+  font-family: 'Source Sans 3', 'Segoe UI', sans-serif;
+  background: var(--fluid-reservoir);
+  isolation: isolate;
+}
+
+.fluid-lab::after {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  content: '';
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(7, 59, 76, 0.86) 0%, rgba(7, 59, 76, 0.48) 50%, transparent 78%),
+    linear-gradient(180deg, rgba(7, 59, 76, 0.32), transparent 45%, rgba(7, 59, 76, 0.72));
+}
+
+.fluid-lab > :not(.fluid-simulation) {
+  position: relative;
+  z-index: 2;
+}
+
+.fluid-lab__header {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  width: min(1280px, calc(100% - 40px));
+  margin: 0 auto;
+  padding: 24px 0;
+}
+
+.fluid-lab__back,
+.fluid-lab__status {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  min-height: 44px;
+  color: var(--fluid-condensation);
+  font-size: 0.9rem;
+  font-weight: 650;
+}
+
+.fluid-lab__back {
+  padding: 0 14px;
+  text-decoration: none;
+  border: 1px solid var(--fluid-border);
+  border-radius: 999px;
+}
+
+.fluid-lab__status {
+  color: var(--fluid-glacier);
+}
+
+.fluid-lab__content {
+  align-self: center;
+  width: min(1280px, calc(100% - 40px));
+  margin: 0 auto;
+  padding: 56px 0 96px;
+}
+
+.fluid-lab__eyebrow {
+  display: block;
+  margin-bottom: 16px;
+  color: var(--fluid-glacier);
+  font-size: 0.78rem;
+  font-weight: 750;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.fluid-lab h1 {
+  max-width: 760px;
+  margin: 0;
+  color: var(--fluid-condensation);
+  font-family: 'Barlow Semi Condensed', 'Arial Narrow', sans-serif;
+  font-size: clamp(4.25rem, 11vw, 9.5rem);
+  font-weight: 650;
+  letter-spacing: -0.04em;
+  line-height: 0.82;
+}
+
+.fluid-lab__content > p {
+  max-width: 590px;
+  margin: 32px 0 0;
+  color: rgba(243, 250, 249, 0.88);
+  font-size: clamp(1rem, 1.6vw, 1.2rem);
+  line-height: 1.6;
+}
+
+.fluid-lab__controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 32px;
+}
+
+.fluid-lab__controls button {
+  min-height: 46px;
+  padding: 0 18px;
+  color: var(--fluid-condensation);
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 700;
+  background: rgba(7, 59, 76, 0.54);
+  border: 1px solid var(--fluid-border);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: color 180ms ease, background-color 180ms ease, border-color 180ms ease;
+}
+
+.fluid-lab__controls button:hover {
+  border-color: rgba(101, 200, 208, 0.72);
+}
+
+.fluid-lab__controls button.is-active {
+  color: var(--fluid-reservoir);
+  background: var(--fluid-amber);
+  border-color: var(--fluid-amber);
+}
+
+.fluid-lab__back:focus-visible,
+.fluid-lab__controls button:focus-visible {
+  outline: 3px solid var(--fluid-amber);
+  outline-offset: 3px;
+}
+
+.fluid-lab__notes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  margin: 48px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fluid-lab__notes li {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  color: rgba(243, 250, 249, 0.82);
+  font-size: 0.9rem;
+}
+
+.fluid-lab__notes svg {
+  color: var(--fluid-glacier);
+}
+
+.fluid-lab__fallback-note {
+  align-self: end;
+  width: min(1280px, calc(100% - 40px));
+  margin: 0 auto;
+  padding: 0 0 24px;
+  color: rgba(243, 250, 249, 0.68);
+  font-size: 0.82rem;
+}
+
+@media (max-width: 700px) {
+  .fluid-lab::after {
+    background: linear-gradient(180deg, rgba(7, 59, 76, 0.38), rgba(7, 59, 76, 0.78));
+  }
+
+  .fluid-lab__header {
+    align-items: flex-start;
+    flex-direction: column;
+    width: min(100% - 32px, 1280px);
+  }
+
+  .fluid-lab__status {
+    min-height: auto;
+  }
+
+  .fluid-lab__content {
+    width: min(100% - 32px, 1280px);
+    padding: 40px 0 64px;
+  }
+
+  .fluid-lab h1 {
+    font-size: clamp(4rem, 24vw, 6.25rem);
+  }
+
+  .fluid-lab__content > p {
+    margin-top: 24px;
+  }
+
+  .fluid-lab__controls button {
+    flex: 1 1 140px;
+  }
+
+  .fluid-lab__notes {
+    display: grid;
+    margin-top: 36px;
+  }
+
+  .fluid-lab__fallback-note {
+    width: min(100% - 32px, 1280px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fluid-lab__controls button {
+    transition: none;
+  }
+}

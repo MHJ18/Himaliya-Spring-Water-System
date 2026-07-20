@@ -1,5 +1,3 @@
-@import '../../../../styles/app';
-
 .shell {
   width: 100%;
   overflow: hidden;
@@ -118,4 +116,11 @@
     height: clamp(16rem, 52vw, 22rem);
     min-height: 16rem;
   }
+}
+
+@media (max-width: 575px) {
+  .mapTop { align-items: flex-start; padding: .45rem .25rem .3rem; }
+  .mapStats { width: 100%; flex-wrap: wrap; }
+  .mapStats span { padding: .28rem .5rem; font-size: .64rem; }
+  .mapCanvas { height: 15rem; min-height: 15rem; border-radius: 1rem; }
 }

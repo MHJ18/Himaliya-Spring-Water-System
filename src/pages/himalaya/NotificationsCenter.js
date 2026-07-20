@@ -1,5 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import {
+  BellRing,
+  CreditCard,
+  MessageCircle,
+  Package,
+  Route,
+  TriangleAlert,
+} from 'lucide-react';
 import { toast } from 'react-toastify';
 import PageShell from '../../components/PageShell/PageShell';
 import {
@@ -27,6 +35,24 @@ function groupLabel(value) {
   if (date.toDateString() === today.toDateString()) return 'Today';
   if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
   return 'Earlier';
+}
+
+function notificationIcon(type) {
+  if (type === 'payment') return CreditCard;
+  if (type === 'stock') return TriangleAlert;
+  if (type === 'tracking') return Route;
+  if (type === 'message') return MessageCircle;
+  if (type === 'order') return Package;
+  return BellRing;
+}
+
+function notificationTypeLabel(type) {
+  if (type === 'payment') return 'Payment';
+  if (type === 'stock') return 'Stock';
+  if (type === 'tracking') return 'Delivery';
+  if (type === 'message') return 'Message';
+  if (type === 'order') return 'Order';
+  return 'Alert';
 }
 
 export default function NotificationsCenter() {
@@ -60,36 +86,60 @@ export default function NotificationsCenter() {
     <PageShell title="Notifications" subtitle="Customer portal orders, delivery, payment, and stock alerts">
       <motion.section className="water-page-card" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
         <div className="water-page-card__header">
-          <div><span>Notification center</span><h2>{unread} unread</h2></div>
+          <div>
+            <span>Notification center</span>
+            <h2>
+              Updates
+              {unread > 0 && (
+                <span className="notification-count-badge">{unread} unread</span>
+              )}
+            </h2>
+          </div>
           <button type="button" className="water-action" onClick={markAllRead}>Mark all as read</button>
         </div>
         <div className="notification-list">
           {loading && <LoadingState label="Loading notifications..." variant="table" compact />}
-          {!loading && !items.length && <p className="p-4 mb-0">No notifications yet. New customer orders will appear here.</p>}
+          {!loading && !items.length && <p style={{ margin: 0, padding: '1.5rem' }}>No notifications yet. New customer orders will appear here.</p>}
           {['Today', 'Yesterday', 'Earlier'].map((group) => {
             const groupedItems = items.filter((item) => groupLabel(item.createdAt) === group);
             if (!groupedItems.length) return null;
-            return <section className="notification-group" key={group} aria-labelledby={`notifications-${group.toLowerCase()}`}>
-              <h3 id={`notifications-${group.toLowerCase()}`} className="notification-group__title">{group}</h3>
-              <div className="notification-group__card">
-                {groupedItems.map((item) => (
-                  <article
-                    key={item.id}
-                    className={`notification-item ${item.read ? 'is-read' : ''}`}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => markRead(item.id)}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter' || event.key === ' ') markRead(item.id);
-                    }}
-                  >
-                    <span className={`notification-icon notification-icon--${item.type}`}>{item.type === 'order' ? 'OR' : 'NT'}</span>
-                    <div><h3>{item.title}</h3><p>{item.detail}</p><time>{timeLabel(item.createdAt)}</time></div>
-                    {!item.read && <span className="notification-unread" aria-label="Unread" />}
-                  </article>
-                ))}
-              </div>
-            </section>;
+            return (
+              <section className="notification-group" key={group} aria-labelledby={`notifications-${group.toLowerCase()}`}>
+                <h3 id={`notifications-${group.toLowerCase()}`} className="notification-group__title">{group}</h3>
+                <div className="notification-group__card">
+                  {groupedItems.map((item) => {
+                    const Icon = notificationIcon(item.type);
+                    return (
+                      <article
+                        key={item.id}
+                        className={`notification-item ${item.read ? 'is-read' : ''}`}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => markRead(item.id)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter' || event.key === ' ') markRead(item.id);
+                        }}
+                      >
+                        <span className={`notification-icon notification-icon--${item.type}`}>
+                          <Icon size={18} strokeWidth={2.2} aria-hidden="true" />
+                        </span>
+                        <div className="notification-item__copy">
+                          <div className="notification-item__title-row">
+                            <h3>{item.title}</h3>
+                            <span className={`notification-type-badge notification-type-badge--${item.type}`}>
+                              {notificationTypeLabel(item.type)}
+                            </span>
+                          </div>
+                          <p>{item.detail}</p>
+                          <time>{timeLabel(item.createdAt)}</time>
+                        </div>
+                        {!item.read && <span className="notification-unread" aria-label="Unread" />}
+                      </article>
+                    );
+                  })}
+                </div>
+              </section>
+            );
           })}
         </div>
       </motion.section>

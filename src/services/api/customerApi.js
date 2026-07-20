@@ -1,4 +1,9 @@
-import { deleteCloudCustomer, getCloudCustomers, saveCloudCustomers } from '../cloud/himalayaDb';
+import {
+  deleteCloudCustomer,
+  deleteCloudSale,
+  getCloudCustomers,
+  saveCloudCustomers,
+} from '../cloud/himalayaDb';
 
 const LEGACY_KEYS = ['ws_customers', 'ws_customers_csv', 'ws_sales_csv', 'ws_cloud_sync_status'];
 
@@ -37,5 +42,9 @@ export const customerApi = {
   async delete(customerId) {
     await deleteCloudCustomer(customerId);
     return customerId;
+  },
+  async deleteTransaction(transactionId) {
+    await deleteCloudSale(transactionId);
+    return transactionId;
   },
 };

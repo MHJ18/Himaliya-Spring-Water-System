@@ -35,3 +35,14 @@
   .delivery-celebration__visual { height: 9rem; }
   .delivery-celebration h2 { font-size: 1.12rem; }
 }
+
+@media (max-height: 560px) and (orientation: landscape) {
+  .delivery-celebration { width: min(32rem, calc(100vw - 2rem)); padding: .7rem 1rem 1rem; }
+  .delivery-celebration__visual { width: 8rem; height: 6rem; margin-bottom: 0; }
+  .delivery-celebration h2 { font-size: 1rem; }
+  .delivery-celebration p { margin-top: .2rem; font-size: .72rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .delivery-celebration { backdrop-filter: none; }
+}

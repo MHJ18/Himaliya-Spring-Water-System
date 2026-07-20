@@ -1,12 +1,26 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
-  Row, Col, Input, Button, InputGroup, InputGroupAddon, InputGroupText, Badge, FormGroup, Label,
-} from 'reactstrap';
+  Alert,
+  Avatar,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  Chip,
+  Grid,
+  InputAdornment,
+  Stack,
+  TextField,
+  Typography,
+} from '@mui/material';
+import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
+import WaterDropOutlinedIcon from '@mui/icons-material/WaterDropOutlined';
+import SaveRoundedIcon from '@mui/icons-material/SaveRounded';
 import { toast } from 'react-toastify';
 import PageShell from '../../components/PageShell/PageShell';
-import Widget from '../../components/Widget/Widget';
 import CustomerSummary from '../../components/common/CustomerSummary';
-import SalesFormBootstrap from '../../components/forms/SalesFormBootstrap';
+import SalesForm from '../../components/forms/SalesForm';
 import { useCustomers } from '../../context/CustomerContext';
 import { useSales } from '../../context/SalesContext';
 import { normalizePhone } from '../../utils/validation';
@@ -15,8 +29,7 @@ import { BOTTLE_TYPES, BOTTLE_TYPE_LABELS } from '../../data/constants';
 import { getBottlePrices, saveBottlePrices } from '../../services/api/bottlePriceApi';
 import LoadingState from '../../components/LoadingState/LoadingState';
 
-const defaultPriceTypes = BOTTLE_TYPES;
-const defaultPrices = defaultPriceTypes.reduce((acc, type) => ({ ...acc, [type]: '' }), {});
+const defaultPrices = BOTTLE_TYPES.reduce((acc, type) => ({ ...acc, [type]: '' }), {});
 
 export default function DailySales() {
   const {
@@ -29,38 +42,36 @@ export default function DailySales() {
   const [searched, setSearched] = useState(false);
   const [saleLoading, setSaleLoading] = useState(false);
   const [priceDefaults, setPriceDefaults] = useState(defaultPrices);
+  const [savingPrices, setSavingPrices] = useState(false);
 
   useEffect(() => {
-    getBottlePrices(defaultPrices).then(setPriceDefaults);
+    getBottlePrices(defaultPrices)
+      .then((prices) => setPriceDefaults({ ...defaultPrices, ...prices }))
+      .catch(() => toast.error('Could not load bottle prices.'));
   }, []);
 
-  const customer = useMemo(() => {
-    if (!selectedId) return null;
-    return customers.find((c) => c.id === selectedId) || null;
-  }, [customers, selectedId]);
+  const customer = useMemo(() => (
+    selectedId ? customers.find((item) => item.id === selectedId) || null : null
+  ), [customers, selectedId]);
 
   const resolveMatches = (query) => {
-    const q = query.trim();
-    if (!q) return [];
-    const hasEnoughPhoneDigits = q.replace(/\D/g, '').length >= 3;
-    const exactPhoneMatch = hasEnoughPhoneDigits ? findByPhone(normalizePhone(q)) : null;
-    return exactPhoneMatch ? [exactPhoneMatch] : searchCustomers(q);
+    const value = query.trim();
+    if (!value) return [];
+    const hasEnoughPhoneDigits = value.replace(/\D/g, '').length >= 3;
+    const exactPhoneMatch = hasEnoughPhoneDigits ? findByPhone(normalizePhone(value)) : null;
+    return exactPhoneMatch ? [exactPhoneMatch] : searchCustomers(value);
   };
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    const q = searchTerm.trim();
-    setSearched(true);
-
-    if (!q) {
-      setMatches([]);
-      setSelectedId(null);
-      return;
-    }
-
-    const nextMatches = resolveMatches(q);
+  const search = (query, selectSingle = false) => {
+    const nextMatches = resolveMatches(query);
     setMatches(nextMatches);
-    setSelectedId(nextMatches.length === 1 ? nextMatches[0].id : null);
+    setSearched(Boolean(query.trim()));
+    setSelectedId(selectSingle && nextMatches.length === 1 ? nextMatches[0].id : null);
+  };
+
+  const handleSearch = (event) => {
+    event.preventDefault();
+    search(searchTerm, true);
   };
 
   const handleSale = async (form) => {
@@ -68,134 +79,174 @@ export default function DailySales() {
     setSaleLoading(true);
     try {
       await recordSale({ customerId: customer.id, ...form });
-      toast.success('Sale recorded');
-    } catch {
-      toast.error('Failed to record sale');
+      toast.success('Sale recorded successfully.');
+    } catch (error) {
+      toast.error(error.message || 'Failed to record sale.');
     } finally {
       setSaleLoading(false);
     }
   };
 
-  const updatePriceDefault = (type, value) => {
-    const next = { ...priceDefaults, [type]: value };
-    setPriceDefaults(next);
-    saveBottlePrices(next);
+  const persistPrices = async () => {
+    setSavingPrices(true);
+    try {
+      await saveBottlePrices(priceDefaults);
+      toast.success('Bottle price defaults saved.');
+    } catch (error) {
+      toast.error(error.message || 'Could not save bottle prices.');
+    } finally {
+      setSavingPrices(false);
+    }
   };
 
-  if (loading) return <PageShell title="Daily Sales Entry"><LoadingState label="Loading sales counter..." variant="form" /></PageShell>;
+  if (loading) {
+    return <PageShell title="Daily sales"><LoadingState label="Loading sales counter..." variant="form" /></PageShell>;
+  }
 
   return (
-    <PageShell title="Daily Sales Entry">
-      <div className="daily-sales-hero">
-        <div>
-          <span className="daily-sales-kicker">Sales counter</span>
-          <h2>Find a customer, record the delivery, keep today moving.</h2>
-          <p>Search by customer name or phone number, then enter bottle quantity and price in one focused flow.</p>
-        </div>
-        <div className="daily-sales-bubbles" aria-hidden="true">
-          <span />
-          <span />
-          <span />
-        </div>
-      </div>
+    <PageShell title="Daily sales" subtitle="Find a customer and record a delivery in one focused flow">
+      <Card sx={{
+        mb: 3,
+        overflow: 'hidden',
+        color: '#f6fcff',
+        background: 'linear-gradient(125deg, #075b84 0%, #0a81ad 58%, #35b7d7 100%)',
+      }}
+      >
+        <CardContent sx={{ position: 'relative', p: { xs: 2.5, md: 3.5 } }}>
+          <WaterDropOutlinedIcon sx={{
+            position: 'absolute', right: { xs: 14, md: 34 }, bottom: -34,
+            fontSize: { xs: 120, md: 170 }, color: 'rgba(255,255,255,.1)',
+          }}
+          />
+          <Typography variant="overline" sx={{ color: '#bff3ff', fontWeight: 800 }}>Sales counter</Typography>
+          <Typography variant="h3" sx={{ maxWidth: 700, mt: 0.5, color: '#fff' }}>
+            Record the delivery while the customer is in front of you.
+          </Typography>
+          <Typography variant="body2" sx={{ maxWidth: 660, mt: 1, color: '#d9f6ff' }}>
+            Search by customer name or phone, confirm the saved bottle price, and add the sale to their cloud history.
+          </Typography>
+        </CardContent>
+      </Card>
 
-      <Widget title={<h5>Find Customer</h5>} className="mb-4 daily-sales-search-card">
-        <form onSubmit={handleSearch}>
-          <Row>
-            <Col lg={9}>
-              <InputGroup className="daily-sales-search">
-                <InputGroupAddon addonType="prepend">
-                  <InputGroupText><i className="fa fa-search" /></InputGroupText>
-                </InputGroupAddon>
-                <Input
-                  type="search"
-                  value={searchTerm}
-                  onChange={(e) => {
-                    const nextSearch = e.target.value;
-                    const nextMatches = resolveMatches(nextSearch);
-                    setSearchTerm(nextSearch);
-                    setMatches(nextMatches);
-                    setSearched(!!nextSearch.trim());
-                    setSelectedId(null);
-                  }}
-                  placeholder="Search by name or phone number..."
-                  className="bg-custom-dark border-0"
-                />
-              </InputGroup>
-            </Col>
-            <Col lg={3} className="mt-3 mt-lg-0">
-              <Button color="primary" block type="submit" className="daily-sales-search-btn">
-                Search Customer
-              </Button>
-            </Col>
-          </Row>
-        </form>
-      </Widget>
+      <Card sx={{ mb: 3 }}>
+        <CardHeader title="Find customer" subheader="Name, email, or phone number" />
+        <CardContent sx={{ pt: 0 }}>
+          <Box component="form" onSubmit={handleSearch}>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+              <TextField
+                type="search"
+                value={searchTerm}
+                onChange={(event) => {
+                  const nextSearch = event.target.value;
+                  setSearchTerm(nextSearch);
+                  search(nextSearch);
+                }}
+                placeholder="Start typing a customer name or phone..."
+                InputProps={{
+                  startAdornment: <InputAdornment position="start"><SearchRoundedIcon /></InputAdornment>,
+                }}
+                fullWidth
+              />
+              <Button type="submit" variant="contained" sx={{ minWidth: { sm: 150 } }}>Search</Button>
+            </Stack>
+          </Box>
+        </CardContent>
+      </Card>
 
-      {searched && !customer && (
-        matches.length === 0 ? (
-          <Widget title={<h5 className="text-danger">Customer Not Found</h5>}>
-            <p className="mb-0">No customer matched that name or phone number.</p>
-          </Widget>
-        ) : (
-          <Widget title={<h5>Select Customer</h5>} className="daily-sales-results">
-            <Row>
-              {matches.map((match, idx) => (
-                <Col md={6} xl={4} className="mb-3" key={match.id}>
-                  <button type="button" className="daily-sales-customer-card" onClick={() => setSelectedId(match.id)}>
-                    <img src={match.photo || getCustomerAvatar(idx)} alt="" />
-                    <strong>{match.name}</strong>
-                    <span>{match.phone}</span>
-                    <small>{match.address}</small>
-                    <Badge color="primary">{(match.purchaseHistory || []).length} orders</Badge>
-                  </button>
-                </Col>
+      {searched && !customer && matches.length === 0 && (
+        <Alert severity="warning" sx={{ mb: 3 }}>
+          No customer matched that name, email, or phone number.
+        </Alert>
+      )}
+
+      {searched && !customer && matches.length > 0 && (
+        <Card sx={{ mb: 3 }}>
+          <CardHeader title="Select customer" subheader={`${matches.length} matching customer${matches.length === 1 ? '' : 's'}`} />
+          <CardContent sx={{ pt: 0 }}>
+            <Grid container spacing={1.5}>
+              {matches.map((match, index) => (
+                <Grid item xs={12} sm={6} xl={4} key={match.id}>
+                  <Button
+                    color="inherit"
+                    onClick={() => setSelectedId(match.id)}
+                    sx={{
+                      width: '100%',
+                      minHeight: 82,
+                      justifyContent: 'flex-start',
+                      gap: 1.25,
+                      p: 1.25,
+                      textAlign: 'left',
+                      border: 1,
+                      borderColor: 'divider',
+                      borderRadius: 2,
+                    }}
+                  >
+                    <Avatar src={match.photo || getCustomerAvatar(index)} alt="" />
+                    <Box sx={{ minWidth: 0, flex: 1 }}>
+                      <Typography variant="body2" fontWeight={800} noWrap>{match.name}</Typography>
+                      <Typography variant="caption" color="text.secondary" display="block" noWrap>{match.phone || match.email}</Typography>
+                      <Typography variant="caption" color="text.secondary" display="block" noWrap>{match.address}</Typography>
+                    </Box>
+                    <Chip size="small" label={`${(match.purchaseHistory || []).length} orders`} />
+                  </Button>
+                </Grid>
               ))}
-            </Row>
-          </Widget>
-        )
+            </Grid>
+          </CardContent>
+        </Card>
       )}
 
       {customer && (
-        <Row className="daily-sales-workspace">
-          <Col xl={5} lg={6}>
+        <Grid container spacing={3}>
+          <Grid item xs={12}>
             <CustomerSummary customer={customer} />
-            <Widget title={<h5>Quick Bottle Prices</h5>} className="daily-sales-price-card">
-              <div className="price-card-head">
-                <div>
-                  <span>Saved defaults</span>
-                  <p>Auto-fill sale prices by bottle type.</p>
-                </div>
-                <i className="fa fa-tint" />
-              </div>
-              <Row className="price-default-grid">
-                {defaultPriceTypes.map((type) => (
-                  <Col sm={6} xl={3} className="mb-3" key={type}>
-                    <FormGroup className="price-default-item mb-0">
-                      <Label>
-                        <span>{BOTTLE_TYPE_LABELS[type] || type}</span>
-                        <small>PKR</small>
-                      </Label>
-                      <Input
+          </Grid>
+          <Grid item xs={12} lg={5}>
+            <Card sx={{ height: '100%' }}>
+              <CardHeader
+                title="Bottle price defaults"
+                subheader="These values auto-fill new sales and customer orders"
+                avatar={<WaterDropOutlinedIcon color="primary" />}
+              />
+              <CardContent sx={{ pt: 0 }}>
+                <Grid container spacing={1.5}>
+                  {BOTTLE_TYPES.map((type) => (
+                    <Grid item xs={12} sm={6} key={type}>
+                      <TextField
+                        label={BOTTLE_TYPE_LABELS[type] || type}
                         type="number"
-                        min="0"
                         value={priceDefaults[type] || ''}
-                        onChange={(e) => updatePriceDefault(type, e.target.value)}
-                        placeholder="PKR"
-                        className="bg-custom-dark border-0"
+                        onChange={(event) => setPriceDefaults((current) => ({ ...current, [type]: event.target.value }))}
+                        InputProps={{
+                          inputProps: { min: 0, step: 1 },
+                          startAdornment: <InputAdornment position="start">PKR</InputAdornment>,
+                        }}
+                        fullWidth
                       />
-                    </FormGroup>
-                  </Col>
-                ))}
-              </Row>
-            </Widget>
-          </Col>
-          <Col xl={7} lg={6} className="mt-4 mt-lg-0">
-            <Widget title={<h5>Record Purchase</h5>} refresh className="daily-sales-form-card">
-              <SalesFormBootstrap onSubmit={handleSale} loading={saleLoading} priceDefaults={priceDefaults} />
-            </Widget>
-          </Col>
-        </Row>
+                    </Grid>
+                  ))}
+                </Grid>
+                <Button
+                  variant="outlined"
+                  startIcon={<SaveRoundedIcon />}
+                  onClick={persistPrices}
+                  disabled={savingPrices}
+                  sx={{ mt: 2 }}
+                >
+                  {savingPrices ? 'Saving prices...' : 'Save price defaults'}
+                </Button>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} lg={7}>
+            <Card sx={{ height: '100%' }}>
+              <CardHeader title="Record sale" subheader={`Add a purchase to ${customer.name}'s history`} />
+              <CardContent sx={{ pt: 0 }}>
+                <SalesForm onSubmit={handleSale} loading={saleLoading} priceDefaults={priceDefaults} />
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
       )}
     </PageShell>
   );

@@ -1,46 +1,58 @@
 import React from 'react';
 import {
-  Container,
-  Form,
-  FormGroup,
-  Input,
+  Box,
   Button,
-} from 'reactstrap';
+  Container,
+  Stack,
+  Typography,
+} from '@mui/material';
+import { ArrowBackRounded, HomeRounded } from '@mui/icons-material';
 import { Link } from 'react-router-dom';
 
-import s from './ErrorPage.module.scss';
-
-class ErrorPage extends React.Component {
-  render() {
-    return (
-      <div className={s.errorPage}>
-        <Container>
-          <div className={`${s.errorContainer} mx-auto`}>
-            <h1 className={s.errorCode}>404</h1>
-            <p className={s.errorInfo}>
-              Opps, it seems that this page does not exist here.
-            </p>
-            <p className={[s.errorHelp, 'mb-3'].join(' ')}>
-              If you are sure it should, please search for it:
-            </p>
-            <Form method="get">
-              <FormGroup>
-                <Input className="input-no-border" type="text" placeholder="Search Pages" />
-              </FormGroup>
-              <Link to="app/extra/search">
-                <Button className={s.errorBtn} type="submit" color="inverse">
-                  Search <i className="fa fa-search text-secondary ml-xs" />
-                </Button>
-              </Link>
-            </Form>
-          </div>
-          <footer className={s.pageFooter}>
-            2020 &copy; Light Blue Template - React Admin Dashboard Template.
-          </footer>
-        </Container>
-      </div>
-    );
-  }
+export default function ErrorPage() {
+  return (
+    <Box
+      component="main"
+      sx={{
+        minHeight: '100dvh',
+        display: 'grid',
+        placeItems: 'center',
+        px: 2,
+        color: 'text.primary',
+        bgcolor: 'background.default',
+        backgroundImage: 'radial-gradient(circle at 50% 15%, rgba(25,118,210,.16), transparent 42%)',
+      }}
+    >
+      <Container maxWidth="sm">
+        <Stack alignItems="center" spacing={2.5} textAlign="center">
+          <Typography
+            component="p"
+            sx={{
+              fontSize: { xs: '5rem', sm: '8rem' },
+              lineHeight: 0.9,
+              fontWeight: 900,
+              letterSpacing: '-0.08em',
+              color: 'primary.main',
+            }}
+          >
+            404
+          </Typography>
+          <Box>
+            <Typography variant="h4" component="h1" gutterBottom>That page is not available</Typography>
+            <Typography color="text.secondary">
+              The link may be outdated, or your session may no longer be active. Return to the dashboard or sign in again.
+            </Typography>
+          </Box>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5} sx={{ width: { xs: '100%', sm: 'auto' } }}>
+            <Button component={Link} to="/app/dashboard" variant="contained" startIcon={<HomeRounded />}>
+              Open dashboard
+            </Button>
+            <Button component={Link} to="/" variant="outlined" startIcon={<ArrowBackRounded />}>
+              Back to home
+            </Button>
+          </Stack>
+        </Stack>
+      </Container>
+    </Box>
+  );
 }
-
-export default ErrorPage;

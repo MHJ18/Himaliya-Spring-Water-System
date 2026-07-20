@@ -112,6 +112,18 @@ export async function deleteCloudCustomer(customerId) {
   return deleted[0];
 }
 
+export async function deleteCloudSale(saleId) {
+  requireCloud();
+  const deleted = await dbRequest(`/sales?id=eq.${encodeURIComponent(saleId)}&select=id`, {
+    method: 'DELETE',
+    prefer: 'return=representation',
+  });
+  if (!Array.isArray(deleted) || deleted.length !== 1) {
+    throw new Error('Sale entry could not be deleted or you do not have permission.');
+  }
+  return deleted[0];
+}
+
 export async function getCloudSettings() {
   requireCloud();
   const rows = await dbRequest('/app_settings?id=eq.main&select=payload&limit=1');

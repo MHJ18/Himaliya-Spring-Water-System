@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import { withRouter } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  BellRing, ChevronDown, Droplets, LogOut, UserRound,
+  ArrowRight, BellRing, CheckCheck, ChevronDown, Download, Droplets, LoaderCircle, LogOut, MessageCircle, Navigation, UserRound, X,
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import {
@@ -19,12 +19,13 @@ import {
 import { getBottlePrices } from '../../services/api/bottlePriceApi';
 import { resolveOrderPricing } from '../../utils/orderPricing';
 import { signOut } from '../../services/cloud/supabaseClient';
+import { getCustomerUnreadMessageCount } from '../../services/api/messagingApi';
 import { BOTTLE_TYPES, BOTTLE_TYPE_LABELS } from '../../data/constants';
-import { exportInvoicePdf } from '../../utils/exportPdf';
 import LoadingState from '../../components/LoadingState/LoadingState';
-import DeliveryCelebration from '../../components/DeliveryCelebration/DeliveryCelebration';
 import './CustomerPortal.css';
 import useCustomerTheme from './useCustomerTheme';
+
+const DeliveryCelebration = React.lazy(() => import('../../components/DeliveryCelebration/DeliveryCelebration'));
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
 const customerBottleTypes = BOTTLE_TYPES;
@@ -74,7 +75,7 @@ function notifyDesktop(title, body) {
 }
 
 function CustomerPortal({ history }) {
-  const { theme } = useCustomerTheme();
+  const { theme, setTheme } = useCustomerTheme();
   const [loading, setLoading] = React.useState(true);
   const [profile, setProfile] = React.useState(null);
   const [orders, setOrders] = React.useState([]);
@@ -88,11 +89,13 @@ function CustomerPortal({ history }) {
   const [deliveredOrder, setDeliveredOrder] = React.useState(null);
   const [orderControls, setOrderControls] = React.useState({ allowCancellation: true, orderCutoffTime: '18:00', orderingOpen: true });
   const [cancelingOrder, setCancelingOrder] = React.useState('');
+  const [unreadMessages, setUnreadMessages] = React.useState(0);
   const [notificationPermission, setNotificationPermission] = React.useState(
     canUseBrowserNotifications() ? window.Notification.permission : 'unsupported',
   );
   const seenInvoiceIds = React.useRef(new Set());
   const seenOrderStatuses = React.useRef(new Map());
+  const activityRequestRunning = React.useRef(false);
   const accountRef = React.useRef(null);
 
   const load = React.useCallback(async () => {
@@ -105,16 +108,20 @@ function CustomerPortal({ history }) {
         return;
       }
       const nextPrices = await getBottlePrices({});
-      const [nextOrders, nextNotifications, nextInvoices, nextControls] = await Promise.all([
+      const [nextOrders, nextNotifications, nextInvoices, nextControls, nextUnreadMessages] = await Promise.all([
         getCustomerOrders(nextPrices),
         getCustomerNotifications(),
         getCustomerInvoices(),
         getCustomerOrderControls(),
+        getCustomerUnreadMessageCount().catch(() => 0),
       ]);
       const hasAnyPrice = Object.values(nextPrices || {}).some((value) => Number(value) > 0);
       setProfile(nextProfile);
+      setTheme(nextProfile.preferences && nextProfile.preferences.theme);
       setOrderForm((current) => ({
         ...current,
+        bottleType: (nextProfile.preferences && nextProfile.preferences.defaultBottleType) || current.bottleType,
+        quantity: (nextProfile.preferences && nextProfile.preferences.defaultQuantity) || current.quantity,
         deliveryAddress: nextProfile.address || current.deliveryAddress,
         deliveryDate: current.deliveryDate || todayIso(),
       }));
@@ -125,13 +132,14 @@ function CustomerPortal({ history }) {
       seenInvoiceIds.current = new Set(nextInvoices.map((invoice) => invoice.id || invoice.invoiceNumber));
       setPrices(nextPrices || {});
       setOrderControls(nextControls);
+      setUnreadMessages(nextUnreadMessages);
       setPriceWarning(hasAnyPrice ? '' : 'Bottle prices are not visible to this customer account yet. Ask admin to save prices in Settings and apply the Supabase price visibility SQL.');
     } catch (err) {
       toast.error(err.message || 'Could not load customer portal.');
     } finally {
       setLoading(false);
     }
-  }, [history]);
+  }, [history, setTheme]);
 
   React.useEffect(() => { load(); }, [load]);
 
@@ -144,16 +152,19 @@ function CustomerPortal({ history }) {
   }, []);
 
   const refreshActivity = React.useCallback(async () => {
+    if (activityRequestRunning.current || document.hidden) return;
+    activityRequestRunning.current = true;
     try {
       const nextPrices = await getBottlePrices({});
-      const [nextOrders, nextNotifications, nextInvoices] = await Promise.all([
+      const [nextOrders, nextNotifications, nextInvoices, nextUnreadMessages] = await Promise.all([
         getCustomerOrders(nextPrices),
         getCustomerNotifications(),
         getCustomerInvoices(),
+        getCustomerUnreadMessageCount().catch(() => 0),
       ]);
       const previousInvoiceIds = seenInvoiceIds.current;
       const newlyRegistered = nextInvoices.filter((invoice) => !previousInvoiceIds.has(invoice.id || invoice.invoiceNumber));
-      if (newlyRegistered.length) {
+      if (newlyRegistered.length && (!profile || !profile.preferences || profile.preferences.invoiceAlerts !== false)) {
         const newest = newlyRegistered[0];
         notifyDesktop(
           'New Himaliya invoice registered',
@@ -166,21 +177,35 @@ function CustomerPortal({ history }) {
         const previousStatus = seenOrderStatuses.current.get(order.id);
         return order.status === 'delivered' && previousStatus && previousStatus !== 'delivered';
       });
-      if (deliveredUpdate) setDeliveredOrder(deliveredUpdate);
+      if (deliveredUpdate && (!profile || !profile.preferences || profile.preferences.orderUpdates !== false)) {
+        setDeliveredOrder(deliveredUpdate);
+      }
       seenOrderStatuses.current = new Map(nextOrders.map((order) => [order.id, order.status]));
       setOrders(nextOrders);
       setNotifications(nextNotifications);
       setInvoices(nextInvoices);
       setPrices(nextPrices || {});
+      setUnreadMessages(nextUnreadMessages);
     } catch {
       // Keep the current screen stable; session expiry is handled globally by the API layer.
+    } finally {
+      activityRequestRunning.current = false;
     }
-  }, []);
+  }, [profile]);
 
   React.useEffect(() => {
     if (!profile) return undefined;
-    const intervalId = window.setInterval(refreshActivity, 25000);
-    return () => window.clearInterval(intervalId);
+    const refreshWhenVisible = () => {
+      if (!document.hidden) refreshActivity();
+    };
+    const intervalId = window.setInterval(refreshWhenVisible, 25000);
+    document.addEventListener('visibilitychange', refreshWhenVisible);
+    window.addEventListener('online', refreshWhenVisible);
+    return () => {
+      window.clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
+      window.removeEventListener('online', refreshWhenVisible);
+    };
   }, [profile, refreshActivity]);
 
   const updateOrder = (field, value) => setOrderForm((current) => ({ ...current, [field]: value }));
@@ -198,7 +223,13 @@ function CustomerPortal({ history }) {
       const order = await createCustomerOrder(profile, { ...orderForm, unitPrice, totalAmount });
       setOrders((current) => [order, ...current]);
       seenOrderStatuses.current.set(order.id, order.status);
-      setOrderForm({ ...defaultOrder, deliveryAddress: profile.address, deliveryDate: todayIso() });
+      setOrderForm({
+        ...defaultOrder,
+        bottleType: (profile.preferences && profile.preferences.defaultBottleType) || defaultOrder.bottleType,
+        quantity: (profile.preferences && profile.preferences.defaultQuantity) || defaultOrder.quantity,
+        deliveryAddress: profile.address,
+        deliveryDate: todayIso(),
+      });
       toast.success('Order placed. The admin team will accept it shortly.');
     } catch (err) {
       toast.error(err.message || 'Could not place order.');
@@ -244,7 +275,7 @@ function CustomerPortal({ history }) {
   };
 
   if (loading) {
-    return <main className="customer-portal-page"><LoadingState label="Loading your delivery portal..." variant="portal" /></main>;
+    return <LoadingState label="Loading your delivery portal..." variant="portal" className={`customer-theme--${theme}`} />;
   }
 
   if (!profile) {
@@ -258,14 +289,19 @@ function CustomerPortal({ history }) {
   const pending = orders.filter((order) => order.status === 'pending').length;
   const paidInvoices = invoices.filter((invoice) => invoice.paymentStatus === 'paid').length;
 
-  const downloadInvoice = (invoice) => {
-    exportInvoicePdf({
-      invoiceNumber: invoice.invoiceNumber,
-      invoiceDate: invoice.invoiceDate,
-      payload: invoice.payload,
-      totalAmount: invoice.totalAmount,
-      totalQty: invoice.totalQty,
-    });
+  const downloadInvoice = async (invoice) => {
+    try {
+      const { exportInvoicePdf } = await import('../../utils/exportPdf');
+      exportInvoicePdf({
+        invoiceNumber: invoice.invoiceNumber,
+        invoiceDate: invoice.invoiceDate,
+        payload: invoice.payload,
+        totalAmount: invoice.totalAmount,
+        totalQty: invoice.totalQty,
+      });
+    } catch (error) {
+      toast.error(error.message || 'Could not prepare this invoice.');
+    }
   };
 
   const invoiceStatusLabel = (status) => (status === 'paid' ? 'Paid' : 'Unpaid');
@@ -277,12 +313,14 @@ function CustomerPortal({ history }) {
   return (
     <main className={`customer-portal-page customer-theme--${theme}`}>
       {deliveredOrder && (
-        <DeliveryCelebration
-          animationPath="/Approved%20animation.json"
-          title="Your order has arrived"
-          message="Delivery completed successfully. Thank you for choosing Himaliya Spring Water."
-          onClose={() => setDeliveredOrder(null)}
-        />
+        <React.Suspense fallback={null}>
+          <DeliveryCelebration
+            animationPath="/Approved%20animation.json"
+            title="Your order has arrived"
+            message="Delivery completed successfully. Thank you for choosing Himaliya Spring Water."
+            onClose={() => setDeliveredOrder(null)}
+          />
+        </React.Suspense>
       )}
       <header className="customer-portal-header">
         <div className="customer-brand-lockup">
@@ -294,11 +332,25 @@ function CustomerPortal({ history }) {
           </div>
         </div>
         <div className="customer-header-actions">
-          {notificationPermission !== 'granted' && notificationPermission !== 'unsupported' && (
-            <button type="button" className="customer-icon-action" onClick={enableBrowserNotifications} aria-label="Enable browser notifications">
-              <BellRing size={20} />
+          {(!profile.preferences || profile.preferences.browserNotifications !== false) &&
+            notificationPermission !== 'granted' && notificationPermission !== 'unsupported' && (
+            <button type="button" className="customer-notification-enable" onClick={enableBrowserNotifications} aria-label="Enable browser notifications">
+              <span className="customer-notification-enable__icon"><BellRing size={18} /></span>
+              <span className="customer-notification-enable__copy"><strong>Enable alerts</strong><small>Order & invoice updates</small></span>
             </button>
           )}
+          <button
+            type="button"
+            className="customer-messages-launch"
+            onClick={() => history.push('/customer/messages')}
+            aria-label={unreadMessages ? `${unreadMessages} unread messages` : 'Open messages'}
+          >
+            <MessageCircle size={18} />
+            <span>Messages</span>
+            {unreadMessages > 0 && (
+              <em>{unreadMessages > 9 ? '9+' : unreadMessages}</em>
+            )}
+          </button>
           <div className="customer-account" ref={accountRef}>
             <button
               type="button"
@@ -363,7 +415,15 @@ function CustomerPortal({ history }) {
             {!orderControls.orderingOpen && <div className="customer-price-warning">Orders are closed after {orderControls.orderCutoffTime}. Please order again tomorrow.</div>}
             <label className="customer-form-wide">
               Delivery address from profile
-              <input value={orderForm.deliveryAddress} onChange={(e) => updateOrder('deliveryAddress', e.target.value)} required />
+              <input
+                value={orderForm.deliveryAddress || profile.address || ''}
+                readOnly
+                required
+                title="Update this from your profile if it needs to change"
+              />
+              <small className="customer-price-hint">
+                Uses the address saved on your profile. Update it under Profile if needed.
+              </small>
             </label>
             <label>
               Delivery date
@@ -378,7 +438,15 @@ function CustomerPortal({ history }) {
               <textarea value={orderForm.notes} onChange={(e) => updateOrder('notes', e.target.value)} placeholder="Gate number, delivery timing, empty gallons to collect..." />
             </label>
             <div className="customer-btn-row">
-              <button type="submit" className="customer-btn" disabled={submitting || !orderControls.orderingOpen}>{submitting ? 'Sending...' : orderControls.orderingOpen ? 'Place order' : 'Orders closed'}</button>
+              <button
+                type="submit"
+                className="customer-btn customer-btn--primary"
+                disabled={submitting || !orderControls.orderingOpen}
+                aria-busy={submitting}
+              >
+                <span>{submitting ? 'Sending...' : orderControls.orderingOpen ? 'Place order' : 'Orders closed'}</span>
+                {submitting ? <LoaderCircle size={17} className="is-spinning" aria-hidden="true" /> : <ArrowRight size={17} aria-hidden="true" />}
+              </button>
             </div>
           </form>
         </section>
@@ -386,16 +454,23 @@ function CustomerPortal({ history }) {
         <section className="customer-portal-card">
           <div className="customer-card-heading">
             <span>Notifications</span>
-            <h2>{unread} unread updates</h2>
+            <h2>
+              Updates
+              {unread > 0 && <span className="customer-notification-badge">{unread} new</span>}
+            </h2>
           </div>
           <div className="customer-btn-row customer-btn-row--start">
-            <button type="button" className="customer-link-button" onClick={markRead}>Mark all as read</button>
+            <button type="button" className="customer-link-button" onClick={markRead}>
+              <CheckCheck size={16} aria-hidden="true" />
+              <span>Mark all as read</span>
+            </button>
           </div>
           <div className="customer-notification-list">
             {notifications.slice(0, 5).map((item) => (
               <article key={item.id} className={item.read ? 'is-read' : ''}>
-                <i />
+                <span className="customer-notification-dot" aria-hidden="true" />
                 <div><strong>{item.title}</strong><p>{item.detail}</p></div>
+                {!item.read && <span className="customer-notification-pill">New</span>}
               </article>
             ))}
             {!notifications.length && <p className="customer-empty">No notifications yet. New order updates will appear here.</p>}
@@ -420,7 +495,30 @@ function CustomerPortal({ history }) {
                 <div className="customer-order-history-meta">
                   <strong>PKR {pricing.totalAmount.toLocaleString()}</strong>
                   <span className={`customer-status customer-status--${order.status}`}>{statusLabel(order.status)}</span>
-                  {order.status === 'pending' && orderControls.allowCancellation && <button type="button" className="customer-order-cancel" disabled={cancelingOrder === order.id} onClick={() => cancelOrder(order.id)}>{cancelingOrder === order.id ? 'Canceling...' : 'Cancel'}</button>}
+                  {order.trackingToken && ['accepted', 'delivered'].includes(order.status) && (
+                    <button
+                      type="button"
+                      className="customer-order-track"
+                      onClick={() => history.push(`/track/${order.trackingToken}`)}
+                    >
+                      <Navigation size={14} aria-hidden="true" />
+                      <span>{order.status === 'delivered' ? 'View route' : 'Track rider'}</span>
+                    </button>
+                  )}
+                  {order.status === 'pending' && orderControls.allowCancellation && (
+                    <button
+                      type="button"
+                      className="customer-order-cancel"
+                      disabled={cancelingOrder === order.id}
+                      aria-busy={cancelingOrder === order.id}
+                      onClick={() => cancelOrder(order.id)}
+                    >
+                      {cancelingOrder === order.id
+                        ? <LoaderCircle size={14} className="is-spinning" aria-hidden="true" />
+                        : <X size={14} aria-hidden="true" />}
+                      <span>{cancelingOrder === order.id ? 'Canceling...' : 'Cancel'}</span>
+                    </button>
+                  )}
                 </div>
               </article>
             );})}
@@ -433,7 +531,7 @@ function CustomerPortal({ history }) {
             <span>Your invoices</span>
             <h2>Invoice details</h2>
           </div>
-          <div className="customer-invoice-list">
+          <div className="customer-invoice-list" tabIndex="0" role="region" aria-label="Scrollable customer invoices">
             {invoices.map((invoice) => (
               <article key={invoice.id}>
                 <div>
@@ -449,7 +547,8 @@ function CustomerPortal({ history }) {
                 <div className="customer-invoice-actions">
                   <strong>PKR {invoice.totalAmount.toLocaleString()}</strong>
                   <button type="button" className="customer-btn customer-btn--ghost customer-invoice-download" onClick={() => downloadInvoice(invoice)}>
-                    Download PDF
+                    <Download size={16} aria-hidden="true" />
+                    <span>Download PDF</span>
                   </button>
                 </div>
               </article>

@@ -1,29 +1,93 @@
 import React, {
-  useState, useMemo, useEffect, useCallback,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
 } from 'react';
-import { Row, Col, Input, Button, ButtonGroup, Badge } from 'reactstrap';
+import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
+  Avatar,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Grid,
+  IconButton,
+  InputAdornment,
+  List,
+  ListItem,
+  ListItemAvatar,
+  ListItemButton,
+  ListItemText,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TextField,
+  ToggleButton,
+  ToggleButtonGroup,
+  Tooltip,
+  Typography,
+} from '@mui/material';
+import {
+  CheckCircleOutlineRounded,
+  DownloadRounded,
+  EditRounded,
+  ExpandMoreRounded,
+  PaymentsOutlined,
+  ReceiptLongRounded,
+  RefreshRounded,
+  SearchRounded,
+} from '@mui/icons-material';
 import { toast } from 'react-toastify';
 import PageShell from '../../components/PageShell/PageShell';
-import Widget from '../../components/Widget/Widget';
 import CustomerSummary from '../../components/common/CustomerSummary';
 import PurchaseHistoryTable from '../../components/tables/PurchaseHistoryTable';
+import { mobileOptionalCellSx, responsiveTableContainerSx } from '../../components/tables/tableStyles';
 import { useCustomers } from '../../context/CustomerContext';
 import { useSettings } from '../../context/SettingsContext';
 import { useDebounce } from '../../hooks/useDebounce';
 import { FILTER_PERIODS } from '../../data/constants';
 import { filterTransactionsByPeriod, computePurchaseStats } from '../../utils/analytics';
 import { formatCurrency, formatDate } from '../../utils/formatters';
-import { exportCustomerHistoryPdf } from '../../utils/exportPdf';
 import { invoiceApi } from '../../services/api/invoiceApi';
 import { customerApi } from '../../services/api/customerApi';
 import { getCustomerAvatar } from '../../utils/customerPhotos';
 import LoadingState from '../../components/LoadingState/LoadingState';
-import './CustomerRecords.css';
 
-export default function CustomerRecords({ location }) {
+const cardSx = {
+  border: '1px solid',
+  borderColor: 'divider',
+  bgcolor: 'background.paper',
+  boxShadow: '0 16px 48px rgba(4, 18, 43, .09)',
+};
+
+function Stat({ label, value }) {
+  return (
+    <Box>
+      <Typography variant="caption" color="text.secondary">{label}</Typography>
+      <Typography variant="subtitle1" fontWeight={850}>{value}</Typography>
+    </Box>
+  );
+}
+
+export default function CustomerRecords({ history, location }) {
   const {
     customers,
     loading,
+    deleteTransaction,
     refresh,
   } = useCustomers();
   const { settings } = useSettings();
@@ -35,58 +99,71 @@ export default function CustomerRecords({ location }) {
   const [allInvoices, setAllInvoices] = useState([]);
   const [invoicesLoading, setInvoicesLoading] = useState(false);
   const [invoiceUpdating, setInvoiceUpdating] = useState('');
+  const [transactionToDelete, setTransactionToDelete] = useState(null);
+  const [deletingTransactionId, setDeletingTransactionId] = useState('');
   const debouncedQuery = useDebounce(query);
+
   const matchesQuery = useCallback((customer) => {
-    const q = (debouncedQuery || '').trim().toLowerCase();
-    if (!q) return true;
-    const digits = q.replace(/\D/g, '');
-    return (customer.name || '').toLowerCase().includes(q) ||
-      (customer.email || '').toLowerCase().includes(q) ||
-      (digits && String(customer.phone || '').replace(/\D/g, '').includes(digits));
+    const normalizedQuery = (debouncedQuery || '').trim().toLowerCase();
+    if (!normalizedQuery) return true;
+    const digits = normalizedQuery.replace(/\D/g, '');
+    return (customer.name || '').toLowerCase().includes(normalizedQuery)
+      || (customer.email || '').toLowerCase().includes(normalizedQuery)
+      || (digits && String(customer.phone || '').replace(/\D/g, '').includes(digits));
   }, [debouncedQuery]);
+
   const filteredCustomers = useMemo(
-    () => customers.filter(matchesQuery).sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)),
+    () => customers
+      .filter(matchesQuery)
+      .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)),
     [customers, matchesQuery],
   );
-  useEffect(() => { refresh(); }, [refresh]);
-  useEffect(() => {
-    let active = true;
-    invoiceApi.getAll()
-      .then((rows) => { if (active) setAllInvoices(rows); })
-      .catch(() => { if (active) setAllInvoices([]); });
-    return () => { active = false; };
+
+  const loadAllInvoices = useCallback(async () => {
+    try {
+      setAllInvoices(await invoiceApi.getAll());
+    } catch (error) {
+      setAllInvoices([]);
+    }
   }, []);
 
-  const selected = customers.find((c) => c.id === selectedId);
+  useEffect(() => { refresh(); }, [refresh]);
+  useEffect(() => { loadAllInvoices(); }, [loadAllInvoices]);
+
+  const selected = customers.find((customer) => customer.id === selectedId);
   const selectedInvoiceKey = selected && [
     selected.id,
     selected.linkedCustomerId,
     selected.portalProfileId,
   ].filter(Boolean).join('|');
+  const selectedInvoiceRef = useRef(selected);
+  selectedInvoiceRef.current = selected;
 
   useEffect(() => {
-    if (!selected) {
+    const invoiceCustomer = selectedInvoiceRef.current;
+    if (!invoiceCustomer) {
       setCustomerInvoices([]);
       return undefined;
     }
     let active = true;
     setInvoicesLoading(true);
-    invoiceApi.getByCustomer(selected)
+    invoiceApi.getByCustomer(invoiceCustomer)
       .then((rows) => { if (active) setCustomerInvoices(rows); })
       .catch(() => { if (active) setCustomerInvoices([]); })
       .finally(() => { if (active) setInvoicesLoading(false); });
     return () => { active = false; };
-  }, [selected, selectedInvoiceKey]);
-  const periodStats = useMemo(() => {
-    if (!selected) return null;
-    return computePurchaseStats(filterTransactionsByPeriod(selected.purchaseHistory || [], period));
-  }, [selected, period]);
+  }, [selectedInvoiceKey]);
 
   const displayHistory = useMemo(() => {
     if (!selected) return [];
     const sorted = [...(selected.purchaseHistory || [])].sort((a, b) => new Date(b.date) - new Date(a.date));
     return filterTransactionsByPeriod(sorted, period);
   }, [selected, period]);
+
+  const periodStats = useMemo(
+    () => (selected ? computePurchaseStats(displayHistory) : null),
+    [selected, displayHistory],
+  );
 
   const handleExport = async () => {
     if (!selected || exporting) return;
@@ -102,6 +179,7 @@ export default function CustomerRecords({ location }) {
         };
         await customerApi.saveOne(invoiceCustomer);
       }
+      const { exportCustomerHistoryPdf } = await import('../../utils/exportPdf');
       const invoice = await exportCustomerHistoryPdf(
         invoiceCustomer,
         displayHistory,
@@ -116,7 +194,7 @@ export default function CustomerRecords({ location }) {
       setAllInvoices(nextAllInvoices);
       refresh();
     } catch (error) {
-      toast.error(error.message || 'Could not export invoice.');
+      toast.error(error.message || 'Could not export the invoice.');
     } finally {
       setExporting(false);
     }
@@ -125,14 +203,14 @@ export default function CustomerRecords({ location }) {
   const updateCustomerInvoice = async (invoice, action) => {
     setInvoiceUpdating(`${invoice.id}-${action}`);
     try {
-      let updatedInvoice;
-      if (action === 'paid') {
-        updatedInvoice = await invoiceApi.markAsPaid(invoice.id);
-        toast.success(`Invoice ${invoice.invoiceNumber} marked as paid.`);
-      } else {
-        updatedInvoice = await invoiceApi.setValidated(invoice.id, true);
-        toast.success(`Invoice ${invoice.invoiceNumber} validated.`);
-      }
+      const updatedInvoice = action === 'paid'
+        ? await invoiceApi.markAsPaid(invoice.id)
+        : await invoiceApi.setValidated(invoice.id, true);
+      toast.success(
+        action === 'paid'
+          ? `Invoice ${invoice.invoiceNumber} marked as paid.`
+          : `Invoice ${invoice.invoiceNumber} validated.`,
+      );
       if (updatedInvoice) {
         setCustomerInvoices((current) => current.map((item) => (
           item.id === updatedInvoice.id ? updatedInvoice : item
@@ -141,169 +219,376 @@ export default function CustomerRecords({ location }) {
           item.id === updatedInvoice.id ? updatedInvoice : item
         )));
       }
-      const rows = await invoiceApi.getByCustomer(selected);
-      const nextAllInvoices = await invoiceApi.getAll();
+      const [rows, nextAllInvoices] = await Promise.all([
+        invoiceApi.getByCustomer(selected),
+        invoiceApi.getAll(),
+      ]);
       setCustomerInvoices(rows);
       setAllInvoices(nextAllInvoices);
-    } catch (err) {
-      toast.error(err.message || 'Could not update invoice.');
+    } catch (error) {
+      toast.error(error.message || 'Could not update the invoice.');
     } finally {
       setInvoiceUpdating('');
     }
   };
 
-  const invoiceRegister = (
-    <Widget className="mt-4 customer-invoice-register" title={<h6>Invoice Register ({allInvoices.length})</h6>} bodyClass="p-0" collapse collapsed>
-      {allInvoices.length === 0 ? (
-        <p className="text-muted p-3 mb-0">No invoices generated yet.</p>
-      ) : (
-        <div className="customer-invoice-register-table">
-          <table>
-            <thead>
-              <tr>
-                <th>Invoice</th>
-                <th>Customer</th>
-                <th>Generated</th>
-                <th>Amount</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {allInvoices.map((invoice) => (
-                <tr key={invoice.id || invoice.invoiceNumber}>
-                  <td>
-                    <strong>{invoice.invoiceNumber}</strong>
-                    <small>{invoice.validated ? 'Validated' : 'Not validated'}</small>
-                  </td>
-                  <td>{invoice.customer?.name || invoice.customerId || 'Customer'}</td>
-                  <td>{formatDate(invoice.invoiceDate)}</td>
-                  <td>{formatCurrency(invoice.totalAmount)}</td>
-                  <td>
-                    <Badge color={invoice.paymentStatus === 'paid' ? 'success' : 'warning'}>
-                      {invoice.paymentStatus === 'paid' ? 'Paid' : 'Unpaid'}
-                    </Badge>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </Widget>
-  );
+  const closeDeleteTransactionDialog = () => {
+    if (deletingTransactionId) return;
+    setTransactionToDelete(null);
+  };
 
-  if (loading) return <PageShell title="Customer Records"><LoadingState label="Loading customer records..." variant="table" /></PageShell>;
+  const handleDeleteTransaction = async () => {
+    if (!selected || !transactionToDelete) return;
+    setDeletingTransactionId(transactionToDelete.id);
+    try {
+      await deleteTransaction(selected.id, transactionToDelete.id);
+      toast.success('Sale entry deleted.');
+      setTransactionToDelete(null);
+    } catch (error) {
+      toast.error(error.message || 'Could not delete the sale entry.');
+    } finally {
+      setDeletingTransactionId('');
+    }
+  };
+
+  if (loading) {
+    return (
+      <PageShell title="Customer records">
+        <LoadingState label="Loading customer records…" variant="table" />
+      </PageShell>
+    );
+  }
 
   return (
-    <PageShell title="Customer Records" subtitle="Search and view purchase history">
-      <Widget className="mb-4">
-        <Input type="search" placeholder="Search by name, phone, or email..." value={query} onChange={(e) => setQuery(e.target.value)} className="bg-custom-dark border-0" />
-      </Widget>
-      <Row>
-        <Col lg={4}>
-          <Widget title={<h6>All Customers ({filteredCustomers.length})</h6>} collapse bodyClass="p-0">
-            <div className="list-group list-group-lg mb-0 customer-record-scroll-list" tabIndex="0" role="region" aria-label="Scrollable customer list">
-              {filteredCustomers.length === 0 ? (
-                <p className="text-muted p-3 mb-0">No customers found</p>
-              ) : filteredCustomers.map((c, idx) => (
-                <button key={c.id} type="button" className={`customer-record-list-item list-group-item list-group-item-action text-left ${selectedId === c.id ? 'active' : ''}`} onClick={() => setSelectedId(c.id)}>
-                  <span className="customer-record-list-avatar">
-                    <img src={c.photo || getCustomerAvatar(idx)} alt="" />
-                    <i className={`status status-bottom ${c.source === 'portal' ? 'bg-info' : 'bg-success'}`} />
-                  </span>
-                  <div className="customer-record-list-copy">
-                    <h6 className="m-0">{c.name}</h6>
-                    <small className="text-muted">{c.phone || c.email}</small>
-                    <span className="customer-record-source">
-                      {c.source === 'both' ? 'Admin + portal' : c.source === 'portal' ? 'Portal signup' : 'Admin'}
-                    </span>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </Widget>
-        </Col>
-        <Col lg={8}>
+    <PageShell
+      title="Customer records"
+      subtitle="Review customer profiles, purchase history, and invoice status."
+      actions={(
+        <Tooltip title="Refresh customer records">
+          <IconButton aria-label="Refresh customer records" onClick={refresh}>
+            <RefreshRounded />
+          </IconButton>
+        </Tooltip>
+      )}
+    >
+      <Card sx={{ ...cardSx, mb: 3 }}>
+        <CardContent>
+          <TextField
+            fullWidth
+            type="search"
+            placeholder="Search by name, phone, or email"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            InputProps={{ startAdornment: <InputAdornment position="start"><SearchRounded /></InputAdornment> }}
+          />
+        </CardContent>
+      </Card>
+
+      <Grid container spacing={3} alignItems="flex-start">
+        <Grid item xs={12} lg={4}>
+          <Card sx={cardSx}>
+            <Box sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 1.5,
+              p: { xs: selected ? 1.5 : 2.5, sm: 2.5 },
+              pb: { xs: selected ? 0.75 : 1.5, sm: 1.5 },
+            }}
+            >
+              <Box sx={{ minWidth: 0 }}>
+                <Typography variant="h6">{selected ? 'Selected customer' : 'All customers'}</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {selected ? 'Tap change to choose another record' : `${filteredCustomers.length} matching records`}
+                </Typography>
+              </Box>
+              {selected && (
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => setSelectedId(null)}
+                  sx={{ display: { xs: 'inline-flex', sm: 'none' }, flex: '0 0 auto' }}
+                >
+                  Change
+                </Button>
+              )}
+            </Box>
+            {filteredCustomers.length === 0 ? (
+              <Typography color="text.secondary" sx={{ px: 2.5, py: 5, textAlign: 'center' }}>No customers found.</Typography>
+            ) : (
+              <List
+                disablePadding
+                sx={{
+                  maxHeight: {
+                    xs: selected ? 76 : 'min(52vh, 420px)',
+                    sm: 'min(52vh, 520px)',
+                    lg: 'min(64vh, 660px)',
+                  },
+                  overflowY: 'auto',
+                  overscrollBehavior: 'contain',
+                  transition: 'max-height 180ms ease',
+                }}
+              >
+                {filteredCustomers.map((customer, index) => (
+                  <ListItem
+                    key={customer.id}
+                    disablePadding
+                    divider
+                    sx={{
+                      display: selectedId && selectedId !== customer.id
+                        ? { xs: 'none', sm: 'flex' }
+                        : 'flex',
+                    }}
+                  >
+                    <ListItemButton
+                      selected={selectedId === customer.id}
+                      onClick={() => setSelectedId(customer.id)}
+                      sx={{ px: 2.5, py: 1.25 }}
+                    >
+                      <ListItemAvatar>
+                        <Avatar src={customer.photo || getCustomerAvatar(index)}>
+                          {(customer.name || '?').charAt(0).toUpperCase()}
+                        </Avatar>
+                      </ListItemAvatar>
+                      <ListItemText
+                        primary={customer.name}
+                        secondary={customer.phone || customer.email}
+                        primaryTypographyProps={{ fontWeight: 800, noWrap: true }}
+                        secondaryTypographyProps={{ noWrap: true }}
+                      />
+                      <Chip
+                        size="small"
+                        color={customer.source === 'portal' ? 'info' : 'default'}
+                        variant="outlined"
+                        label={customer.source === 'both' ? 'Admin + app' : customer.source === 'portal' ? 'App' : 'Admin'}
+                        sx={{ ml: 1 }}
+                      />
+                    </ListItemButton>
+                  </ListItem>
+                ))}
+              </List>
+            )}
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} lg={8}>
           {!selected ? (
-            <Widget title={<h6>Details</h6>}><p className="text-muted mb-0">Select a customer to view details.</p></Widget>
+            <Card sx={cardSx}>
+              <Stack alignItems="center" spacing={1.5} sx={{ p: { xs: 4, sm: 7 }, textAlign: 'center' }}>
+                <Avatar sx={{ width: 58, height: 58, bgcolor: 'primary.main' }}><ReceiptLongRounded /></Avatar>
+                <Typography variant="h6">Choose a customer</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Their contact details, invoices, and purchase history will appear here.
+                </Typography>
+              </Stack>
+            </Card>
           ) : (
-            <>
+            <Stack spacing={3}>
               <CustomerSummary customer={selected} />
-              <Widget className="mt-4 customer-record-tools" title={<h6>Filter & Export</h6>}>
-                <div className="customer-record-toolbar">
-                  <ButtonGroup className="customer-record-filter">
-                  {Object.values(FILTER_PERIODS).map((p) => (
-                    <Button key={p} color={period === p ? 'primary' : 'secondary'} size="sm" onClick={() => setPeriod(p)} className="text-capitalize">{p}</Button>
-                  ))}
-                  </ButtonGroup>
-                  <Button color="info" size="sm" className="customer-export-btn" onClick={handleExport} disabled={exporting}>
-                    <i className="fa fa-download mr-1" /> {exporting ? 'Creating...' : 'Export PDF'}
-                  </Button>
-                </div>
-                {periodStats && (
-                  <Row className="mt-4">
-                    <Col xs={6} md={3}><small className="text-muted d-block">Orders</small><span className="fw-bold">{periodStats.totalOrders}</span></Col>
-                    <Col xs={6} md={3}><small className="text-muted d-block">Bottles</small><span className="fw-bold">{periodStats.totalBottles}</span></Col>
-                    <Col xs={6} md={3}><small className="text-muted d-block">Top Type</small><span className="fw-bold">{periodStats.mostPurchased}</span></Col>
-                    <Col xs={6} md={3}><small className="text-muted d-block">Revenue</small><span className="fw-bold">{formatCurrency(periodStats.totalRevenue)}</span></Col>
-                  </Row>
-                )}
-              </Widget>
-              <Widget className="mt-4" title={<h6>Customer Invoices ({customerInvoices.length})</h6>} bodyClass="p-0">
+
+              <Card sx={cardSx}>
+                <CardContent>
+                  <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ xs: 'stretch', md: 'center' }} gap={2}>
+                    <Box>
+                      <Typography variant="h6">Reporting period</Typography>
+                      <Typography variant="body2" color="text.secondary">Filter the ledger before generating an invoice.</Typography>
+                    </Box>
+                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25}>
+                      <ToggleButtonGroup
+                        value={period}
+                        exclusive
+                        size="small"
+                        onChange={(event, value) => { if (value) setPeriod(value); }}
+                        aria-label="Purchase history period"
+                      >
+                        {Object.values(FILTER_PERIODS).map((value) => (
+                          <ToggleButton key={value} value={value} sx={{ textTransform: 'capitalize' }}>{value}</ToggleButton>
+                        ))}
+                      </ToggleButtonGroup>
+                      <Button
+                        variant="contained"
+                        startIcon={exporting ? <CircularProgress size={17} color="inherit" /> : <DownloadRounded />}
+                        onClick={handleExport}
+                        disabled={exporting}
+                      >
+                        {exporting ? 'Creating…' : 'Export invoice'}
+                      </Button>
+                    </Stack>
+                  </Stack>
+                  {periodStats && (
+                    <Grid container spacing={2} sx={{ mt: 1 }}>
+                      <Grid item xs={6} sm={3}><Stat label="Orders" value={periodStats.totalOrders} /></Grid>
+                      <Grid item xs={6} sm={3}><Stat label="Bottles" value={periodStats.totalBottles} /></Grid>
+                      <Grid item xs={6} sm={3}><Stat label="Top type" value={periodStats.mostPurchased} /></Grid>
+                      <Grid item xs={6} sm={3}><Stat label="Revenue" value={formatCurrency(periodStats.totalRevenue)} /></Grid>
+                    </Grid>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card sx={cardSx}>
+                <Box sx={{ p: 2.5, pb: 1.5 }}>
+                  <Stack direction="row" justifyContent="space-between" alignItems="center">
+                    <Box>
+                      <Typography variant="h6">Customer invoices</Typography>
+                      <Typography variant="body2" color="text.secondary">{customerInvoices.length} invoices linked to this customer</Typography>
+                    </Box>
+                    <Button size="small" startIcon={<EditRounded />} onClick={() => history.push(`/app/customers/${selected.id}/edit`)}>
+                      Edit customer
+                    </Button>
+                  </Stack>
+                </Box>
                 {invoicesLoading ? (
-                  <p className="text-muted p-3 mb-0">Loading invoices...</p>
+                  <Stack direction="row" spacing={1.25} alignItems="center" sx={{ p: 2.5 }}>
+                    <CircularProgress size={20} />
+                    <Typography variant="body2" color="text.secondary">Loading invoices…</Typography>
+                  </Stack>
                 ) : customerInvoices.length === 0 ? (
-                  <p className="text-muted p-3 mb-0">No invoices generated for this customer yet.</p>
+                  <Typography variant="body2" color="text.secondary" sx={{ px: 2.5, pb: 3 }}>No invoices generated for this customer yet.</Typography>
                 ) : (
-                  <div className="customer-record-invoice-list">
+                  <Stack
+                    divider={<Box sx={{ borderTop: '1px solid', borderColor: 'divider' }} />}
+                    role="region"
+                    tabIndex={0}
+                    aria-label="Scrollable customer invoices"
+                    sx={{
+                      maxHeight: { xs: 320, md: 420 },
+                      overflowY: 'auto',
+                      overscrollBehavior: 'contain',
+                      scrollbarGutter: 'stable',
+                      '&:focus-visible': {
+                        outline: '2px solid',
+                        outlineColor: 'primary.main',
+                        outlineOffset: -2,
+                      },
+                    }}
+                  >
                     {customerInvoices.map((invoice) => (
-                      <article key={invoice.id} className="customer-record-invoice-item">
-                        <div>
-                          <strong>{invoice.invoiceNumber}</strong>
-                          <small>{formatDate(invoice.invoiceDate)} · {formatCurrency(invoice.totalAmount)}</small>
-                        </div>
-                        <div className="customer-record-invoice-meta">
-                          <Badge color={invoice.paymentStatus === 'paid' ? 'success' : 'warning'}>
-                            {invoice.paymentStatus === 'paid' ? 'Paid' : 'Unpaid'}
-                          </Badge>
-                          {invoice.validated && <Badge color="info">Validated</Badge>}
-                        </div>
-                        <div className="customer-record-invoice-actions">
-                          {invoice.paymentStatus !== 'paid' && (
-                            <Button
-                              size="sm"
-                              color="success"
-                              disabled={Boolean(invoiceUpdating)}
-                              onClick={() => updateCustomerInvoice(invoice, 'paid')}
-                            >
-                              Mark paid
-                            </Button>
-                          )}
-                          {!invoice.validated && (
-                            <Button
-                              size="sm"
-                              color="info"
-                              outline
-                              disabled={Boolean(invoiceUpdating)}
-                              onClick={() => updateCustomerInvoice(invoice, 'validate')}
-                            >
-                              Validate
-                            </Button>
-                          )}
-                        </div>
-                      </article>
+                      <Box key={invoice.id} sx={{ px: 2.5, py: 1.75 }}>
+                        <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} gap={1.5}>
+                          <Box>
+                            <Typography variant="subtitle2">{invoice.invoiceNumber}</Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {formatDate(invoice.invoiceDate)} · {formatCurrency(invoice.totalAmount)}
+                            </Typography>
+                          </Box>
+                          <Stack direction="row" spacing={0.75} alignItems="center" flexWrap="wrap" useFlexGap>
+                            <Chip size="small" color={invoice.paymentStatus === 'paid' ? 'success' : 'warning'} label={invoice.paymentStatus === 'paid' ? 'Paid' : 'Unpaid'} />
+                            {invoice.validated && <Chip size="small" color="info" variant="outlined" label="Validated" />}
+                            {invoice.paymentStatus !== 'paid' && (
+                              <Button
+                                size="small"
+                                variant="contained"
+                                color="success"
+                                startIcon={<PaymentsOutlined />}
+                                disabled={Boolean(invoiceUpdating)}
+                                onClick={() => updateCustomerInvoice(invoice, 'paid')}
+                              >
+                                Mark paid
+                              </Button>
+                            )}
+                            {!invoice.validated && (
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                startIcon={<CheckCircleOutlineRounded />}
+                                disabled={Boolean(invoiceUpdating)}
+                                onClick={() => updateCustomerInvoice(invoice, 'validate')}
+                              >
+                                Validate
+                              </Button>
+                            )}
+                          </Stack>
+                        </Stack>
+                      </Box>
                     ))}
-                  </div>
+                  </Stack>
                 )}
-              </Widget>
-              <Widget className="mt-4" title={<h6>Purchase History ({displayHistory.length})</h6>} refresh bodyClass="p-0">
-                <div className="p-3"><PurchaseHistoryTable transactions={displayHistory} /></div>
-              </Widget>
-            </>
+              </Card>
+
+              <Card sx={cardSx}>
+                <Box sx={{ p: 2.5, pb: 1.5 }}>
+                  <Typography variant="h6">Purchase history</Typography>
+                  <Typography variant="body2" color="text.secondary">{displayHistory.length} transactions in this period</Typography>
+                </Box>
+                <Box sx={{ px: { xs: 1, sm: 2.5 }, pb: 2.5 }}>
+                  <PurchaseHistoryTable
+                    transactions={displayHistory}
+                    onDelete={setTransactionToDelete}
+                    deletingTransactionId={deletingTransactionId}
+                  />
+                </Box>
+              </Card>
+            </Stack>
           )}
-        </Col>
-      </Row>
-      {invoiceRegister}
+        </Grid>
+      </Grid>
+
+      <Accordion sx={{ ...cardSx, mt: 3, '&::before': { display: 'none' } }}>
+        <AccordionSummary expandIcon={<ExpandMoreRounded />}>
+          <Stack direction="row" spacing={1.25} alignItems="center">
+            <ReceiptLongRounded color="primary" />
+            <Box>
+              <Typography variant="subtitle1" fontWeight={850}>Invoice register</Typography>
+              <Typography variant="caption" color="text.secondary">{allInvoices.length} invoices across all customers</Typography>
+            </Box>
+          </Stack>
+        </AccordionSummary>
+        <AccordionDetails sx={{ p: 0 }}>
+          <TableContainer
+            role="region"
+            tabIndex={0}
+            aria-label="Scrollable invoice register"
+            sx={{ ...responsiveTableContainerSx, maxHeight: 'min(60vh, 560px)' }}
+          >
+            <Table stickyHeader aria-label="Invoice register" sx={{ minWidth: { xs: 520, sm: 680 } }}>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Invoice</TableCell>
+                  <TableCell>Customer</TableCell>
+                  <TableCell sx={mobileOptionalCellSx}>Generated</TableCell>
+                  <TableCell>Amount</TableCell>
+                  <TableCell>Status</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {allInvoices.map((invoice) => (
+                  <TableRow key={invoice.id || invoice.invoiceNumber} hover>
+                    <TableCell>
+                      <Typography variant="body2" fontWeight={800}>{invoice.invoiceNumber}</Typography>
+                      <Typography variant="caption" color="text.secondary">{invoice.validated ? 'Validated' : 'Not validated'}</Typography>
+                    </TableCell>
+                    <TableCell>{(invoice.customer && invoice.customer.name) || invoice.customerId || 'Customer'}</TableCell>
+                    <TableCell sx={mobileOptionalCellSx}>{formatDate(invoice.invoiceDate)}</TableCell>
+                    <TableCell>{formatCurrency(invoice.totalAmount)}</TableCell>
+                    <TableCell><Chip size="small" color={invoice.paymentStatus === 'paid' ? 'success' : 'warning'} label={invoice.paymentStatus === 'paid' ? 'Paid' : 'Unpaid'} /></TableCell>
+                  </TableRow>
+                ))}
+                {!allInvoices.length && (
+                  <TableRow><TableCell colSpan={5} align="center" sx={{ py: 5, color: 'text.secondary' }}>No invoices generated yet.</TableCell></TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </AccordionDetails>
+      </Accordion>
+
+      <Dialog open={Boolean(transactionToDelete)} onClose={closeDeleteTransactionDialog} maxWidth="xs" fullWidth>
+        <DialogTitle>Delete sale entry</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary">
+            {`This will permanently remove the ${
+              transactionToDelete ? formatCurrency(transactionToDelete.totalAmount) : ''
+            } sale from ${selected ? selected.name : 'this customer'}'s purchase history.`}
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button color="inherit" onClick={closeDeleteTransactionDialog} disabled={Boolean(deletingTransactionId)}>Cancel</Button>
+          <Button color="error" variant="contained" onClick={handleDeleteTransaction} disabled={Boolean(deletingTransactionId)}>
+            {deletingTransactionId ? 'Deleting...' : 'Delete entry'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </PageShell>
   );
 }

@@ -1,5 +1,13 @@
 import React from 'react';
-import { Row, Col, Button } from 'reactstrap';
+import {
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Grid,
+  Typography,
+} from '@mui/material';
+import DownloadRoundedIcon from '@mui/icons-material/DownloadRounded';
 import { toast } from 'react-toastify';
 import PageShell from '../../components/PageShell/PageShell';
 import Widget from '../../components/Widget/Widget';
@@ -15,32 +23,71 @@ import LoadingState from '../../components/LoadingState/LoadingState';
 
 export default function Analytics() {
   const {
-    loading, revenueThisMonth, bottlesSoldToday, activeCustomers, totalCustomers,
-    monthlyRevenueChart, dailySalesChart, bottleDistribution, customerGrowth,
+    loading,
+    revenueThisMonth,
+    bottlesSoldToday,
+    activeCustomers,
+    totalCustomers,
+    monthlyRevenueChart,
+    dailySalesChart,
+    bottleDistribution,
+    customerGrowth,
   } = useAnalytics();
   const { customers } = useCustomers();
 
-  if (loading) return <PageShell title="Monthly Analytics"><LoadingState label="Loading analytics..." /></PageShell>;
+  if (loading) {
+    return <PageShell title="Analytics"><LoadingState label="Loading analytics..." variant="analytics" /></PageShell>;
+  }
+
+  const metrics = [
+    { label: 'Monthly revenue', value: formatCurrency(revenueThisMonth), accent: '#32b5f5' },
+    { label: 'Bottles today', value: bottlesSoldToday, accent: '#27c59a' },
+    { label: 'Active customers', value: activeCustomers, accent: '#7b79f7' },
+    { label: 'Total customers', value: totalCustomers, accent: '#f5a524' },
+  ];
 
   return (
-    <PageShell title="Monthly Analytics" subtitle="Charts and business insights">
-      <div className="text-right mb-3">
-        <Button color="info" onClick={() => { exportSalesToCsv(customers); toast.success('CSV exported'); }}>
-          <i className="fa fa-download mr-1" /> Export Sales CSV
+    <PageShell title="Analytics" subtitle="Sales performance, customer growth, and bottle distribution">
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+        <Button
+          variant="outlined"
+          startIcon={<DownloadRoundedIcon />}
+          onClick={() => {
+            exportSalesToCsv(customers);
+            toast.success('Sales CSV exported.');
+          }}
+        >
+          Export sales CSV
         </Button>
-      </div>
-      <Row>
-        <Col lg={3} md={6} className="mb-4"><Widget title={<h6>Revenue</h6>} close><h3>{formatCurrency(revenueThisMonth)}</h3></Widget></Col>
-        <Col lg={3} md={6} className="mb-4"><Widget title={<h6>Bottles Today</h6>} close><h3>{bottlesSoldToday}</h3></Widget></Col>
-        <Col lg={3} md={6} className="mb-4"><Widget title={<h6>Active</h6>} close><h3>{activeCustomers}</h3></Widget></Col>
-        <Col lg={3} md={6} className="mb-4"><Widget title={<h6>Customers</h6>} close><h3>{totalCustomers}</h3></Widget></Col>
-      </Row>
-      <Row>
-        <Col lg={6} className="mb-4"><Widget title={<h5>Monthly Revenue</h5>} refresh close><MonthlyRevenueChart data={monthlyRevenueChart} /></Widget></Col>
-        <Col lg={6} className="mb-4"><Widget title={<h5>Daily Sales</h5>} refresh close><DailySalesChart data={dailySalesChart} /></Widget></Col>
-        <Col lg={6} className="mb-4"><Widget title={<h5>Bottle Distribution</h5>} refresh close><BottlePieChart data={bottleDistribution} /></Widget></Col>
-        <Col lg={6} className="mb-4"><Widget title={<h5>Customer Growth</h5>} refresh close><CustomerGrowthChart data={customerGrowth} /></Widget></Col>
-      </Row>
+      </Box>
+
+      <Grid container spacing={2.5}>
+        {metrics.map((metric) => (
+          <Grid item xs={12} sm={6} lg={3} key={metric.label}>
+            <Card sx={{ height: '100%', borderTop: `3px solid ${metric.accent}` }}>
+              <CardContent>
+                <Typography variant="body2" color="text.secondary" fontWeight={700}>{metric.label}</Typography>
+                <Typography variant="h4" sx={{ mt: 1, fontWeight: 820, fontVariantNumeric: 'tabular-nums' }}>
+                  {metric.value}
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
+
+        <Grid item xs={12} lg={6}>
+          <Widget title="Monthly revenue" fullscreen><MonthlyRevenueChart data={monthlyRevenueChart} /></Widget>
+        </Grid>
+        <Grid item xs={12} lg={6}>
+          <Widget title="Daily sales" fullscreen><DailySalesChart data={dailySalesChart} /></Widget>
+        </Grid>
+        <Grid item xs={12} lg={6}>
+          <Widget title="Bottle distribution" fullscreen><BottlePieChart data={bottleDistribution} /></Widget>
+        </Grid>
+        <Grid item xs={12} lg={6}>
+          <Widget title="Customer growth" fullscreen><CustomerGrowthChart data={customerGrowth} /></Widget>
+        </Grid>
+      </Grid>
     </PageShell>
   );
 }

@@ -8,6 +8,15 @@ import {
 } from '../cloud/supabaseClient';
 import { canonicalBottleType, resolveOrderPricing } from '../../utils/orderPricing';
 
+const defaultCustomerPreferences = {
+  theme: 'dark',
+  browserNotifications: true,
+  orderUpdates: true,
+  invoiceAlerts: true,
+  defaultBottleType: 'Gallon',
+  defaultQuantity: 1,
+};
+
 function requireCloud() {
   if (!isSupabaseConfigured()) throw new Error('Supabase configuration is required.');
 }
@@ -29,6 +38,7 @@ function toProfile(row) {
     companyName: row.company_name || 'Himaliya Spring Water',
     contractLabel: row.contract_label || 'Monthly water delivery contract',
     active: row.active !== false,
+    preferences: { ...defaultCustomerPreferences, ...(row.preferences || {}) },
     createdAt: row.created_at,
   };
 }
@@ -51,6 +61,15 @@ function toOrder(row, prices) {
     acceptedAt: row.accepted_at,
     deliveredAt: row.delivered_at,
     createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    trackingToken: row.tracking_token,
+    trackingStatus: row.tracking_status || 'unassigned',
+    riderName: row.rider_name || '',
+    riderPhone: row.rider_phone || '',
+    riderLat: row.rider_lat === null || row.rider_lat === undefined ? null : Number(row.rider_lat),
+    riderLng: row.rider_lng === null || row.rider_lng === undefined ? null : Number(row.rider_lng),
+    riderHeading: row.rider_heading === null || row.rider_heading === undefined ? null : Number(row.rider_heading),
+    locationUpdatedAt: row.location_updated_at,
     profile: row.customers ? toProfile(row.customers) : null,
   };
   const pricing = resolveOrderPricing(base, prices);
@@ -89,9 +108,31 @@ function toInvoice(row) {
   };
 }
 
-export async function signInCustomer(email, password) {
+function isEmailIdentifier(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').trim());
+}
+
+async function signInCustomerWithPhone(phone, password) {
+  const response = await fetch('/.netlify/functions/customer-phone-login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ phone: phone.trim(), password }),
+  });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(body.message || 'Incorrect phone number or password.');
+  }
+  storeSession(body, 'customer');
+}
+
+export async function signInCustomer(identifier, password) {
   requireCloud();
-  await signInWithPassword(email.trim().toLowerCase(), password, 'customer');
+  const value = String(identifier || '').trim();
+  if (isEmailIdentifier(value)) {
+    await signInWithPassword(value.toLowerCase(), password, 'customer');
+  } else {
+    await signInCustomerWithPhone(value, password);
+  }
   return getCustomerProfile();
 }
 
@@ -136,6 +177,9 @@ export async function saveCustomerProfile(form) {
       source: 'portal',
       updated_at: new Date().toISOString(),
   };
+  if (form.preferences && typeof form.preferences === 'object') {
+    body.preferences = { ...defaultCustomerPreferences, ...form.preferences };
+  }
   const rows = existing.length
     ? await dbRequest(`/customers?id=eq.${encodeURIComponent(existing[0].id)}&select=*`, {
       method: 'PATCH', body: JSON.stringify(body),
@@ -178,13 +222,17 @@ export async function createCustomerOrder(profile, form) {
   const unitPrice = Number(form.unitPrice || 0);
   const quantity = Number(form.quantity || 1);
   const totalAmount = Number(form.totalAmount || 0) || (unitPrice * quantity);
+  const deliveryAddress = String(profile.address || '').trim();
+  if (!deliveryAddress) {
+    throw new Error('Add a delivery address to your profile before placing an order.');
+  }
   const payload = {
     customer_id: profile.id,
     quantity,
     bottle_type: canonicalBottleType(form.bottleType || 'Gallon'),
     unit_price: unitPrice,
     total_amount: totalAmount,
-    delivery_address: form.deliveryAddress || profile.address,
+    delivery_address: deliveryAddress,
     delivery_date: form.deliveryDate || null,
     notes: form.notes || '',
   };
@@ -313,6 +361,78 @@ export async function updateAdminCustomerOrder(orderOrId, status, adminNote = ''
   }
   const priceMap = order && order.bottleType ? { [canonicalBottleType(order.bottleType)]: unitPrice } : {};
   return toOrder(rows[0], priceMap);
+}
+
+export async function updateAdminRiderTracking(order, tracking) {
+  requireCloud();
+  if (!order || !order.id) throw new Error('Select an order before updating rider tracking.');
+
+  const payload = {
+    rider_name: String(tracking.riderName || '').trim(),
+    rider_phone: String(tracking.riderPhone || '').trim(),
+    tracking_status: tracking.trackingStatus || 'unassigned',
+    rider_lat: tracking.riderLat === '' || tracking.riderLat === null
+      ? null
+      : Number(tracking.riderLat),
+    rider_lng: tracking.riderLng === '' || tracking.riderLng === null
+      ? null
+      : Number(tracking.riderLng),
+    rider_heading: tracking.riderHeading === '' || tracking.riderHeading === null
+      ? null
+      : Number(tracking.riderHeading),
+    updated_at: new Date().toISOString(),
+  };
+
+  const rows = await dbRequest(
+    `/customer_orders?id=eq.${encodeURIComponent(order.id)}&select=*,customers(*)`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    },
+  );
+
+  if (!rows || !rows[0]) throw new Error('The delivery could not be updated.');
+  const priceMap = order.bottleType ? {
+    [canonicalBottleType(order.bottleType)]: Number(order.unitPrice || 0),
+  } : {};
+  return toOrder(rows[0], priceMap);
+}
+
+export async function getPublicRiderTracking(trackingToken) {
+  requireCloud();
+  const token = String(trackingToken || '').trim();
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(token)) {
+    throw new Error('This tracking link is not valid.');
+  }
+
+  const result = await dbRequest('/rpc/get_delivery_tracking', {
+    method: 'POST',
+    body: JSON.stringify({ p_tracking_token: token }),
+    useUserToken: false,
+  });
+  const row = Array.isArray(result) ? result[0] : result;
+  if (!row) throw new Error('This tracking link is no longer available.');
+
+  return {
+    orderId: row.order_id,
+    trackingToken: row.tracking_token,
+    customerName: row.customer_name || 'Customer',
+    quantity: Number(row.quantity || 0),
+    bottleType: canonicalBottleType(row.bottle_type),
+    deliveryAddress: row.delivery_address || '',
+    deliveryDate: row.delivery_date,
+    orderStatus: row.order_status,
+    trackingStatus: row.tracking_status || 'unassigned',
+    riderName: row.rider_name || '',
+    riderPhone: row.rider_phone || '',
+    riderLat: row.rider_lat === null || row.rider_lat === undefined ? null : Number(row.rider_lat),
+    riderLng: row.rider_lng === null || row.rider_lng === undefined ? null : Number(row.rider_lng),
+    riderHeading: row.rider_heading === null || row.rider_heading === undefined ? null : Number(row.rider_heading),
+    locationUpdatedAt: row.location_updated_at,
+    acceptedAt: row.accepted_at,
+    deliveredAt: row.delivered_at,
+    createdAt: row.created_at,
+  };
 }
 
 export async function getAdminCustomerPortalStats() {

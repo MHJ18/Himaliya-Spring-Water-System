@@ -1,12 +1,18 @@
 import React, { useState } from 'react';
 import { withRouter } from 'react-router-dom';
-import { Input, Button, Badge } from 'reactstrap';
+import {
+  Alert,
+  Button,
+  Chip,
+  CircularProgress,
+  InputAdornment,
+  TextField,
+} from '@mui/material';
 import { toast } from 'react-toastify';
 import {
   Search,
   ExternalLink,
   FileText,
-  Loader2,
   CheckCircle2,
   CreditCard,
   ShieldCheck,
@@ -89,7 +95,7 @@ function InvoiceLookup({ history }) {
 
   return (
     <PageShell title="Invoice Lookup" subtitle="Search invoices, validate them, and manage payment status">
-      <Widget className="mb-4 invoice-lookup-card">
+      <Widget className="invoice-lookup-card">
         <div className="invoice-lookup-card__intro">
           <span className="invoice-lookup-card__icon" aria-hidden="true"><FileText size={24} /></span>
           <div>
@@ -99,21 +105,22 @@ function InvoiceLookup({ history }) {
         </div>
 
         <form className="invoice-lookup-form" onSubmit={handleSearch}>
-          <label className="sr-only" htmlFor="invoice-number">Invoice number</label>
-          <div className="invoice-lookup-form__control">
-            <Search size={20} aria-hidden="true" />
-            <Input
-              id="invoice-number"
-              type="search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value.toUpperCase())}
-              placeholder="e.g. HSW-8K2P4M7N"
-              autoComplete="off"
-              aria-describedby={error ? 'invoice-lookup-error' : undefined}
-            />
-          </div>
-          <Button color="primary" type="submit" disabled={loading || !query.trim()}>
-            {loading ? <><Loader2 className="invoice-search-spinner" size={18} aria-hidden="true" /> Searching...</> : 'Find invoice'}
+          <TextField
+            id="invoice-number"
+            type="search"
+            label="Invoice number"
+            value={query}
+            onChange={(event) => setQuery(event.target.value.toUpperCase())}
+            placeholder="e.g. HSW-8K2P4M7N"
+            autoComplete="off"
+            aria-describedby={error ? 'invoice-lookup-error' : undefined}
+            InputProps={{
+              startAdornment: <InputAdornment position="start"><Search size={20} aria-hidden="true" /></InputAdornment>,
+            }}
+            fullWidth
+          />
+          <Button variant="contained" color="primary" type="submit" disabled={loading || !query.trim()}>
+            {loading ? <><CircularProgress size={18} color="inherit" /> Searching...</> : 'Find invoice'}
           </Button>
         </form>
 
@@ -124,7 +131,7 @@ function InvoiceLookup({ history }) {
           </div>
         )}
 
-        {error && <p id="invoice-lookup-error" role="alert" className="invoice-lookup-error">{error}</p>}
+        {error && <Alert id="invoice-lookup-error" severity="error" sx={{ mt: 2 }}>{error}</Alert>}
 
         {invoice && (
           <div className="invoice-lookup-card__result">
@@ -135,37 +142,34 @@ function InvoiceLookup({ history }) {
             </div>
 
             <div className="invoice-lookup-status-row">
-              <Badge color={paymentStatus === 'paid' ? 'success' : 'warning'} className="invoice-lookup-badge">
-                {paymentStatus === 'paid' ? 'Paid' : 'Unpaid'}
-              </Badge>
+              <Chip color={paymentStatus === 'paid' ? 'success' : 'warning'} size="small" label={paymentStatus === 'paid' ? 'Paid' : 'Unpaid'} />
               {isValidated && (
-                <Badge color="info" className="invoice-lookup-badge">
-                  <CheckCircle2 size={12} aria-hidden="true" /> Validated
-                </Badge>
+                <Chip color="info" size="small" icon={<CheckCircle2 size={14} aria-hidden="true" />} label="Validated" />
               )}
             </div>
 
             <div className="invoice-lookup-actions">
               {paymentStatus !== 'paid' ? (
-                <Button className="invoice-action-btn invoice-action-btn--paid" disabled={Boolean(updating)} onClick={() => updatePayment('paid')}>
+                <Button variant="contained" color="success" className="invoice-action-btn invoice-action-btn--paid" disabled={Boolean(updating)} onClick={() => updatePayment('paid')}>
                   <CreditCard size={16} aria-hidden="true" />
                   {updating === 'paid' ? 'Saving...' : 'Mark paid'}
                 </Button>
               ) : (
-                <Button className="invoice-action-btn invoice-action-btn--unpaid" disabled={Boolean(updating)} onClick={() => updatePayment('unpaid')}>
+                <Button variant="outlined" color="warning" className="invoice-action-btn invoice-action-btn--unpaid" disabled={Boolean(updating)} onClick={() => updatePayment('unpaid')}>
                   <RotateCcw size={16} aria-hidden="true" />
                   {updating === 'unpaid' ? 'Saving...' : 'Mark unpaid'}
                 </Button>
               )}
 
               {!isValidated && (
-                <Button className="invoice-action-btn invoice-action-btn--validate" disabled={Boolean(updating)} onClick={handleValidate}>
+                <Button variant="outlined" color="info" className="invoice-action-btn invoice-action-btn--validate" disabled={Boolean(updating)} onClick={handleValidate}>
                   <ShieldCheck size={16} aria-hidden="true" />
                   {updating === 'validate' ? 'Saving...' : 'Validate'}
                 </Button>
               )}
 
               <Button
+                variant="text"
                 className="invoice-action-btn invoice-action-btn--open"
                 type="button"
                 onClick={() => history.push(`/invoice/${invoiceNumber || query.trim()}`)}

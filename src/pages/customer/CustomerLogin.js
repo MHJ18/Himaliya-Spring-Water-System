@@ -1,9 +1,18 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { Link, Redirect, withRouter } from 'react-router-dom';
-import { AnimatePresence, LayoutGroup, motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { ShakeX } from 'framer-motion-animations';
 import { toast } from 'react-toastify';
+import {
+  ArrowRight,
+  AtSign,
+  Droplets,
+  LockKeyhole,
+  MapPin,
+  Phone,
+  UserRound,
+} from 'lucide-react';
 import {
   registerCustomer,
   saveCustomerProfile,
@@ -15,6 +24,7 @@ import {
 } from '../../services/cloud/supabaseClient';
 import '../login/WaterLogin.css';
 import './CustomerPortal.css';
+import './CustomerLogin.css';
 
 const customerModes = ['signin', 'signup'];
 
@@ -98,7 +108,7 @@ function CustomerLogin({ location, history }) {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <span className="water-login-logo-mark">HS</span>
+          <span className="water-login-logo-mark"><Droplets size={22} aria-hidden="true" /></span>
           <div>
             <h1>Himaliya Spring Water</h1>
             <p>Customer delivery portal</p>
@@ -107,50 +117,51 @@ function CustomerLogin({ location, history }) {
 
         <motion.section className="water-login-copy" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <span className="water-login-badge">Customer portal</span>
-          <h1>Order 19L water gallons without calling the office.</h1>
+          <h1>Your next 19L refill is already within reach.</h1>
           <p>
-            Place delivery requests, see accepted/delivered updates, review paid and unpaid invoices,
-            and keep your contract details in one simple account.
+            Order water, follow the route and review invoices from one focused customer account.
           </p>
           <div className="water-login-stats">
-            <span><strong>19L</strong>gallon orders</span>
-            <span><strong>Live</strong>order status</span>
-            <span><strong>Live</strong>invoice status</span>
+            <span><strong>19L</strong>refill requests</span>
+            <span><strong>Live</strong>delivery status</span>
+            <span><strong>Clear</strong>invoice history</span>
+          </div>
+          <div className="customer-login-route" aria-hidden="true">
+            <span className="is-complete"><i>01</i><b>Request</b></span>
+            <span className="is-current"><i>02</i><b>Deliver</b></span>
+            <span><i>03</i><b>Track</b></span>
           </div>
         </motion.section>
 
-        <section className="water-login-card customer-login-card">
+        <motion.section
+          className="water-login-card customer-login-card"
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, delay: 0.08 }}
+        >
           <div className="water-login-logo">
-            <span className="water-login-logo-mark">HS</span>
+            <span className="water-login-logo-mark"><Droplets size={23} aria-hidden="true" /></span>
             <div>
-              <h2>Customer access</h2>
-              <p>{mode === 'signup' ? 'Create your portal account' : 'Sign in to order water'}</p>
+              <h2>{mode === 'signup' ? 'Create your account' : 'Welcome back'}</h2>
+              <p>{mode === 'signup' ? 'Set up your delivery profile' : 'Sign in to request a refill'}</p>
             </div>
           </div>
 
-          <LayoutGroup id="customer-login-tabs">
-            <div className="customer-login-tabs" role="tablist" aria-label="Customer login mode">
-              {customerModes.map((tabMode) => (
-                <button
-                  key={tabMode}
-                  type="button"
-                  role="tab"
-                  aria-selected={mode === tabMode}
-                  className={mode === tabMode ? 'is-active' : ''}
-                  onClick={() => switchMode(tabMode)}
-                >
-                  {mode === tabMode && (
-                    <motion.span
-                      className="customer-login-tab-indicator"
-                      layoutId="customer-login-tab-indicator"
-                      transition={{ type: 'spring', stiffness: 520, damping: 42, mass: 0.8 }}
-                    />
-                  )}
-                  <span>{tabMode === 'signin' ? 'Sign in' : 'Create account'}</span>
-                </button>
-              ))}
-            </div>
-          </LayoutGroup>
+          <div className="customer-login-tabs" role="tablist" aria-label="Customer login mode">
+            {customerModes.map((tabMode) => (
+              <button
+                key={tabMode}
+                type="button"
+                role="tab"
+                aria-selected={mode === tabMode}
+                aria-controls="customer-auth-panel"
+                className={mode === tabMode ? 'is-active' : ''}
+                onClick={() => switchMode(tabMode)}
+              >
+                <span>{tabMode === 'signin' ? 'Sign in' : 'Create account'}</span>
+              </button>
+            ))}
+          </div>
 
           <form className="water-login-form customer-login-form" method="post" onSubmit={submit} autoComplete="on">
             {(visibleError || loginNotice) && (
@@ -162,59 +173,114 @@ function CustomerLogin({ location, history }) {
               </ShakeX>
             )}
 
-            <div className="customer-login-form-shell">
-              <AnimatePresence mode="popLayout" initial={false}>
-                <motion.div
-                  key={mode}
-                  className="customer-login-form-panel"
-                  initial={{ opacity: 0, y: mode === 'signup' ? 14 : -14 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: mode === 'signup' ? -10 : 10 }}
-                  transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-                >
+            <motion.div
+              id="customer-auth-panel"
+              className="customer-login-form-shell"
+              layout
+              transition={{ layout: { duration: 0.32, ease: [0.22, 1, 0.36, 1] } }}
+            >
+              <AnimatePresence initial={false}>
                 {mode === 'signup' && (
-                  <>
-                    <label className="water-login-label" htmlFor="customer-name">Full name</label>
-                    <div className="water-login-input-wrap">
-                      <span className="water-login-input-icon" aria-hidden="true">ID</span>
-                      <input id="customer-name" className="water-login-input" value={form.name} onChange={(e) => update('name', e.target.value)} placeholder="Your full name" autoComplete="name" required />
+                  <motion.div
+                    key="customer-signup-fields"
+                    className="customer-signup-fields"
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{
+                      height: { duration: 0.32, ease: [0.22, 1, 0.36, 1] },
+                      opacity: { duration: 0.2, ease: 'easeOut' },
+                    }}
+                  >
+                    <div className="customer-signup-fields__inner">
+                      <label className="water-login-label" htmlFor="customer-name">Full name</label>
+                      <div className="water-login-input-wrap">
+                        <span className="water-login-input-icon" aria-hidden="true"><UserRound size={18} /></span>
+                        <input
+                          id="customer-name"
+                          name="name"
+                          className="water-login-input"
+                          value={form.name}
+                          onChange={(e) => update('name', e.target.value)}
+                          placeholder="Your full name"
+                          autoComplete="name"
+                          required
+                        />
+                      </div>
+
+                      <label className="water-login-label" htmlFor="customer-phone">Phone number</label>
+                      <div className="water-login-input-wrap">
+                        <span className="water-login-input-icon" aria-hidden="true"><Phone size={18} /></span>
+                        <input
+                          id="customer-phone"
+                          name="tel"
+                          className="water-login-input"
+                          type="tel"
+                          inputMode="tel"
+                          value={form.phone}
+                          onChange={(e) => update('phone', e.target.value)}
+                          placeholder="+92 300 0000000"
+                          autoComplete="tel"
+                          required
+                        />
+                      </div>
+
+                      <label className="water-login-label" htmlFor="customer-address">Delivery address</label>
+                      <div className="water-login-input-wrap">
+                        <span className="water-login-input-icon" aria-hidden="true"><MapPin size={18} /></span>
+                        <input
+                          id="customer-address"
+                          name="street-address"
+                          className="water-login-input"
+                          value={form.address}
+                          onChange={(e) => update('address', e.target.value)}
+                          placeholder="Street, area, city"
+                          autoComplete="street-address"
+                          required
+                        />
+                      </div>
                     </div>
-                  </>
+                  </motion.div>
                 )}
-
-                <label className="water-login-label" htmlFor="customer-email">Email address</label>
-                <div className="water-login-input-wrap">
-                  <span className="water-login-input-icon" aria-hidden="true">@</span>
-                  <input id="customer-email" className="water-login-input" type="email" value={form.email} onChange={(e) => update('email', e.target.value)} placeholder="you@email.com" autoComplete="username" required />
-                </div>
-
-                {mode === 'signup' && (
-                  <>
-                    <label className="water-login-label" htmlFor="customer-phone">Phone number</label>
-                    <div className="water-login-input-wrap">
-                      <span className="water-login-input-icon" aria-hidden="true">PH</span>
-                      <input id="customer-phone" className="water-login-input" value={form.phone} onChange={(e) => update('phone', e.target.value)} placeholder="+92 300 0000000" autoComplete="tel" required />
-                    </div>
-
-                    <label className="water-login-label" htmlFor="customer-address">Delivery address</label>
-                    <div className="water-login-input-wrap">
-                      <span className="water-login-input-icon" aria-hidden="true">AD</span>
-                      <input id="customer-address" className="water-login-input" value={form.address} onChange={(e) => update('address', e.target.value)} placeholder="Street, area, city" autoComplete="street-address" required />
-                    </div>
-                  </>
-                )}
-
-                <label className="water-login-label" htmlFor="customer-password">Password</label>
-                <div className="water-login-input-wrap">
-                  <span className="water-login-input-icon" aria-hidden="true">&bull;</span>
-                  <input id="customer-password" className="water-login-input" type="password" value={form.password} onChange={(e) => update('password', e.target.value)} placeholder={mode === 'signup' ? 'Create a password' : 'Enter your password'} autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} required />
-                </div>
-                </motion.div>
               </AnimatePresence>
-            </div>
+
+              <label className="water-login-label" htmlFor="customer-email">{mode === 'signup' ? 'Email address' : 'Email or phone number'}</label>
+              <div className="water-login-input-wrap">
+                <span className="water-login-input-icon" aria-hidden="true"><AtSign size={18} /></span>
+                <input
+                  id="customer-email"
+                  name="username"
+                  className="water-login-input"
+                  type={mode === 'signup' ? 'email' : 'text'}
+                  inputMode={mode === 'signup' ? 'email' : 'text'}
+                  value={form.email}
+                  onChange={(e) => update('email', e.target.value)}
+                  placeholder={mode === 'signup' ? 'you@email.com' : 'Email or +92 phone number'}
+                  autoComplete="username"
+                  required
+                />
+              </div>
+
+              <label className="water-login-label" htmlFor="customer-password">Password</label>
+              <div className="water-login-input-wrap">
+                <span className="water-login-input-icon" aria-hidden="true"><LockKeyhole size={18} /></span>
+                <input
+                  id="customer-password"
+                  name="password"
+                  className="water-login-input"
+                  type="password"
+                  value={form.password}
+                  onChange={(e) => update('password', e.target.value)}
+                  placeholder={mode === 'signup' ? 'Create a password' : 'Enter your password'}
+                  autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+                  required
+                />
+              </div>
+            </motion.div>
 
             <button type="submit" className="water-login-submit" disabled={loading} aria-busy={loading}>
-              {loading ? 'Please wait...' : mode === 'signup' ? 'Create customer account' : 'Sign in and order'}
+              <span>{loading ? 'Please wait...' : mode === 'signup' ? 'Create customer account' : 'Sign in and order'}</span>
+              {!loading && <ArrowRight size={18} aria-hidden="true" />}
             </button>
             <p className="water-login-note">Use the same phone/email from your Himaliya Spring Water contract to link invoices automatically.</p>
             {mode === 'signin' && <Link className="water-login-forgot" to="/forgot-password?account=customer">Forgot password?</Link>}
@@ -224,7 +290,7 @@ function CustomerLogin({ location, history }) {
             <Link className="water-login-back" to="/">&larr; Back to landing</Link>
             <Link className="water-login-back" to="/login">Admin login</Link>
           </div>
-        </section>
+        </motion.section>
       </div>
     </main>
   );

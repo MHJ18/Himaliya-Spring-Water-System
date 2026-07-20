@@ -18,6 +18,8 @@ Himaliya Spring Water combines day-to-day delivery administration with a dedicat
 
 ![Customer-to-delivery workflow](docs/images/platform-workflow.svg)
 
+For a click-by-click operational handover covering access, customer records, sales, orders, invoices, payments, pricing, users, and passwords, open the [client workflow guide](docs/client-workflow-guide.html) in a browser. It can also be printed or saved as a PDF.
+
 ## Features
 
 ### Administration
@@ -44,8 +46,8 @@ Himaliya Spring Water combines day-to-day delivery administration with a dedicat
 
 | Layer | Technology |
 | --- | --- |
-| Frontend | React 18, React Router, Redux, Reactstrap |
-| Motion | Framer Motion |
+| Frontend | React 18, React Router, Redux, Material UI 5 |
+| Motion | Framer Motion, Motion, Anime.js, Lottie |
 | Backend | Supabase Auth and PostgreSQL |
 | Data security | Row Level Security policies and authenticated REST access |
 | Documents | jsPDF invoice and customer-statement exports |
@@ -72,11 +74,15 @@ Never place a Supabase `service_role` key in this browser application.
 
 For owner-authorized customer password resets on Netlify, add `SUPABASE_SERVICE_ROLE_KEY` in **Netlify → Site configuration → Environment variables**. Never prefix it with `REACT_APP_`; the key is consumed only by the server function.
 
+Customer phone-number sign-in uses the same server-only key to securely resolve a customer record to its Supabase Auth account. Also configure `SUPABASE_URL` and `SUPABASE_ANON_KEY` in Netlify (the existing `REACT_APP_` equivalents remain supported).
+
 In **Supabase → Authentication → URL Configuration**, add the deployed `/reset-password` URL (and `http://localhost:3000/reset-password` for local testing) to the allowed redirect URLs.
 
 ### 3. Apply database migrations
 
 Review and apply the SQL files under [`supabase/migrations`](supabase/migrations) in chronological order. Back up an existing production database before applying schema changes.
+
+The latest migrations add cloud-synced customer preferences and repair missing Auth token defaults left by older manual `auth.users` inserts. That repair is required if an existing account returns `500: Database error querying schema` during sign-in.
 
 ### 4. Start development
 
@@ -91,7 +97,8 @@ The application runs at [http://localhost:3000](http://localhost:3000).
 ```bash
 npm start                  # Development server
 npm run build              # Optimized production build
-npm test                   # Test suite
+npm test -- --runInBand    # Test suite
+npm audit --omit=dev       # Production dependency audit
 ```
 
 ## Main routes

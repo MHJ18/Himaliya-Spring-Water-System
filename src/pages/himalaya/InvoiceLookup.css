@@ -41,38 +41,12 @@
   width: 100%;
 }
 
-.invoice-lookup-form__control {
-  position: relative;
-  display: flex;
-  align-items: center;
+.invoice-lookup-form > .MuiFormControl-root {
   flex: 1 1 auto;
   min-width: 0;
 }
 
-.invoice-lookup-form__control > svg {
-  position: absolute;
-  left: 1rem;
-  z-index: 1;
-  color: #7f91aa;
-  pointer-events: none;
-}
-
-.invoice-lookup-form__control .form-control {
-  height: 3rem;
-  padding: 0 1rem 0 2.9rem;
-  color: #eef6ff;
-  background: rgba(11, 31, 54, 0.72);
-  border: 1px solid rgba(148, 163, 184, 0.28);
-  border-radius: 0.75rem;
-  box-shadow: none;
-}
-
-.invoice-lookup-form__control .form-control:focus {
-  border-color: #38bdf8;
-  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.16);
-}
-
-.invoice-lookup-form > .btn {
+.invoice-lookup-form > button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -204,7 +178,7 @@
   box-shadow: 0 12px 28px rgba(56, 189, 248, 0.18);
 }
 
-.invoice-action-btn--open.btn {
+.invoice-action-btn--open {
   color: #dff8ff;
   background: rgba(125, 223, 255, 0.1);
   border: 1px solid rgba(125, 223, 255, 0.2);
@@ -214,8 +188,8 @@
 @media (max-width: 575.98px) {
   .invoice-lookup-card .widget-body { padding: 1.1rem; }
   .invoice-lookup-form { flex-direction: column; }
-  .invoice-lookup-form > .btn { width: 100%; }
+  .invoice-lookup-form > button { width: 100%; }
   .invoice-lookup-card__result { grid-template-columns: 1fr; }
   .invoice-lookup-status-row { justify-content: flex-start; }
-  .invoice-action-btn.btn { width: 100%; }
+  .invoice-action-btn { width: 100%; }
 }

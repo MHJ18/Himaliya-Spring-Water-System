@@ -1,12 +1,11 @@
 html {
   box-sizing: border-box;
   font-weight: 400;
-  font-size: $font-size-initial;
+  font-size: 16px;
   line-height: 1.5;
   -webkit-text-size-adjust: 100%;
   -ms-text-size-adjust: 100%;
   text-size-adjust: 100%;
-  zoom: 1;
 }
 
 *,
@@ -18,8 +17,8 @@ html {
 body {
   margin: 0;
   overflow-x: hidden;
-  color: $text-color;
-  font-family: $font-family-base;
+  color: rgba(244, 244, 245, 0.9);
+  font-family: "Plus Jakarta Sans", "Segoe UI", Arial, sans-serif;
   font-size: 1rem;
   font-weight: 400;
   line-height: 1.5;
@@ -27,10 +26,22 @@ body {
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
   font-size-adjust: none;
-  background: $main-gradient;
-  background-attachment: fixed;
+  background:
+    radial-gradient(circle at 15% 0%, rgba(0, 194, 255, 0.18), transparent 28rem),
+    radial-gradient(circle at 88% 12%, rgba(41, 121, 255, 0.14), transparent 32rem),
+    linear-gradient(135deg, #061827 0%, #082238 48%, #03111f 100%);
+  background-attachment: scroll;
   background-size: cover;
   background-repeat: no-repeat;
+}
+
+button {
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+button:disabled {
+  cursor: not-allowed;
 }
 
 html,
@@ -48,7 +59,7 @@ a,
 .btn {
   cursor: pointer;
   transition: color 0.1s ease-in-out, background-color 0.1s ease-in-out, border-color 0.1s ease-in-out;
-  font-family: $font-family-base;
+  font-family: "Plus Jakarta Sans", "Segoe UI", Arial, sans-serif;
 }
 
 a:hover {
@@ -80,7 +91,19 @@ ol ul {
 ul,
 ol {
   list-style: none;
+  margin: 0;
   padding-left: 0;
+}
+
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
 }
 
  .app-error-boundary {
@@ -93,12 +116,19 @@ ol {
   background: linear-gradient(145deg, #07111f, #03101a);
 }
 
-html.theme-transitioning *,
-html.theme-transitioning *::before,
-html.theme-transitioning *::after {
+html.theme-transitioning body,
+html.theme-transitioning header,
+html.theme-transitioning aside,
+html.theme-transitioning main,
+html.theme-transitioning section,
+html.theme-transitioning article,
+html.theme-transitioning .MuiPaper-root,
+html.theme-transitioning .MuiTableCell-root,
+html.theme-transitioning .MuiOutlinedInput-root,
+html.theme-transitioning .MuiSvgIcon-root {
   transition-property: color, background-color, border-color, box-shadow, fill, stroke !important;
-  transition-duration: 420ms !important;
-  transition-timing-function: ease !important;
+  transition-duration: 240ms !important;
+  transition-timing-function: ease-out !important;
 }
 
 button,
@@ -138,4 +168,37 @@ textarea {
   background: linear-gradient(135deg, #72ecff, #3198ff);
   border: 0;
   border-radius: 999px;
+}
+
+@media (min-width: 1024px) and (hover: hover) {
+  body {
+    background-attachment: fixed;
+  }
+}
+
+@media (pointer: coarse) {
+  a,
+  button,
+  [role='button'] {
+    touch-action: manipulation;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  html.theme-transitioning body,
+  html.theme-transitioning header,
+  html.theme-transitioning aside,
+  html.theme-transitioning main,
+  html.theme-transitioning section,
+  html.theme-transitioning article,
+  html.theme-transitioning .MuiPaper-root,
+  html.theme-transitioning .MuiTableCell-root,
+  html.theme-transitioning .MuiOutlinedInput-root,
+  html.theme-transitioning .MuiSvgIcon-root {
+    transition-duration: 0.01ms !important;
+  }
 }

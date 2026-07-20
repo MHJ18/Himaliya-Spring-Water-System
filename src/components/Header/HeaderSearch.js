@@ -1,83 +1,76 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { withRouter } from 'react-router-dom';
-import { InputGroup, InputGroupAddon, InputGroupText, Input, Form, FormGroup } from 'reactstrap';
-import SearchIcon from '../Icons/HeaderIcons/SearchIcon';
+import { Box, InputBase, Paper, Typography } from '@mui/material';
+import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
+import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
 import { searchRoutes } from '../Sidebar/SidebarSearch';
 import s from './Header.module.scss';
 
-class HeaderSearch extends React.Component {
-  static propTypes = {
-    history: PropTypes.shape({ push: PropTypes.func.isRequired }).isRequired,
-  };
-
-  constructor(props) {
-    super(props);
-    this.state = { searchQuery: '' };
-  }
-
-  getSearchResults = () => {
-    const query = this.state.searchQuery.trim().toLowerCase();
-    if (!query) return [];
-    return searchRoutes
+function HeaderSearch({ history }) {
+  const [searchQuery, setSearchQuery] = React.useState('');
+  const [focused, setFocused] = React.useState(false);
+  const query = searchQuery.trim().toLowerCase();
+  const results = query
+    ? searchRoutes
       .filter((item) => `${item.label} ${item.keywords}`.toLowerCase().includes(query))
-      .slice(0, 5);
+      .slice(0, 5)
+    : [];
+
+  const goToSearchResult = (path) => {
+    setSearchQuery('');
+    setFocused(false);
+    history.push(path);
   };
 
-  goToSearchResult = (path) => {
-    this.setState({ searchQuery: '' });
-    this.props.history.push(path);
-  };
-
-  handleSubmit = (event) => {
+  const handleSubmit = (event) => {
     event.preventDefault();
-    const query = this.state.searchQuery.trim();
     if (!query) return;
-    const result = this.getSearchResults()[0];
-    this.goToSearchResult(result ? result.path : `/app/customers?search=${encodeURIComponent(query)}`);
+    goToSearchResult(results.length
+      ? results[0].path
+      : `/app/customers?search=${encodeURIComponent(searchQuery.trim())}`);
   };
 
-  render() {
-    const { searchQuery } = this.state;
-    const results = this.getSearchResults();
-
-    return (
-      <Form className={`${s.searchForm} ${s.desktopOnly}`} inline onSubmit={this.handleSubmit}>
-        <FormGroup>
-          <InputGroup className={`input-group-no-border ${s.searchInputGroup}`}>
-            <InputGroupAddon addonType="prepend">
-              <InputGroupText className={s.inputGroupText} tag="span">
-                <SearchIcon className={s.headerIcon} aria-hidden="true" />
-              </InputGroupText>
-            </InputGroupAddon>
-            <Input
-              value={searchQuery}
-              onChange={(event) => this.setState({ searchQuery: event.target.value })}
-              className={`input-transparent ${s.searchInput}`}
-              placeholder="Search customers, sales, pages"
-              aria-label="Search dashboard"
-            />
-          </InputGroup>
-        </FormGroup>
-        {searchQuery && (
-          <div className={s.searchResults}>
-            {results.map((item) => (
-              <button key={item.path} type="button" onMouseDown={() => this.goToSearchResult(item.path)}>
-                {item.label}
-                <span>&rarr;</span>
-              </button>
-            ))}
-            {!results.length && (
-              <button type="submit">
-                Search customers for &ldquo;{searchQuery}&rdquo;
-                <span>&rarr;</span>
-              </button>
-            )}
-          </div>
-        )}
-      </Form>
-    );
-  }
+  return (
+    <Box component="form" className={s.searchForm} onSubmit={handleSubmit} role="search">
+      <SearchRoundedIcon className={s.searchIcon} aria-hidden="true" />
+      <InputBase
+        value={searchQuery}
+        onChange={(event) => setSearchQuery(event.target.value)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => window.setTimeout(() => setFocused(false), 120)}
+        placeholder="Search customers, sales, pages"
+        inputProps={{ 'aria-label': 'Search dashboard' }}
+        className={s.searchInput}
+      />
+      {focused && query && (
+        <Paper className={s.searchResults} elevation={12}>
+          {results.map((item) => (
+            <button key={item.path} type="button" onMouseDown={() => goToSearchResult(item.path)}>
+              <span>
+                <Typography component="span" variant="body2">{item.label}</Typography>
+                <small>{item.keywords.split(' ').slice(0, 3).join(' ')}</small>
+              </span>
+              <ArrowForwardRoundedIcon fontSize="small" />
+            </button>
+          ))}
+          {!results.length && (
+            <button type="submit">
+              <span>
+                <Typography component="span" variant="body2">Search customer records</Typography>
+                <small>{searchQuery.trim()}</small>
+              </span>
+              <ArrowForwardRoundedIcon fontSize="small" />
+            </button>
+          )}
+        </Paper>
+      )}
+    </Box>
+  );
 }
+
+HeaderSearch.propTypes = {
+  history: PropTypes.shape({ push: PropTypes.func.isRequired }).isRequired,
+};
 
 export default withRouter(HeaderSearch);

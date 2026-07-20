@@ -1,800 +1,398 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
-  Grid, TextField, Button, Card, CardContent, CardHeader,
-  List, ListItem, ListItemAvatar, ListItemText, Avatar,
-  Typography, IconButton, InputAdornment, Divider, Chip,
-  Fade, Box, CircularProgress,
-} from '@material-ui/core';
-import { makeStyles } from '@material-ui/core/styles';
-import PersonAddIcon from '@material-ui/icons/PersonAdd';
-import SearchIcon from '@material-ui/icons/Search';
-import PhoneIcon from '@material-ui/icons/Phone';
-import EmailIcon from '@material-ui/icons/Email';
-import LocationOnIcon from '@material-ui/icons/LocationOn';
-import PersonIcon from '@material-ui/icons/Person';
-import CloseIcon from '@material-ui/icons/Close';
-import PhotoCameraIcon from '@material-ui/icons/PhotoCamera';
-import EventIcon from '@material-ui/icons/Event';
-import EditIcon from '@material-ui/icons/Edit';
+  Avatar,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  CircularProgress,
+  Divider,
+  Grid,
+  IconButton,
+  InputAdornment,
+  List,
+  ListItem,
+  ListItemAvatar,
+  ListItemButton,
+  ListItemText,
+  Stack,
+  TextField,
+  Typography,
+} from '@mui/material';
+import {
+  AddAPhotoOutlined,
+  AlternateEmailRounded,
+  CalendarMonthRounded,
+  CloseRounded,
+  EditRounded,
+  LocationOnRounded,
+  PersonAddAltRounded,
+  PersonOutlineRounded,
+  PhoneRounded,
+  SearchRounded,
+} from '@mui/icons-material';
 import { toast } from 'react-toastify';
+import PageShell from '../../components/PageShell/PageShell';
 import { useCustomers } from '../../context/CustomerContext';
 import { DEFAULT_COUNTRY_CODE } from '../../data/constants';
 import { validateCustomerForm, normalizePhone } from '../../utils/validation';
 import { getCustomerAvatar } from '../../utils/customerPhotos';
+import { compressImageFile } from '../../utils/imageCompression';
 
-const useStyles = makeStyles((theme) => ({
-  root: {
-    padding: theme.spacing(3),
-    minHeight: '100%',
-    color: 'var(--hs-page-text, #fff)',
-    [theme.breakpoints.down('sm')]: {
-      padding: theme.spacing(2, 1.5),
-    },
-  },
-  pageTitle: {
-    color: 'var(--hs-page-text, #fff)',
-    marginBottom: theme.spacing(3),
-    fontWeight: 700,
-    fontSize: '1.75rem',
-    letterSpacing: '-0.5px',
-  },
-  pageSubtitle: {
-    color: 'var(--hs-page-muted, rgba(255,255,255,0.5))',
-    fontSize: '0.9rem',
-    marginBottom: theme.spacing(3),
-  },
-  formCard: {
-    background: 'var(--hs-card-bg, linear-gradient(145deg, rgba(30,37,65,0.95) 0%, rgba(22,27,48,0.98) 100%))',
-    borderRadius: 16,
-    border: '1px solid var(--hs-card-border, rgba(255,255,255,0.06))',
-    backdropFilter: 'blur(12px)',
-    boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
-    overflow: 'visible',
-  },
-  cardHeader: {
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    borderRadius: '16px 16px 0 0',
-    padding: theme.spacing(2, 3),
-    '& .MuiCardHeader-title': {
-      color: '#fff',
-      fontWeight: 600,
-      fontSize: '1.1rem',
-    },
-    '& .MuiCardHeader-subheader': {
-      color: 'rgba(255,255,255,0.7)',
-      fontSize: '0.8rem',
-    },
-  },
-  cardContent: {
-    padding: theme.spacing(3),
-  },
-  textField: {
-    marginBottom: theme.spacing(2.5),
-    '& .MuiOutlinedInput-root': {
-      borderRadius: 10,
-      backgroundColor: 'var(--hs-input-bg, rgba(255,255,255,0.04))',
-      color: 'var(--hs-page-text, #e0e0e0)',
-      transition: 'all 0.3s ease',
-      '&:hover': {
-        backgroundColor: 'rgba(255,255,255,0.07)',
-      },
-      '&.Mui-focused': {
-        backgroundColor: 'rgba(255,255,255,0.08)',
-      },
-      '& fieldset': {
-        borderColor: 'var(--hs-input-border, rgba(255,255,255,0.12))',
-        transition: 'border-color 0.3s ease',
-      },
-      '&:hover fieldset': {
-        borderColor: 'rgba(102,126,234,0.5)',
-      },
-      '&.Mui-focused fieldset': {
-        borderColor: '#667eea',
-        borderWidth: 2,
-      },
-    },
-    '& .MuiInputLabel-root': {
-      color: 'var(--hs-page-muted, rgba(255,255,255,0.5))',
-      '&.Mui-focused': {
-        color: '#667eea',
-      },
-    },
-    '& .MuiInputAdornment-root .MuiSvgIcon-root': {
-      color: 'var(--hs-icon-muted, rgba(255,255,255,0.3))',
-    },
-  },
-  submitBtn: {
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    color: '#fff',
-    borderRadius: 10,
-    padding: theme.spacing(1.4, 4),
-    fontWeight: 600,
-    textTransform: 'none',
-    fontSize: '0.95rem',
-    boxShadow: '0 4px 15px rgba(102,126,234,0.35)',
-    transition: 'all 0.3s ease',
-    '&:hover': {
-      boxShadow: '0 6px 20px rgba(102,126,234,0.5)',
-      transform: 'translateY(-1px)',
-    },
-    '&:disabled': {
-      opacity: 0.6,
-    },
-  },
-  avatarUpload: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    marginBottom: theme.spacing(3),
-  },
-  avatarLarge: {
-    width: 88,
-    height: 88,
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    fontSize: '2rem',
-    boxShadow: '0 4px 20px rgba(102,126,234,0.4)',
-    cursor: 'pointer',
-    transition: 'transform 0.3s ease, box-shadow 0.3s ease',
-    '&:hover': {
-      transform: 'scale(1.05)',
-      boxShadow: '0 6px 25px rgba(102,126,234,0.5)',
-    },
-  },
-  listCard: {
-    background: 'var(--hs-card-bg, linear-gradient(145deg, rgba(30,37,65,0.95) 0%, rgba(22,27,48,0.98) 100%))',
-    borderRadius: 16,
-    border: '1px solid var(--hs-card-border, rgba(255,255,255,0.06))',
-    backdropFilter: 'blur(12px)',
-    boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
-    height: 'auto',
-    display: 'flex',
-    flexDirection: 'column',
-  },
-  listHeader: {
-    background: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)',
-    borderRadius: '16px 16px 0 0',
-    padding: theme.spacing(2, 3),
-  },
-  listHeaderTitle: {
-    color: '#fff',
-    fontWeight: 600,
-    fontSize: '1.1rem',
-  },
-  listHeaderCount: {
-    color: 'rgba(255,255,255,0.8)',
-    fontSize: '0.8rem',
-  },
-  searchField: {
-    margin: theme.spacing(2),
-    '& .MuiOutlinedInput-root': {
-      borderRadius: 10,
-      backgroundColor: 'var(--hs-input-bg, rgba(255,255,255,0.04))',
-      color: 'var(--hs-page-text, #e0e0e0)',
-      '& fieldset': {
-        borderColor: 'var(--hs-input-border, rgba(255,255,255,0.12))',
-      },
-      '&:hover fieldset': {
-        borderColor: 'rgba(17,153,142,0.5)',
-      },
-      '&.Mui-focused fieldset': {
-        borderColor: '#11998e',
-      },
-    },
-    '& .MuiInputLabel-root': {
-      color: 'var(--hs-page-muted, rgba(255,255,255,0.5))',
-    },
-    '& .MuiInputAdornment-root .MuiSvgIcon-root': {
-      color: 'var(--hs-icon-muted, rgba(255,255,255,0.3))',
-    },
-  },
-  customerList: {
-    flex: 1,
-    overflowY: 'auto',
-    maxHeight: 300,
-    padding: 0,
-    [theme.breakpoints.down('sm')]: {
-      maxHeight: 'none',
-    },
-    '&::-webkit-scrollbar': {
-      width: 6,
-    },
-    '&::-webkit-scrollbar-thumb': {
-      backgroundColor: 'rgba(255,255,255,0.15)',
-      borderRadius: 3,
-    },
-  },
-  customerItem: {
-    borderBottom: '1px solid rgba(255,255,255,0.04)',
-    transition: 'all 0.2s ease',
-    cursor: 'pointer',
-    '&:hover': {
-      backgroundColor: 'rgba(102,126,234,0.08)',
-    },
-  },
-  customerItemSelected: {
-    backgroundColor: 'rgba(102,126,234,0.15) !important',
-    borderLeft: '3px solid #667eea',
-  },
-  customerAvatar: {
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    width: 42,
-    height: 42,
-    fontSize: '0.95rem',
-    fontWeight: 600,
-  },
-  customerName: {
-    color: 'var(--hs-page-text, #e0e0e0)',
-    fontWeight: 500,
-    fontSize: '0.9rem',
-  },
-  customerPhone: {
-    color: 'var(--hs-page-muted, rgba(255,255,255,0.4))',
-    fontSize: '0.78rem',
-  },
-  detailCard: {
-    background: 'var(--hs-card-bg, linear-gradient(145deg, rgba(30,37,65,0.95) 0%, rgba(22,27,48,0.98) 100%))',
-    borderRadius: 16,
-    border: '1px solid var(--hs-card-border, rgba(255,255,255,0.06))',
-    backdropFilter: 'blur(12px)',
-    boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
-    marginTop: theme.spacing(2),
-    overflow: 'hidden',
-  },
-  detailHeader: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    padding: theme.spacing(2, 3),
-  },
-  detailAvatar: {
-    width: 56,
-    height: 56,
-    border: '3px solid rgba(255,255,255,0.3)',
-    marginRight: theme.spacing(2),
-  },
-  detailName: {
-    color: '#fff',
-    fontWeight: 600,
-    fontSize: '1.1rem',
-  },
-  detailBody: {
-    padding: theme.spacing(3),
-  },
-  detailRow: {
-    display: 'flex',
-    alignItems: 'center',
-    marginBottom: theme.spacing(2),
-    '&:last-child': {
-      marginBottom: 0,
-    },
-  },
-  detailIcon: {
-    color: '#667eea',
-    marginRight: theme.spacing(1.5),
-    fontSize: '1.2rem',
-  },
-  detailLabel: {
-    color: 'var(--hs-page-muted, rgba(255,255,255,0.4))',
-    fontSize: '0.75rem',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
-  detailValue: {
-    color: 'var(--hs-page-text, #e0e0e0)',
-    fontSize: '0.9rem',
-  },
-  emptyState: {
-    textAlign: 'center',
-    padding: theme.spacing(4),
-    color: 'var(--hs-page-muted, rgba(255,255,255,0.3))',
-  },
-  emptyIcon: {
-    fontSize: 48,
-    marginBottom: theme.spacing(2),
-    opacity: 0.3,
-  },
-}));
+const initialForm = {
+  name: '',
+  phone: DEFAULT_COUNTRY_CODE,
+  address: '',
+  email: '',
+  photo: '',
+};
 
-const initial = { name: '', phone: DEFAULT_COUNTRY_CODE, address: '', email: '', photo: '' };
+const panelBaseSx = {
+  overflow: 'hidden',
+  border: '1px solid',
+  borderColor: 'divider',
+  bgcolor: 'background.paper',
+  boxShadow: '0 20px 60px rgba(4, 18, 43, 0.12)',
+};
+
+const formPanelSx = {
+  ...panelBaseSx,
+  height: '100%',
+};
+
+const listPanelSx = {
+  ...panelBaseSx,
+};
+
+function DetailRow({ icon, label, children }) {
+  return (
+    <Stack direction="row" spacing={1.5} alignItems="flex-start">
+      <Box sx={{ color: 'primary.main', display: 'grid', placeItems: 'center', mt: 0.25 }}>
+        {icon}
+      </Box>
+      <Box sx={{ minWidth: 0 }}>
+        <Typography variant="overline" color="text.secondary" sx={{ letterSpacing: '0.09em' }}>
+          {label}
+        </Typography>
+        <Typography variant="body2" sx={{ overflowWrap: 'anywhere' }}>{children || 'Not provided'}</Typography>
+      </Box>
+    </Stack>
+  );
+}
 
 export default function AddCustomer({ history }) {
-  const classes = useStyles();
-  const { customers, addCustomer, loading: ctxLoading, refresh } = useCustomers();
-  const [form, setForm] = useState(initial);
+  const {
+    customers,
+    addCustomer,
+    loading,
+    refresh,
+  } = useCustomers();
+  const [form, setForm] = useState(initialForm);
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
-  const [formKey, setFormKey] = useState(0);
   const [preview, setPreview] = useState('');
   const [search, setSearch] = useState('');
   const [selectedId, setSelectedId] = useState(null);
 
   useEffect(() => { refresh(); }, [refresh]);
 
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return customers;
-    return customers.filter(
-      (c) => c.name.toLowerCase().includes(q) ||
-        (c.email || '').toLowerCase().includes(q) ||
-        c.phone.includes(q.replace(/\D/g, ''))
-    );
+  const filteredCustomers = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    const digits = query.replace(/\D/g, '');
+    if (!query) return customers;
+    return customers.filter((customer) => (
+      (customer.name || '').toLowerCase().includes(query)
+      || (customer.email || '').toLowerCase().includes(query)
+      || (digits && String(customer.phone || '').replace(/\D/g, '').includes(digits))
+    ));
   }, [customers, search]);
 
-  const selected = customers.find((c) => c.id === selectedId);
+  const selected = customers.find((customer) => customer.id === selectedId);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm((p) => ({ ...p, [name]: value }));
-    setErrors((p) => ({ ...p, [name]: undefined }));
+  const updateForm = (field, value) => {
+    setForm((current) => ({ ...current, [field]: value }));
+    setErrors((current) => ({ ...current, [field]: undefined }));
   };
 
-  const handleImage = (e) => {
-    const file = e.target.files?.[0];
+  const handleImage = async (event) => {
+    const file = event.target.files && event.target.files[0];
+    event.target.value = '';
     if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setPreview(reader.result);
-      setForm((p) => ({ ...p, photo: reader.result }));
-    };
-    reader.readAsDataURL(file);
+    try {
+      const dataUrl = await compressImageFile(file);
+      setPreview(dataUrl);
+      updateForm('photo', dataUrl);
+    } catch (error) {
+      toast.error(error.message || 'Could not process this image.');
+    }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const err = validateCustomerForm(form);
-    if (Object.keys(err).length) {
-      setErrors(err);
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    const validationErrors = validateCustomerForm(form);
+    if (Object.keys(validationErrors).length) {
+      setErrors(validationErrors);
       return;
     }
     setSaving(true);
     try {
       await addCustomer(form);
-      toast.success('Customer added successfully!');
-      setFormKey((k) => k + 1);
-      setForm(initial);
+      setForm(initialForm);
       setPreview('');
-    } catch (ex) {
-      toast.error(ex.message);
+      toast.success('Customer added successfully.');
+    } catch (error) {
+      toast.error(error.message || 'Could not add the customer.');
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <div className={`${classes.root} himalaya-add-customer`}>
-      <Typography className={classes.pageTitle}>
-        Add Customer
-      </Typography>
-      <Typography className={classes.pageSubtitle}>
-        Register new delivery customers and manage existing ones
-      </Typography>
-
-      <Grid container spacing={3}>
-        {/* ── LEFT COLUMN: Form ── */}
-        <Grid item xs={12} md={5}>
-          <Card className={classes.formCard} elevation={0}>
-            <CardHeader
-              className={classes.cardHeader}
-              avatar={<PersonAddIcon style={{ color: '#fff' }} />}
-              title="New Customer"
-              subheader="Fill in the details below"
-            />
-            <CardContent className={classes.cardContent}>
-              <form onSubmit={handleSubmit} key={formKey}>
-                {/* Avatar Upload */}
-                <div className={classes.avatarUpload}>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    id="customer-photo"
-                    style={{ display: 'none' }}
-                    onChange={handleImage}
-                  />
-                  <label htmlFor="customer-photo">
-                    <Avatar
-                      src={preview || undefined}
-                      className={classes.avatarLarge}
-                    >
-                      {preview ? null : <PhotoCameraIcon style={{ fontSize: 32 }} />}
-                    </Avatar>
-                  </label>
-                  <Typography
-                    variant="caption"
-                    style={{ color: 'rgba(255,255,255,0.4)', marginTop: 8 }}
-                  >
-                    Click to upload photo
+    <PageShell
+      title="Add customer"
+      subtitle="Register a delivery account or review an existing customer profile."
+    >
+      <Grid container spacing={3} alignItems="flex-start">
+        <Grid item xs={12} lg={5}>
+          <Card sx={formPanelSx}>
+            <Box
+              sx={{
+                p: { xs: 2.25, sm: 3 },
+                color: 'common.white',
+                background: 'linear-gradient(135deg, #1473e6 0%, #5c3ce5 100%)',
+              }}
+            >
+              <Stack direction="row" spacing={1.5} alignItems="center">
+                <Box sx={{ width: 44, height: 44, borderRadius: 2.5, bgcolor: 'rgba(255,255,255,.15)', display: 'grid', placeItems: 'center' }}>
+                  <PersonAddAltRounded />
+                </Box>
+                <Box>
+                  <Typography variant="h6">New delivery customer</Typography>
+                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,.75)' }}>
+                    Required fields are marked below.
                   </Typography>
-                </div>
+                </Box>
+              </Stack>
+            </Box>
+            <CardContent sx={{ p: { xs: 2.25, sm: 3 } }}>
+              <Box component="form" onSubmit={handleSubmit} noValidate>
+                <Stack spacing={2.25}>
+                  <Stack alignItems="center" spacing={1}>
+                    <input
+                      id="customer-photo"
+                      type="file"
+                      accept="image/*"
+                      hidden
+                      onChange={handleImage}
+                    />
+                    <Box component="label" htmlFor="customer-photo" sx={{ cursor: 'pointer', position: 'relative' }}>
+                      <Avatar
+                        src={preview || undefined}
+                        sx={{
+                          width: 92,
+                          height: 92,
+                          bgcolor: 'primary.main',
+                          boxShadow: '0 12px 30px rgba(20,115,230,.3)',
+                        }}
+                      >
+                        <AddAPhotoOutlined fontSize="large" />
+                      </Avatar>
+                      <Box sx={{ position: 'absolute', right: -2, bottom: -2, width: 30, height: 30, borderRadius: '50%', bgcolor: 'background.paper', color: 'primary.main', display: 'grid', placeItems: 'center', boxShadow: 2 }}>
+                        <AddAPhotoOutlined sx={{ fontSize: 17 }} />
+                      </Box>
+                    </Box>
+                    <Typography variant="caption" color="text.secondary">Optional photo. Large images are compressed automatically.</Typography>
+                  </Stack>
 
-                <TextField
-                  className={classes.textField}
-                  label="Full Name"
-                  name="name"
-                  value={form.name}
-                  onChange={handleChange}
-                  variant="outlined"
-                  fullWidth
-                  required
-                  error={!!errors.name}
-                  helperText={errors.name}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <PersonIcon />
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-
-                <TextField
-                  className={classes.textField}
-                  label="Phone (+92)"
-                  name="phone"
-                  value={form.phone}
-                  onChange={(e) => {
-                    const nextPhone = e.target.value;
-                    setForm((p) => ({
-                      ...p,
-                      phone: normalizePhone(nextPhone),
-                    }));
-                  }}
-                  variant="outlined"
-                  fullWidth
-                  required
-                  error={!!errors.phone}
-                  helperText={errors.phone}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <PhoneIcon />
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-
-                <TextField
-                  className={classes.textField}
-                  label="Address"
-                  name="address"
-                  value={form.address}
-                  onChange={handleChange}
-                  variant="outlined"
-                  fullWidth
-                  required
-                  multiline
-                  rows={3}
-                  error={!!errors.address}
-                  helperText={errors.address}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <LocationOnIcon />
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-
-                <TextField
-                  className={classes.textField}
-                  label="Email (optional)"
-                  name="email"
-                  type="email"
-                  value={form.email}
-                  onChange={handleChange}
-                  variant="outlined"
-                  fullWidth
-                  error={!!errors.email}
-                  helperText={errors.email}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <EmailIcon />
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-
-                <Button
-                  type="submit"
-                  className={classes.submitBtn}
-                  fullWidth
-                  disabled={saving}
-                  startIcon={
-                    saving ? (
-                      <CircularProgress size={18} color="inherit" />
-                    ) : (
-                      <PersonAddIcon />
-                    )
-                  }
-                >
-                  {saving ? 'Saving...' : 'Add Customer'}
-                </Button>
-              </form>
+                  <TextField
+                    label="Full name"
+                    value={form.name}
+                    onChange={(event) => updateForm('name', event.target.value)}
+                    required
+                    error={Boolean(errors.name)}
+                    helperText={errors.name}
+                    autoComplete="name"
+                    InputProps={{ startAdornment: <InputAdornment position="start"><PersonOutlineRounded /></InputAdornment> }}
+                  />
+                  <TextField
+                    label="Phone number"
+                    value={form.phone}
+                    onChange={(event) => updateForm('phone', normalizePhone(event.target.value))}
+                    required
+                    error={Boolean(errors.phone)}
+                    helperText={errors.phone || 'Use a Pakistan number with country code.'}
+                    autoComplete="tel"
+                    inputMode="tel"
+                    InputProps={{ startAdornment: <InputAdornment position="start"><PhoneRounded /></InputAdornment> }}
+                  />
+                  <TextField
+                    label="Delivery address"
+                    value={form.address}
+                    onChange={(event) => updateForm('address', event.target.value)}
+                    required
+                    multiline
+                    minRows={3}
+                    error={Boolean(errors.address)}
+                    helperText={errors.address}
+                    autoComplete="street-address"
+                    InputProps={{ startAdornment: <InputAdornment position="start"><LocationOnRounded /></InputAdornment> }}
+                  />
+                  <TextField
+                    label="Email address"
+                    type="email"
+                    value={form.email}
+                    onChange={(event) => updateForm('email', event.target.value)}
+                    error={Boolean(errors.email)}
+                    helperText={errors.email || 'Optional'}
+                    autoComplete="email"
+                    InputProps={{ startAdornment: <InputAdornment position="start"><AlternateEmailRounded /></InputAdornment> }}
+                  />
+                  <Button
+                    type="submit"
+                    variant="contained"
+                    size="large"
+                    disabled={saving}
+                    startIcon={saving ? <CircularProgress size={18} color="inherit" /> : <PersonAddAltRounded />}
+                    sx={{ minHeight: 48 }}
+                  >
+                    {saving ? 'Saving customer…' : 'Add customer'}
+                  </Button>
+                </Stack>
+              </Box>
             </CardContent>
           </Card>
         </Grid>
 
-        {/* ── RIGHT COLUMN: Customer List + Details ── */}
-        <Grid item xs={12} md={7}>
-          <div className={classes.listCard}>
-            <div className={classes.listHeader}>
-              <Typography className={classes.listHeaderTitle}>
-                Existing Customers
-              </Typography>
-              <Typography className={classes.listHeaderCount}>
-                {customers.length} registered
-              </Typography>
-            </div>
-
-            <TextField
-              className={classes.searchField}
-              placeholder="Search by name or phone..."
-              variant="outlined"
-              size="small"
-              fullWidth
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon />
-                  </InputAdornment>
-                ),
-                endAdornment: search ? (
-                  <InputAdornment position="end">
-                    <IconButton size="small" onClick={() => setSearch('')}>
-                      <CloseIcon style={{ color: 'rgba(255,255,255,0.3)', fontSize: 18 }} />
-                    </IconButton>
-                  </InputAdornment>
-                ) : null,
-              }}
-            />
-
-            {ctxLoading ? (
-              <Box className={classes.emptyState}>
-                <CircularProgress size={32} style={{ color: '#667eea' }} />
-                <Typography style={{ marginTop: 16, color: 'rgba(255,255,255,0.4)' }}>
-                  Loading customers...
+        <Grid item xs={12} lg={7}>
+          <Stack spacing={2}>
+          <Card sx={listPanelSx}>
+            <Box sx={{ p: { xs: 2.25, sm: 3 }, pb: 2 }}>
+              <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" gap={1}>
+                <Box>
+                  <Typography variant="h6">Existing customers</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Select a person to review or edit their profile.
+                  </Typography>
+                </Box>
+                <Chip label={`${customers.length} registered`} color="primary" variant="outlined" />
+              </Stack>
+              <TextField
+                fullWidth
+                size="small"
+                placeholder="Search by name, email, or phone"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                sx={{ mt: 2.5 }}
+                InputProps={{
+                  startAdornment: <InputAdornment position="start"><SearchRounded /></InputAdornment>,
+                  endAdornment: search ? (
+                    <InputAdornment position="end">
+                      <IconButton aria-label="Clear customer search" size="small" onClick={() => setSearch('')}>
+                        <CloseRounded />
+                      </IconButton>
+                    </InputAdornment>
+                  ) : null,
+                }}
+              />
+            </Box>
+            <Divider />
+            {loading ? (
+              <Stack alignItems="center" spacing={1.5} sx={{ py: 7 }}>
+                <CircularProgress size={28} />
+                <Typography variant="body2" color="text.secondary">Loading customers…</Typography>
+              </Stack>
+            ) : filteredCustomers.length === 0 ? (
+              <Stack alignItems="center" spacing={1} sx={{ py: 7, px: 2, textAlign: 'center' }}>
+                <PersonOutlineRounded sx={{ fontSize: 44, color: 'text.disabled' }} />
+                <Typography variant="subtitle1">{search ? 'No matching customers' : 'No customers yet'}</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {search ? 'Try a different name, email, or phone number.' : 'Use the form to create the first customer.'}
                 </Typography>
-              </Box>
-            ) : filtered.length === 0 ? (
-              <Box className={classes.emptyState}>
-                <PersonIcon className={classes.emptyIcon} />
-                <Typography>
-                  {search ? 'No customers match your search' : 'No customers yet'}
-                </Typography>
-              </Box>
+              </Stack>
             ) : (
-              <List className={classes.customerList}>
-                {filtered.map((c, idx) => (
-                  <ListItem
-                    key={c.id}
-                    className={`${classes.customerItem} ${
-                      selectedId === c.id ? classes.customerItemSelected : ''
-                    }`}
-                    onClick={() => setSelectedId(c.id)}
-                    button
-                  >
-                    <ListItemAvatar>
-                      <Avatar
-                        src={c.photo || getCustomerAvatar(idx)}
-                        className={classes.customerAvatar}
-                      >
-                        {c.name.charAt(0).toUpperCase()}
-                      </Avatar>
-                    </ListItemAvatar>
-                    <ListItemText
-                      primary={
-                        <span className={classes.customerName}>{c.name}</span>
-                      }
-                      secondary={
-                        <span className={classes.customerPhone}>{c.phone}</span>
-                      }
-                    />
-                    {(c.source === 'portal' || c.source === 'both') && (
-                      <Chip
-                        label={c.source === 'both' ? 'Admin + app' : 'App signup'}
-                        size="small"
-                        style={{
-                          backgroundColor: 'rgba(56,239,125,0.15)',
-                          color: '#38ef7d',
-                          fontWeight: 600,
-                          fontSize: '0.68rem',
-                          marginRight: 6,
-                        }}
+              <List disablePadding sx={{ maxHeight: { xs: 420, lg: 520 }, overflowY: 'auto' }}>
+                {filteredCustomers.map((customer, index) => (
+                  <ListItem key={customer.id} disablePadding divider>
+                    <ListItemButton
+                      selected={selectedId === customer.id}
+                      onClick={() => setSelectedId(customer.id)}
+                      sx={{ py: 1.25, px: { xs: 2, sm: 3 } }}
+                    >
+                      <ListItemAvatar>
+                        <Avatar src={customer.photo || getCustomerAvatar(index)}>
+                          {(customer.name || '?').charAt(0).toUpperCase()}
+                        </Avatar>
+                      </ListItemAvatar>
+                      <ListItemText
+                        primary={customer.name}
+                        secondary={customer.phone || customer.email || 'No contact details'}
+                        primaryTypographyProps={{ fontWeight: 700, noWrap: true }}
+                        secondaryTypographyProps={{ noWrap: true }}
                       />
-                    )}
-                    {c.purchaseHistory && c.purchaseHistory.length > 0 && (
-                      <Chip
-                        label={`${c.purchaseHistory.length} orders`}
-                        size="small"
-                        style={{
-                          backgroundColor: 'rgba(102,126,234,0.15)',
-                          color: '#667eea',
-                          fontWeight: 500,
-                          fontSize: '0.7rem',
-                        }}
-                      />
-                    )}
+                      <Stack direction="row" spacing={0.75} sx={{ display: { xs: 'none', sm: 'flex' } }}>
+                        {(customer.source === 'portal' || customer.source === 'both') && (
+                          <Chip size="small" label={customer.source === 'both' ? 'Admin + app' : 'App signup'} color="info" variant="outlined" />
+                        )}
+                        <Chip size="small" label={`${(customer.purchaseHistory || []).length} orders`} />
+                      </Stack>
+                    </ListItemButton>
                   </ListItem>
                 ))}
               </List>
             )}
-          </div>
+          </Card>
 
-          {/* ── Customer Detail Card ── */}
           {selected && (
-            <Fade in={!!selected}>
-              <Card className={classes.detailCard} elevation={0}>
-                <div className={classes.detailHeader}>
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <Avatar
-                      src={selected.photo || getCustomerAvatar(0)}
-                      className={classes.detailAvatar}
-                    >
-                      {selected.name.charAt(0).toUpperCase()}
+            <Card sx={listPanelSx}>
+              <Box sx={{ p: { xs: 2.25, sm: 3 }, color: 'common.white', background: 'linear-gradient(135deg, #1473e6, #5c3ce5)' }}>
+                <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={2}>
+                  <Stack direction="row" alignItems="center" spacing={1.5} sx={{ minWidth: 0 }}>
+                    <Avatar src={selected.photo || getCustomerAvatar(0)} sx={{ width: 56, height: 56, border: '2px solid rgba(255,255,255,.4)' }}>
+                      {(selected.name || '?').charAt(0).toUpperCase()}
                     </Avatar>
-                    <div>
-                      <Typography className={classes.detailName}>
-                        {selected.name}
-                      </Typography>
-                      <Typography
-                        style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.8rem' }}
-                      >
-                        Customer Details
-                      </Typography>
-                    </div>
-                  </div>
-                  <IconButton
-                    size="small"
-                    onClick={() => setSelectedId(null)}
-                    style={{ color: 'rgba(255,255,255,0.7)' }}
-                  >
-                    <CloseIcon />
+                    <Box sx={{ minWidth: 0 }}>
+                      <Typography variant="h6" noWrap>{selected.name}</Typography>
+                      <Typography variant="body2" sx={{ color: 'rgba(255,255,255,.72)' }}>Customer profile</Typography>
+                    </Box>
+                  </Stack>
+                  <IconButton aria-label="Close customer details" onClick={() => setSelectedId(null)} sx={{ color: 'inherit' }}>
+                    <CloseRounded />
                   </IconButton>
-                </div>
-
-                <div className={classes.detailBody}>
-                  <div className={classes.detailRow}>
-                    <PhoneIcon className={classes.detailIcon} />
-                    <div>
-                      <Typography className={classes.detailLabel}>Phone</Typography>
-                      <Typography className={classes.detailValue}>
-                        {selected.phone}
-                      </Typography>
-                    </div>
-                  </div>
-
-                  <Divider
-                    style={{
-                      backgroundColor: 'rgba(255,255,255,0.06)',
-                      margin: '12px 0',
-                    }}
-                  />
-
-                  <div className={classes.detailRow}>
-                    <LocationOnIcon className={classes.detailIcon} />
-                    <div>
-                      <Typography className={classes.detailLabel}>Address</Typography>
-                      <Typography className={classes.detailValue}>
-                        {selected.address}
-                      </Typography>
-                    </div>
-                  </div>
-
-                  {selected.email && (
-                    <>
-                      <Divider
-                        style={{
-                          backgroundColor: 'rgba(255,255,255,0.06)',
-                          margin: '12px 0',
-                        }}
-                      />
-                      <div className={classes.detailRow}>
-                        <EmailIcon className={classes.detailIcon} />
-                        <div>
-                          <Typography className={classes.detailLabel}>
-                            Email
-                          </Typography>
-                          <Typography className={classes.detailValue}>
-                            {selected.email}
-                          </Typography>
-                        </div>
-                      </div>
-                    </>
-                  )}
-
-                  <Divider
-                    style={{
-                      backgroundColor: 'rgba(255,255,255,0.06)',
-                      margin: '12px 0',
-                    }}
-                  />
-
-                  <div className={classes.detailRow}>
-                    <EventIcon className={classes.detailIcon} />
-                    <div>
-                      <Typography className={classes.detailLabel}>
-                        Date Added
-                      </Typography>
-                      <Typography className={classes.detailValue}>
-                        {selected.createdAt
-                          ? new Date(selected.createdAt).toLocaleDateString('en-PK', {
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric',
-                            })
-                          : 'N/A'}
-                      </Typography>
-                    </div>
-                  </div>
-
-                  {selected.purchaseHistory &&
-                    selected.purchaseHistory.length > 0 && (
-                      <>
-                        <Divider
-                          style={{
-                            backgroundColor: 'rgba(255,255,255,0.06)',
-                            margin: '12px 0',
-                          }}
-                        />
-                        <div
-                          style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                          }}
-                        >
-                          <div>
-                            <Typography className={classes.detailLabel}>
-                              Total Orders
-                            </Typography>
-                            <Typography
-                              className={classes.detailValue}
-                              style={{ fontWeight: 600, fontSize: '1.2rem' }}
-                            >
-                              {selected.purchaseHistory.length}
-                            </Typography>
-                          </div>
-                          <Chip
-                            label="Active"
-                            size="small"
-                            style={{
-                              backgroundColor: 'rgba(56,239,125,0.15)',
-                              color: '#38ef7d',
-                              fontWeight: 600,
-                            }}
-                          />
-                        </div>
-                      </>
-                    )}
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    startIcon={<EditIcon />}
-                    onClick={() => history.push(`/app/customers/${selected.id}/edit`)}
-                    style={{
-                      marginTop: 16,
-                      padding: '6px 12px',
-                      color: '#72dcff',
-                      fontWeight: 700,
-                      fontSize: '0.78rem',
-                      textTransform: 'none',
-                      border: '1px solid rgba(114,220,255,0.45)',
-                      borderRadius: 999,
-                      background: 'rgba(36,119,255,0.1)',
-                      boxShadow: '0 8px 20px rgba(3,20,45,0.12)',
-                    }}
-                  >
-                    Edit profile
-                  </Button>
-                </div>
-              </Card>
-            </Fade>
+                </Stack>
+              </Box>
+              <CardContent sx={{ p: { xs: 2.25, sm: 3 } }}>
+                <Grid container spacing={2.5}>
+                  <Grid item xs={12} sm={6}><DetailRow icon={<PhoneRounded />} label="Phone">{selected.phone}</DetailRow></Grid>
+                  <Grid item xs={12} sm={6}><DetailRow icon={<AlternateEmailRounded />} label="Email">{selected.email}</DetailRow></Grid>
+                  <Grid item xs={12}><DetailRow icon={<LocationOnRounded />} label="Delivery address">{selected.address}</DetailRow></Grid>
+                  <Grid item xs={12} sm={6}>
+                    <DetailRow icon={<CalendarMonthRounded />} label="Date added">
+                      {selected.createdAt
+                        ? new Date(selected.createdAt).toLocaleDateString('en-PK', { year: 'numeric', month: 'long', day: 'numeric' })
+                        : 'Not available'}
+                    </DetailRow>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <DetailRow icon={<PersonOutlineRounded />} label="Account source">
+                      {selected.source === 'both' ? 'Admin and customer app' : selected.source === 'portal' ? 'Customer app signup' : 'Created by admin'}
+                    </DetailRow>
+                  </Grid>
+                </Grid>
+                <Button
+                  variant="outlined"
+                  startIcon={<EditRounded />}
+                  onClick={() => history.push(`/app/customers/${selected.id}/edit`)}
+                  sx={{ mt: 3 }}
+                >
+                  Edit customer
+                </Button>
+              </CardContent>
+            </Card>
           )}
+          </Stack>
         </Grid>
       </Grid>
-    </div>
+    </PageShell>
   );
 }

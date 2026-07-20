@@ -1,13 +1,55 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  Row, Col, Button, FormGroup, Label, Input, Table, Badge, Alert,
-} from 'reactstrap';
+  Alert,
+  Avatar,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Grid,
+  IconButton,
+  InputAdornment,
+  MenuItem,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TextField,
+  Tooltip,
+  Typography,
+} from '@mui/material';
+import {
+  AdminPanelSettingsRounded,
+  AlternateEmailRounded,
+  ContentCopyRounded,
+  DeleteOutlineRounded,
+  KeyRounded,
+  LockOutlined,
+  PasswordRounded,
+  PersonAddAltRounded,
+  PersonOutlineRounded,
+  PhoneRounded,
+  RefreshRounded,
+  ShieldOutlined,
+} from '@mui/icons-material';
 import { toast } from 'react-toastify';
 import PageShell from '../../components/PageShell/PageShell';
-import Widget from '../../components/Widget/Widget';
+import { mobileOptionalCellSx, responsiveTableContainerSx } from '../../components/tables/tableStyles';
 import { useCustomers } from '../../context/CustomerContext';
 import {
-  createAdmin, deleteAdminWithOwnerPassword, getAdmins, getCurrentAdminProfile,
+  createAdmin,
+  deleteAdminWithOwnerPassword,
+  getAdmins,
+  getCurrentAdminProfile,
 } from '../../utils/adminAuth';
 import {
   deleteAdminCustomerProfile,
@@ -20,6 +62,14 @@ const initialForm = {
   email: '',
   password: '',
   role: 'Admin',
+};
+
+const cardSx = {
+  height: '100%',
+  border: '1px solid',
+  borderColor: 'divider',
+  bgcolor: 'background.paper',
+  boxShadow: '0 18px 55px rgba(4, 18, 43, .1)',
 };
 
 function phoneKey(phone) {
@@ -37,26 +87,18 @@ function buildAllCustomerUsers(profiles, manualCustomers) {
     const email = (profile.email || '').toLowerCase();
     if (phone) seen.add(phone);
     if (email) seen.add(email);
-    rows.push({
-      ...profile,
-      userType: 'app',
-      canRemove: true,
-    });
+    rows.push({ ...profile, userType: 'app', canRemove: true });
   });
 
   (manualCustomers || []).forEach((customer) => {
     const phone = phoneKey(customer.phone);
     const email = (customer.email || '').toLowerCase();
-    if (seen.has(customer.id) || (phone && seen.has(phone)) || (email && seen.has(email))) {
-      return;
-    }
+    if (seen.has(customer.id) || (phone && seen.has(phone)) || (email && seen.has(email))) return;
     rows.push({
       id: customer.id,
       name: customer.name,
-      email: customer.email || '—',
+      email: customer.email || 'Not provided',
       phone: customer.phone,
-      companyName: 'Manual customer',
-      contractLabel: 'Added in Customer Records',
       active: true,
       createdAt: customer.createdAt,
       userType: 'admin',
@@ -67,16 +109,28 @@ function buildAllCustomerUsers(profiles, manualCustomers) {
   return rows.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
 }
 
+function EmptyRow({ columns, children }) {
+  return (
+    <TableRow>
+      <TableCell colSpan={columns} align="center" sx={{ py: 6, color: 'text.secondary' }}>
+        {children}
+      </TableCell>
+    </TableRow>
+  );
+}
+
 export default function AdminUsers() {
   const { customers: manualCustomers } = useCustomers();
   const [admins, setAdmins] = useState([]);
   const [profiles, setProfiles] = useState([]);
   const [form, setForm] = useState(initialForm);
-  const [error, setError] = useState('');
+  const [formError, setFormError] = useState('');
+  const [creatingAdmin, setCreatingAdmin] = useState(false);
+  const [currentAdmin, setCurrentAdmin] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [ownerPassword, setOwnerPassword] = useState('');
   const [deleteError, setDeleteError] = useState('');
-  const [currentAdmin, setCurrentAdmin] = useState(null);
   const [customerDeleteTarget, setCustomerDeleteTarget] = useState(null);
   const [customerDeletePhrase, setCustomerDeletePhrase] = useState('');
   const [passwordTarget, setPasswordTarget] = useState(null);
@@ -84,20 +138,23 @@ export default function AdminUsers() {
   const [resetOwnerPassword, setResetOwnerPassword] = useState('');
   const [resettingPassword, setResettingPassword] = useState(false);
 
-  const loadAdmins = () => {
-    getAdmins().then(setAdmins).catch(() => setAdmins([]));
-    getCurrentAdminProfile().then(setCurrentAdmin).catch(() => setCurrentAdmin(null));
-  };
-
-  const loadProfiles = () => {
-    getAdminCustomerProfiles().then(setProfiles).catch(() => setProfiles([]));
+  const loadUsers = async () => {
+    setLoading(true);
+    const [adminResult, profileResult, currentResult] = await Promise.allSettled([
+      getAdmins(),
+      getAdminCustomerProfiles(),
+      getCurrentAdminProfile(),
+    ]);
+    setAdmins(adminResult.status === 'fulfilled' ? adminResult.value : []);
+    setProfiles(profileResult.status === 'fulfilled' ? profileResult.value : []);
+    setCurrentAdmin(currentResult.status === 'fulfilled' ? currentResult.value : null);
+    setLoading(false);
   };
 
   useEffect(() => {
-    loadAdmins();
-    loadProfiles();
-    window.addEventListener('focus', loadProfiles);
-    return () => window.removeEventListener('focus', loadProfiles);
+    loadUsers();
+    window.addEventListener('focus', loadUsers);
+    return () => window.removeEventListener('focus', loadUsers);
   }, []);
 
   const customers = useMemo(
@@ -106,59 +163,64 @@ export default function AdminUsers() {
   );
 
   const updateForm = (field, value) => {
-    setError('');
+    setFormError('');
     setForm((current) => ({ ...current, [field]: value }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     if (!form.name.trim() || !form.email.trim() || !form.password) {
-      setError('Name, email, and password are required.');
+      setFormError('Name, email, and password are required.');
       return;
     }
-
-    if (form.password.length < 6) {
-      setError('Password must be at least 6 characters.');
+    if (form.password.length < 8) {
+      setFormError('Use a password with at least 8 characters.');
       return;
     }
-
+    if (!currentAdmin || currentAdmin.role !== 'Owner') {
+      setFormError('Only an active owner can create administrator accounts.');
+      return;
+    }
+    const email = form.email.trim().toLowerCase();
+    if (customers.some((customer) => String(customer.email || '').trim().toLowerCase() === email)) {
+      setFormError('This email belongs to a customer account. Customer identities cannot be promoted to administrators.');
+      return;
+    }
+    if (admins.some((admin) => String(admin.email || '').trim().toLowerCase() === email)) {
+      setFormError('An administrator already uses this email address.');
+      return;
+    }
+    setCreatingAdmin(true);
     try {
       const admin = await createAdmin(form);
       setAdmins((current) => [...current, admin]);
       setForm(initialForm);
-      toast.success('Admin created');
-    } catch (err) {
-      setError(err.message || 'Could not create admin.');
+      toast.success('Admin account created.');
+    } catch (error) {
+      setFormError(error.message || 'Could not create the admin.');
+    } finally {
+      setCreatingAdmin(false);
     }
   };
 
-  const openDeleteModal = (admin) => {
-    setDeleteTarget(admin);
-    setOwnerPassword('');
-    setDeleteError('');
-  };
-
-  const closeDeleteModal = () => {
+  const closeAdminDelete = () => {
     setDeleteTarget(null);
     setOwnerPassword('');
     setDeleteError('');
   };
 
   const handleDeleteAdmin = async () => {
-    if (!deleteTarget) return;
     if (!ownerPassword) {
-      setDeleteError('Enter the owner password to delete this admin.');
+      setDeleteError('Enter the owner password to continue.');
       return;
     }
-
     try {
       const nextAdmins = await deleteAdminWithOwnerPassword(deleteTarget.id, ownerPassword);
       setAdmins(nextAdmins);
-      toast.success('Admin deleted');
-      closeDeleteModal();
-    } catch (err) {
-      setDeleteError(err.message || 'Could not delete admin.');
+      toast.success('Admin account removed.');
+      closeAdminDelete();
+    } catch (error) {
+      setDeleteError(error.message || 'Could not remove the admin.');
     }
   };
 
@@ -168,9 +230,8 @@ export default function AdminUsers() {
   };
 
   const handleDeleteCustomerProfile = async () => {
-    if (!customerDeleteTarget) return;
     if (customerDeletePhrase !== 'DELETE') {
-      toast.error('Type DELETE to confirm removing this customer app profile.');
+      toast.error('Type DELETE exactly to confirm.');
       return;
     }
     try {
@@ -178,8 +239,8 @@ export default function AdminUsers() {
       setProfiles((current) => current.filter((customer) => customer.id !== customerDeleteTarget.id));
       toast.success('Customer app profile removed.');
       closeCustomerDelete();
-    } catch (err) {
-      toast.error(err.message || 'Could not remove customer profile.');
+    } catch (error) {
+      toast.error(error.message || 'Could not remove the customer profile.');
     }
   };
 
@@ -189,198 +250,373 @@ export default function AdminUsers() {
     setTemporaryPassword(Array.from(values, (value) => alphabet[value % alphabet.length]).join(''));
   };
 
+  const copyTemporaryPassword = async () => {
+    if (!temporaryPassword) return;
+    try {
+      await navigator.clipboard.writeText(temporaryPassword);
+      toast.success('Temporary password copied.');
+    } catch (error) {
+      toast.info('Select the password and copy it manually.');
+    }
+  };
+
+  const closePasswordDialog = () => {
+    setPasswordTarget(null);
+    setTemporaryPassword('');
+    setResetOwnerPassword('');
+  };
+
   const resetCustomerPassword = async () => {
-    if (!passwordTarget || temporaryPassword.length < 8) {
-      toast.error('Enter or generate a temporary password with at least 8 characters.');
+    if (!temporaryPassword || temporaryPassword.length < 8) {
+      toast.error('Use a temporary password with at least 8 characters.');
+      return;
+    }
+    if (!resetOwnerPassword) {
+      toast.error('Enter the owner password to authorize this change.');
       return;
     }
     setResettingPassword(true);
     try {
       await adminResetCustomerPassword(passwordTarget.id, temporaryPassword, resetOwnerPassword);
-      toast.success(`Temporary password set for ${passwordTarget.name}. Share it securely.`);
-      setPasswordTarget(null);
-      setTemporaryPassword('');
-      setResetOwnerPassword('');
-    } catch (err) {
-      toast.error(err.message || 'Could not reset the customer password.');
+      toast.success(`Temporary password set for ${passwordTarget.name}.`);
+      closePasswordDialog();
+    } catch (error) {
+      toast.error(error.message || 'Could not reset the customer password.');
     } finally {
       setResettingPassword(false);
     }
   };
 
   return (
-    <PageShell title="All Users" subtitle="Manage admin accounts and signed-up customer app users">
-      <Row>
-        <Col xl={5} lg={6}>
-          <Widget title={<h5>New Admin</h5>} className="admin-access-card">
-            <div className="admin-access-intro">
-              <span className="admin-access-icon"><i className="fa fa-shield" /></span>
-              <div>
-                <h4>Dashboard access only</h4>
-                <p>Only admins created here can sign in to the Himaliya Spring dashboard.</p>
-              </div>
-            </div>
-            {error && <Alert color="danger" className="alert-sm">{error}</Alert>}
-            <form onSubmit={handleSubmit}>
-              <FormGroup>
-                <Label for="admin-name">Full Name</Label>
-                <Input id="admin-name" value={form.name} onChange={(e) => updateForm('name', e.target.value)} placeholder="e.g. Hassan Admin" />
-              </FormGroup>
-              <FormGroup>
-                <Label for="admin-email">Email</Label>
-                <Input id="admin-email" type="email" value={form.email} onChange={(e) => updateForm('email', e.target.value)} placeholder="admin@example.com" />
-              </FormGroup>
-              <FormGroup>
-                <Label for="admin-password">Password</Label>
-                <Input id="admin-password" type="password" value={form.password} onChange={(e) => updateForm('password', e.target.value)} placeholder="Minimum 6 characters" />
-              </FormGroup>
-              <FormGroup>
-                <Label for="admin-role">Role</Label>
-                <Input id="admin-role" type="select" value={form.role} onChange={(e) => updateForm('role', e.target.value)}>
-                  <option>Admin</option>
-                  <option>Manager</option>
-                  <option>Owner</option>
-                </Input>
-              </FormGroup>
-              <Button color="primary" type="submit" className="admin-access-submit">Create Admin</Button>
-            </form>
-          </Widget>
-        </Col>
-        <Col xl={7} lg={6}>
-          <Widget title={<h5>Admin Users</h5>} className="admin-list-card">
-            <div className="table-responsive admin-users-scroll" tabIndex="0" role="region" aria-label="Scrollable administrator table">
-              <Table className="admin-users-table mb-0">
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Role</th>
-                    <th>Status</th>
-                    <th className="text-right">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {admins.map((admin) => (
-                    <tr key={admin.id}>
-                      <td><div className="admin-user-cell"><span>{admin.name.charAt(0).toUpperCase()}</span><strong>{admin.name}</strong></div></td>
-                      <td>{admin.email}</td>
-                      <td>{admin.role}</td>
-                      <td><Badge color="success">Allowed</Badge></td>
-                      <td className="text-right">
-                        <Button color="danger" size="sm" outline className="admin-delete-btn" disabled={currentAdmin && currentAdmin.id === admin.id} onClick={() => openDeleteModal(admin)}>Delete</Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </Table>
-            </div>
-            {deleteTarget && (
-              <div className={`admin-delete-panel ${deleteError ? 'is-invalid' : ''}`}>
-                <div className="admin-delete-panel-head">
-                  <span className="admin-delete-icon"><i className="fa fa-lock" /></span>
-                  <div>
-                    <h4>Confirm admin removal</h4>
-                    <p>Enter the owner password to delete <strong>{deleteTarget.name}</strong>.</p>
-                  </div>
-                </div>
-                <Row form className="align-items-end">
-                  <Col md={7}>
-                    <FormGroup className="mb-md-0">
-                      <Label for="owner-password">Owner Password</Label>
-                      <Input id="owner-password" type="password" value={ownerPassword} className={deleteError ? 'is-invalid' : ''} onChange={(e) => { setOwnerPassword(e.target.value); setDeleteError(''); }} placeholder="Enter owner password" />
-                    </FormGroup>
-                  </Col>
-                  <Col md={5}>
-                    <div className="admin-delete-actions">
-                      <Button color="secondary" outline onClick={closeDeleteModal}>Cancel</Button>
-                      <Button color="danger" onClick={handleDeleteAdmin}>Delete Admin</Button>
-                    </div>
-                  </Col>
-                </Row>
-              </div>
-            )}
-          </Widget>
-        </Col>
-      </Row>
+    <PageShell
+      title="Users & access"
+      subtitle="Manage dashboard administrators and customer app accounts from one workspace."
+      actions={(
+        <Tooltip title="Refresh users">
+          <IconButton aria-label="Refresh users" onClick={loadUsers} disabled={loading}>
+            <RefreshRounded />
+          </IconButton>
+        </Tooltip>
+      )}
+    >
+      <Grid container spacing={3} alignItems="stretch">
+        <Grid item xs={12} lg={5}>
+          <Card sx={cardSx}>
+            <Box sx={{ p: { xs: 2.25, sm: 3 }, color: 'common.white', background: 'linear-gradient(135deg, #155eef, #5538d8)' }}>
+              <Stack direction="row" spacing={1.5} alignItems="center">
+                <Avatar sx={{ bgcolor: 'rgba(255,255,255,.15)' }}><ShieldOutlined /></Avatar>
+                <Box>
+                  <Typography variant="h6">Create admin access</Typography>
+                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,.74)' }}>
+                    Dashboard access only. Use the customer app for delivery accounts.
+                  </Typography>
+                </Box>
+              </Stack>
+            </Box>
+            <CardContent sx={{ p: { xs: 2.25, sm: 3 } }}>
+              <Box component="form" onSubmit={handleSubmit} noValidate>
+                <Stack spacing={2}>
+                  {currentAdmin && currentAdmin.role !== 'Owner' && (
+                    <Alert severity="info">Only an Owner can create or promote administrator accounts.</Alert>
+                  )}
+                  {formError && <Alert severity="error">{formError}</Alert>}
+                  <TextField
+                    label="Full name"
+                    value={form.name}
+                    onChange={(event) => updateForm('name', event.target.value)}
+                    autoComplete="name"
+                    required
+                    InputProps={{ startAdornment: <InputAdornment position="start"><PersonOutlineRounded /></InputAdornment> }}
+                  />
+                  <TextField
+                    label="Email address"
+                    type="email"
+                    value={form.email}
+                    onChange={(event) => updateForm('email', event.target.value)}
+                    autoComplete="email"
+                    required
+                    InputProps={{ startAdornment: <InputAdornment position="start"><AlternateEmailRounded /></InputAdornment> }}
+                  />
+                  <TextField
+                    label="Temporary password"
+                    type="password"
+                    value={form.password}
+                    onChange={(event) => updateForm('password', event.target.value)}
+                    autoComplete="new-password"
+                    required
+                    helperText="Minimum 8 characters. Ask the admin to change it after signing in."
+                    InputProps={{ startAdornment: <InputAdornment position="start"><PasswordRounded /></InputAdornment> }}
+                  />
+                  <TextField
+                    select
+                    label="Access role"
+                    value={form.role}
+                    onChange={(event) => updateForm('role', event.target.value)}
+                    InputProps={{ startAdornment: <InputAdornment position="start"><AdminPanelSettingsRounded /></InputAdornment> }}
+                  >
+                    <MenuItem value="Admin">Admin</MenuItem>
+                    <MenuItem value="Manager">Manager</MenuItem>
+                    <MenuItem value="Owner">Owner</MenuItem>
+                  </TextField>
+                  <Button
+                    type="submit"
+                    variant="contained"
+                    size="large"
+                    startIcon={creatingAdmin ? <CircularProgress size={18} color="inherit" /> : <PersonAddAltRounded />}
+                    disabled={creatingAdmin || !currentAdmin || currentAdmin.role !== 'Owner'}
+                    sx={{ minHeight: 48 }}
+                  >
+                    {creatingAdmin ? 'Creating secure account…' : 'Create admin'}
+                  </Button>
+                </Stack>
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
 
-      <Widget title={<h5>All Customer Users</h5>} className="admin-list-card mt-4">
-        <div className="table-responsive admin-users-scroll" tabIndex="0" role="region" aria-label="Scrollable customer user table">
-          <Table className="admin-users-table mb-0">
-            <thead>
-              <tr>
-                <th>Customer</th>
-                <th>Email</th>
-                <th>Phone</th>
-                <th>Source</th>
-                <th>Status</th>
-                <th className="text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody>
+        <Grid item xs={12} lg={7}>
+          <Card sx={cardSx}>
+            <Box sx={{ p: { xs: 2.25, sm: 3 }, pb: 1.5 }}>
+              <Typography variant="h6">Dashboard administrators</Typography>
+              <Typography variant="body2" color="text.secondary">{admins.length} accounts with operational access</Typography>
+            </Box>
+            <TableContainer
+              role="region"
+              tabIndex={0}
+              aria-label="Scrollable administrator accounts"
+              sx={{ ...responsiveTableContainerSx, maxHeight: 520 }}
+            >
+              <Table stickyHeader aria-label="Dashboard administrators" sx={{ minWidth: { xs: 500, sm: 620 } }}>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Administrator</TableCell>
+                    <TableCell>Role</TableCell>
+                    <TableCell sx={mobileOptionalCellSx}>Status</TableCell>
+                    <TableCell align="right">Action</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {admins.map((admin) => (
+                    <TableRow key={admin.id} hover>
+                      <TableCell>
+                        <Stack direction="row" spacing={1.25} alignItems="center">
+                          <Avatar sx={{ width: 38, height: 38, bgcolor: 'primary.main', fontSize: '.9rem' }}>
+                            {(admin.name || '?').charAt(0).toUpperCase()}
+                          </Avatar>
+                          <Box sx={{ minWidth: 0 }}>
+                            <Typography variant="body2" fontWeight={800} noWrap>{admin.name}</Typography>
+                            <Typography variant="caption" color="text.secondary" noWrap>{admin.email}</Typography>
+                          </Box>
+                        </Stack>
+                      </TableCell>
+                      <TableCell>{admin.role}</TableCell>
+                      <TableCell sx={mobileOptionalCellSx}><Chip size="small" color="success" label="Allowed" /></TableCell>
+                      <TableCell align="right">
+                        <Tooltip title={currentAdmin && currentAdmin.id === admin.id ? 'You cannot remove your current account' : 'Remove admin'}>
+                          <span>
+                            <IconButton
+                              aria-label={`Remove ${admin.name}`}
+                              color="error"
+                              disabled={Boolean(currentAdmin && currentAdmin.id === admin.id)}
+                              onClick={() => setDeleteTarget(admin)}
+                            >
+                              <DeleteOutlineRounded />
+                            </IconButton>
+                          </span>
+                        </Tooltip>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {!admins.length && <EmptyRow columns={4}>{loading ? 'Loading administrators…' : 'No administrators found.'}</EmptyRow>}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Card>
+        </Grid>
+      </Grid>
+
+      <Card sx={{ ...cardSx, mt: 3, height: 'auto' }}>
+        <Box sx={{ p: { xs: 2.25, sm: 3 }, pb: 1.5 }}>
+          <Typography variant="h6">All customer accounts</Typography>
+          <Typography variant="body2" color="text.secondary">
+            Signed-up app users and admin-created customers are shown together.
+          </Typography>
+        </Box>
+        <TableContainer
+          role="region"
+          tabIndex={0}
+          aria-label="Scrollable customer accounts"
+          sx={{ ...responsiveTableContainerSx, maxHeight: 'min(62vh, 620px)' }}
+        >
+          <Table stickyHeader aria-label="All customer accounts" sx={{ minWidth: { xs: 560, sm: 780 } }}>
+            <TableHead>
+              <TableRow>
+                <TableCell>Customer</TableCell>
+                <TableCell sx={mobileOptionalCellSx}>Phone</TableCell>
+                <TableCell>Source</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell align="right">Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
               {customers.map((customer) => (
-                <tr key={`${customer.userType}-${customer.id}`}>
-                  <td><div className="admin-user-cell"><span>{(customer.name || '?').charAt(0).toUpperCase()}</span><strong>{customer.name}</strong></div></td>
-                  <td>{customer.email}</td>
-                  <td>{customer.phone}</td>
-                  <td>{customer.userType === 'app' ? 'Customer app signup' : 'Added by admin'}</td>
-                  <td><Badge color={customer.active ? 'success' : 'secondary'}>{customer.active ? 'Active' : 'Inactive'}</Badge></td>
-                  <td className="text-right">
+                <TableRow key={`${customer.userType}-${customer.id}`} hover>
+                  <TableCell sx={mobileOptionalCellSx}>
+                    <Stack direction="row" spacing={1.25} alignItems="center">
+                      <Avatar sx={{ width: 38, height: 38, bgcolor: 'info.main', fontSize: '.9rem' }}>
+                        {(customer.name || '?').charAt(0).toUpperCase()}
+                      </Avatar>
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography variant="body2" fontWeight={800} noWrap>{customer.name}</Typography>
+                        <Typography variant="caption" color="text.secondary" noWrap>{customer.email}</Typography>
+                      </Box>
+                    </Stack>
+                  </TableCell>
+                  <TableCell>
+                    <Stack direction="row" spacing={0.75} alignItems="center">
+                      <PhoneRounded sx={{ fontSize: 17, color: 'text.secondary' }} />
+                      <Typography variant="body2" noWrap>{customer.phone || 'Not provided'}</Typography>
+                    </Stack>
+                  </TableCell>
+                  <TableCell>
+                    <Chip
+                      size="small"
+                      variant="outlined"
+                      color={customer.userType === 'app' ? 'info' : 'default'}
+                      label={customer.userType === 'app' ? 'Customer app signup' : 'Added by admin'}
+                    />
+                  </TableCell>
+                  <TableCell><Chip size="small" color={customer.active ? 'success' : 'default'} label={customer.active ? 'Active' : 'Inactive'} /></TableCell>
+                  <TableCell align="right">
                     {customer.canRemove ? (
-                      <div className="admin-user-actions">
-                        {currentAdmin && currentAdmin.role === 'Owner' && <Button color="info" size="sm" outline onClick={() => { setPasswordTarget(customer); setTemporaryPassword(''); setResetOwnerPassword(''); }}>Reset password</Button>}
-                        <Button color="danger" size="sm" outline className="admin-delete-btn" onClick={() => setCustomerDeleteTarget(customer)}>Remove</Button>
-                      </div>
+                      <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+                        {currentAdmin && currentAdmin.role === 'Owner' && (
+                          <Tooltip title="Set temporary password">
+                            <IconButton
+                              aria-label={`Reset password for ${customer.name}`}
+                              color="primary"
+                              onClick={() => {
+                                setPasswordTarget(customer);
+                                setTemporaryPassword('');
+                                setResetOwnerPassword('');
+                              }}
+                            >
+                              <KeyRounded />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                        <Tooltip title="Remove customer app profile">
+                          <IconButton aria-label={`Remove ${customer.name}`} color="error" onClick={() => setCustomerDeleteTarget(customer)}>
+                            <DeleteOutlineRounded />
+                          </IconButton>
+                        </Tooltip>
+                      </Stack>
                     ) : (
-                      <span className="text-muted small">Manage in Customers</span>
+                      <Typography variant="caption" color="text.secondary">Manage in Customers</Typography>
                     )}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-              {!customers.length && (
-                <tr><td colSpan="6" className="text-muted text-center py-4">No customer users yet. Add customers or wait for app signups.</td></tr>
-              )}
-            </tbody>
+              {!customers.length && <EmptyRow columns={5}>{loading ? 'Loading customer accounts…' : 'No customer accounts yet.'}</EmptyRow>}
+            </TableBody>
           </Table>
-        </div>
-        {passwordTarget && (
-          <div className="admin-delete-panel admin-password-panel">
-            <div className="admin-delete-panel-head"><span className="admin-delete-icon"><i className="fa fa-key" /></span><div><h4>Set temporary password</h4><p>Reset access for <strong>{passwordTarget.name}</strong>. Share the password through a trusted channel.</p></div></div>
-            <Row form className="align-items-end">
-              <Col md={4}><FormGroup><Label for="temporary-customer-password">Temporary password</Label><Input id="temporary-customer-password" type="text" value={temporaryPassword} onChange={(event) => setTemporaryPassword(event.target.value)} autoComplete="off" placeholder="At least 8 characters" /></FormGroup><Button color="secondary" size="sm" outline onClick={generateTemporaryPassword}>Generate secure password</Button></Col>
-              <Col md={4}><FormGroup><Label for="reset-owner-password">Owner password</Label><Input id="reset-owner-password" type="password" value={resetOwnerPassword} onChange={(event) => setResetOwnerPassword(event.target.value)} autoComplete="current-password" /></FormGroup></Col>
-              <Col md={4}><div className="admin-delete-actions"><Button color="secondary" outline onClick={() => { setPasswordTarget(null); setTemporaryPassword(''); setResetOwnerPassword(''); }}>Cancel</Button><Button color="primary" disabled={resettingPassword} onClick={resetCustomerPassword}>{resettingPassword ? 'Updating...' : 'Set password'}</Button></div></Col>
-            </Row>
-          </div>
-        )}
-        {customerDeleteTarget && (
-          <div className="admin-delete-panel">
-            <div className="admin-delete-panel-head">
-              <span className="admin-delete-icon"><i className="fa fa-user-times" /></span>
-              <div>
-                <h4>Remove customer app profile</h4>
-                <p>
-                  Type <strong>DELETE</strong> to remove <strong>{customerDeleteTarget.name}</strong> from the app tables.
-                  This removes the customer profile and its operational records. Use Reset password above when the customer only needs restored access.
-                </p>
-              </div>
-            </div>
-            <Row form className="align-items-end">
-              <Col md={7}>
-                <FormGroup className="mb-md-0">
-                  <Label for="delete-customer-confirm">Security Check</Label>
-                  <Input id="delete-customer-confirm" value={customerDeletePhrase} onChange={(e) => setCustomerDeletePhrase(e.target.value)} placeholder="Type DELETE" />
-                </FormGroup>
-              </Col>
-              <Col md={5}>
-                <div className="admin-delete-actions">
-                  <Button color="secondary" outline onClick={closeCustomerDelete}>Cancel</Button>
-                  <Button color="danger" onClick={handleDeleteCustomerProfile}>Remove Profile</Button>
-                </div>
-              </Col>
-            </Row>
-          </div>
-        )}
-      </Widget>
+        </TableContainer>
+      </Card>
+
+      <Dialog open={Boolean(deleteTarget)} onClose={closeAdminDelete} fullWidth maxWidth="xs">
+        <DialogTitle>Remove administrator?</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ pt: 1 }}>
+            <Alert severity="warning">
+              This immediately removes dashboard access for <strong>{deleteTarget && deleteTarget.name}</strong>.
+            </Alert>
+            <TextField
+              label="Owner password"
+              type="password"
+              value={ownerPassword}
+              onChange={(event) => { setOwnerPassword(event.target.value); setDeleteError(''); }}
+              autoComplete="current-password"
+              error={Boolean(deleteError)}
+              helperText={deleteError}
+              InputProps={{ startAdornment: <InputAdornment position="start"><LockOutlined /></InputAdornment> }}
+              autoFocus
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeAdminDelete}>Cancel</Button>
+          <Button color="error" variant="contained" onClick={handleDeleteAdmin}>Remove admin</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={Boolean(passwordTarget)} onClose={resettingPassword ? undefined : closePasswordDialog} fullWidth maxWidth="sm">
+        <DialogTitle>Set temporary password</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2.25} sx={{ pt: 1 }}>
+            <Alert severity="info">
+              Reset access for <strong>{passwordTarget && passwordTarget.name}</strong>. Share the new password through a trusted channel.
+            </Alert>
+            <TextField
+              label="Temporary password"
+              value={temporaryPassword}
+              onChange={(event) => setTemporaryPassword(event.target.value)}
+              autoComplete="off"
+              helperText="Minimum 8 characters."
+              InputProps={{
+                startAdornment: <InputAdornment position="start"><PasswordRounded /></InputAdornment>,
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <Tooltip title="Copy password">
+                      <IconButton aria-label="Copy temporary password" edge="end" onClick={copyTemporaryPassword} disabled={!temporaryPassword}>
+                        <ContentCopyRounded />
+                      </IconButton>
+                    </Tooltip>
+                  </InputAdornment>
+                ),
+              }}
+            />
+            <Button variant="outlined" onClick={generateTemporaryPassword}>Generate strong password</Button>
+            <TextField
+              label="Owner password"
+              type="password"
+              value={resetOwnerPassword}
+              onChange={(event) => setResetOwnerPassword(event.target.value)}
+              autoComplete="current-password"
+              InputProps={{ startAdornment: <InputAdornment position="start"><LockOutlined /></InputAdornment> }}
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ flexWrap: 'wrap' }}>
+          <Button onClick={closePasswordDialog} disabled={resettingPassword}>Cancel</Button>
+          <Button variant="contained" onClick={resetCustomerPassword} disabled={resettingPassword} startIcon={resettingPassword ? <CircularProgress size={17} color="inherit" /> : <KeyRounded />}>
+            {resettingPassword ? 'Updating…' : 'Set password'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={Boolean(customerDeleteTarget)} onClose={closeCustomerDelete} fullWidth maxWidth="sm">
+        <DialogTitle>Remove customer app profile?</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ pt: 1 }}>
+            <Alert severity="error">
+              This removes <strong>{customerDeleteTarget && customerDeleteTarget.name}</strong> and their operational app records. Reset their password instead if they only lost access.
+            </Alert>
+            <TextField
+              label="Type DELETE to confirm"
+              value={customerDeletePhrase}
+              onChange={(event) => setCustomerDeletePhrase(event.target.value)}
+              autoComplete="off"
+              autoFocus
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeCustomerDelete}>Cancel</Button>
+          <Button color="error" variant="contained" disabled={customerDeletePhrase !== 'DELETE'} onClick={handleDeleteCustomerProfile}>
+            Remove profile
+          </Button>
+        </DialogActions>
+      </Dialog>
     </PageShell>
   );
 }
