@@ -33,6 +33,8 @@ export function validateSaleForm({ bottleType, quantity, pricePerBottle }) {
   const qty = Number(quantity);
   if (!qty || qty < 1) errors.quantity = 'Quantity must be at least 1';
   const price = Number(pricePerBottle);
-  if (Number.isNaN(price) || price < 0) errors.pricePerBottle = 'Enter a valid price';
+  if (!price || Number.isNaN(price) || price < 1) {
+    errors.pricePerBottle = 'Unit price must be greater than 0';
+  }
   return errors;
 }

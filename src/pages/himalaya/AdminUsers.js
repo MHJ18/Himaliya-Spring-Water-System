@@ -38,7 +38,6 @@ import {
   PersonAddAltRounded,
   PersonOutlineRounded,
   PhoneRounded,
-  RefreshRounded,
   ShieldOutlined,
 } from '@mui/icons-material';
 import { toast } from 'react-toastify';
@@ -291,13 +290,6 @@ export default function AdminUsers() {
     <PageShell
       title="Users & access"
       subtitle="Manage dashboard administrators and customer app accounts from one workspace."
-      actions={(
-        <Tooltip title="Refresh users">
-          <IconButton aria-label="Refresh users" onClick={loadUsers} disabled={loading}>
-            <RefreshRounded />
-          </IconButton>
-        </Tooltip>
-      )}
     >
       <Grid container spacing={3} alignItems="stretch">
         <Grid item xs={12} lg={5}>

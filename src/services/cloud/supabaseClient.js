@@ -124,10 +124,19 @@ async function getHeaders(useUserToken = true) {
 
 async function parseResponse(response) {
   const text = await response.text();
-  const body = text ? JSON.parse(text) : null;
+  let body = null;
+  try {
+    body = text ? JSON.parse(text) : null;
+  } catch {
+    body = null;
+  }
   if (!response.ok) {
+    const isHtmlFallback = /^\s*</i.test(text || '');
     const description = body && (body.msg || body.message || body.error_description || body.error);
     const error = new Error(description || 'Supabase request failed');
+    if (isHtmlFallback) {
+      error.message = 'Administrator service is unavailable on this deployment. Configure the server function before creating admin accounts.';
+    }
     error.status = response.status;
     error.code = body && (body.code || body.error_code || body.error);
     throw error;
@@ -230,10 +239,13 @@ export async function adminResetCustomerPassword(customerId, newPassword, ownerP
 
 export async function adminCreateUser(admin) {
   const session = await getFreshSession();
-  const response = await fetch('/.netlify/functions/admin-create-user', {
+  const endpoint = process.env.REACT_APP_ADMIN_CREATE_URL
+    || `${getConfig().url.replace(/\/$/, '')}/functions/v1/admin-create-user`;
+  const response = await fetch(endpoint, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${session.access_token}`,
+      apikey: getConfig().anonKey,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(admin),

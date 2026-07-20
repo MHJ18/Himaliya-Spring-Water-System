@@ -296,8 +296,20 @@ export async function getAdminCustomerOrders(prices) {
 
 export async function getAdminCustomerProfiles() {
   requireCloud();
-  const rows = await dbRequest('/customers?auth_user_id=not.is.null&select=*&order=created_at.desc');
-  return rows.map(toProfile);
+  const [rows, adminRows] = await Promise.all([
+    dbRequest('/customers?auth_user_id=not.is.null&select=*&order=created_at.desc'),
+    dbRequest('/admin_profiles?select=auth_user_id,email'),
+  ]);
+  const adminIds = new Set((adminRows || []).map((admin) => admin.auth_user_id).filter(Boolean));
+  const adminEmails = new Set((adminRows || [])
+    .map((admin) => String(admin.email || '').trim().toLowerCase())
+    .filter(Boolean));
+  return rows
+    .filter((row) => (
+      !adminIds.has(row.auth_user_id)
+      && !adminEmails.has(String(row.email || '').trim().toLowerCase())
+    ))
+    .map(toProfile);
 }
 
 export async function updateAdminCustomerProfile(profileId, form) {

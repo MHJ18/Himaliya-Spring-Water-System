@@ -3,6 +3,10 @@ export function mapLoginError(error) {
   const status = error && error.status;
   const normalized = message.toLowerCase();
 
+  if (normalized.includes('email not confirmed')) {
+    return 'Please confirm your email address from the inbox before signing in.';
+  }
+
   if (
     status === 400
     || status === 401
@@ -11,10 +15,6 @@ export function mapLoginError(error) {
     || normalized.includes('invalid_grant')
   ) {
     return 'Incorrect username or password.';
-  }
-
-  if (normalized.includes('email not confirmed')) {
-    return 'Your email is not confirmed yet. Check your inbox, then try again.';
   }
 
   if (normalized.includes('not allowed to access')) {

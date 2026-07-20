@@ -57,11 +57,24 @@ function toSaleRow(customer, sale) {
   };
 }
 
+function isAdministratorIdentity(customer, adminRows) {
+  const email = String(customer.email || '').trim().toLowerCase();
+  return (adminRows || []).some((admin) => (
+    (customer.authUserId && admin.auth_user_id === customer.authUserId)
+      || (email && String(admin.email || '').trim().toLowerCase() === email)
+  ));
+}
+
 export async function getCloudCustomers() {
   requireCloud();
-  const customers = await dbRequest('/customers?select=*&order=created_at.asc');
-  const sales = await dbRequest('/sales?select=*&order=created_at.asc');
-  return customers.map((customer) => toCustomer(customer, sales));
+  const [customers, sales, adminRows] = await Promise.all([
+    dbRequest('/customers?select=*&order=created_at.asc'),
+    dbRequest('/sales?select=*&order=created_at.asc'),
+    dbRequest('/admin_profiles?select=auth_user_id,email'),
+  ]);
+  return customers
+    .filter((customer) => !isAdministratorIdentity(customer, adminRows))
+    .map((customer) => toCustomer(customer, sales));
 }
 
 export async function saveCloudCustomers(customers) {

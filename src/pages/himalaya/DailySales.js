@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Alert,
   Avatar,
@@ -16,7 +16,6 @@ import {
 } from '@mui/material';
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
 import WaterDropOutlinedIcon from '@mui/icons-material/WaterDropOutlined';
-import SaveRoundedIcon from '@mui/icons-material/SaveRounded';
 import { toast } from 'react-toastify';
 import PageShell from '../../components/PageShell/PageShell';
 import CustomerSummary from '../../components/common/CustomerSummary';
@@ -25,11 +24,7 @@ import { useCustomers } from '../../context/CustomerContext';
 import { useSales } from '../../context/SalesContext';
 import { normalizePhone } from '../../utils/validation';
 import { getCustomerAvatar } from '../../utils/customerPhotos';
-import { BOTTLE_TYPES, BOTTLE_TYPE_LABELS } from '../../data/constants';
-import { getBottlePrices, saveBottlePrices } from '../../services/api/bottlePriceApi';
 import LoadingState from '../../components/LoadingState/LoadingState';
-
-const defaultPrices = BOTTLE_TYPES.reduce((acc, type) => ({ ...acc, [type]: '' }), {});
 
 export default function DailySales() {
   const {
@@ -41,14 +36,6 @@ export default function DailySales() {
   const [selectedId, setSelectedId] = useState(null);
   const [searched, setSearched] = useState(false);
   const [saleLoading, setSaleLoading] = useState(false);
-  const [priceDefaults, setPriceDefaults] = useState(defaultPrices);
-  const [savingPrices, setSavingPrices] = useState(false);
-
-  useEffect(() => {
-    getBottlePrices(defaultPrices)
-      .then((prices) => setPriceDefaults({ ...defaultPrices, ...prices }))
-      .catch(() => toast.error('Could not load bottle prices.'));
-  }, []);
 
   const customer = useMemo(() => (
     selectedId ? customers.find((item) => item.id === selectedId) || null : null
@@ -80,22 +67,12 @@ export default function DailySales() {
     try {
       await recordSale({ customerId: customer.id, ...form });
       toast.success('Sale recorded successfully.');
+      return true;
     } catch (error) {
       toast.error(error.message || 'Failed to record sale.');
+      return false;
     } finally {
       setSaleLoading(false);
-    }
-  };
-
-  const persistPrices = async () => {
-    setSavingPrices(true);
-    try {
-      await saveBottlePrices(priceDefaults);
-      toast.success('Bottle price defaults saved.');
-    } catch (error) {
-      toast.error(error.message || 'Could not save bottle prices.');
-    } finally {
-      setSavingPrices(false);
     }
   };
 
@@ -123,7 +100,7 @@ export default function DailySales() {
             Record the delivery while the customer is in front of you.
           </Typography>
           <Typography variant="body2" sx={{ maxWidth: 660, mt: 1, color: '#d9f6ff' }}>
-            Search by customer name or phone, confirm the saved bottle price, and add the sale to their cloud history.
+            Search by customer name or phone, set the agreed bottle price for this entry, and add it to their cloud history.
           </Typography>
         </CardContent>
       </Card>
@@ -201,48 +178,14 @@ export default function DailySales() {
           <Grid item xs={12}>
             <CustomerSummary customer={customer} />
           </Grid>
-          <Grid item xs={12} lg={5}>
+          <Grid item xs={12}>
             <Card sx={{ height: '100%' }}>
               <CardHeader
-                title="Bottle price defaults"
-                subheader="These values auto-fill new sales and customer orders"
-                avatar={<WaterDropOutlinedIcon color="primary" />}
+                title="Record sale"
+                subheader={`Set this entry's bottle price and add the purchase to ${customer.name}'s history`}
               />
               <CardContent sx={{ pt: 0 }}>
-                <Grid container spacing={1.5}>
-                  {BOTTLE_TYPES.map((type) => (
-                    <Grid item xs={12} sm={6} key={type}>
-                      <TextField
-                        label={BOTTLE_TYPE_LABELS[type] || type}
-                        type="number"
-                        value={priceDefaults[type] || ''}
-                        onChange={(event) => setPriceDefaults((current) => ({ ...current, [type]: event.target.value }))}
-                        InputProps={{
-                          inputProps: { min: 0, step: 1 },
-                          startAdornment: <InputAdornment position="start">PKR</InputAdornment>,
-                        }}
-                        fullWidth
-                      />
-                    </Grid>
-                  ))}
-                </Grid>
-                <Button
-                  variant="outlined"
-                  startIcon={<SaveRoundedIcon />}
-                  onClick={persistPrices}
-                  disabled={savingPrices}
-                  sx={{ mt: 2 }}
-                >
-                  {savingPrices ? 'Saving prices...' : 'Save price defaults'}
-                </Button>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} lg={7}>
-            <Card sx={{ height: '100%' }}>
-              <CardHeader title="Record sale" subheader={`Add a purchase to ${customer.name}'s history`} />
-              <CardContent sx={{ pt: 0 }}>
-                <SalesForm onSubmit={handleSale} loading={saleLoading} priceDefaults={priceDefaults} />
+                <SalesForm onSubmit={handleSale} loading={saleLoading} />
               </CardContent>
             </Card>
           </Grid>

@@ -200,6 +200,9 @@ exports.handler = async (event) => {
     });
   } catch (error) {
     if (createdAuthUserId) await deleteAuthUser(supabaseUrl, serviceKey, createdAuthUserId);
+    if (/email not confirmed|confirmation/i.test(error.message || '')) {
+      return json(409, { message: 'Please confirm the owner email address from the inbox before creating administrator accounts.' });
+    }
     if ([400, 409, 422].includes(error.status)) {
       return json(409, {
         message: /already|registered|exists|duplicate/i.test(error.message || '')

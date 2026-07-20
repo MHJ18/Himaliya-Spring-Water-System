@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Alert,
   Box,
@@ -173,17 +173,28 @@ export default function Settings() {
   const [currentAdminEmail, setCurrentAdminEmail] = useState('');
   const cloudReady = isSupabaseConfigured();
 
+  const loadBottlePrices = useCallback(async () => {
+    try {
+      const prices = await getBottlePrices(emptyBottleValues);
+      setBottlePrices({ ...emptyBottleValues, ...prices });
+    } catch (error) {
+      toast.error(error.message || 'Could not load bottle prices.');
+    }
+  }, []);
+
   useEffect(() => {
-    getBottlePrices(emptyBottleValues)
-      .then((prices) => setBottlePrices({ ...emptyBottleValues, ...prices }))
-      .catch(() => toast.error('Could not load bottle prices.'));
+    loadBottlePrices();
     getInventory()
       .then((stock) => setInventory({ ...emptyBottleValues, ...stock }))
       .catch(() => {});
     getCurrentAdminProfile()
       .then((admin) => setCurrentAdminEmail(admin.email))
       .catch(() => {});
-  }, []);
+  }, [loadBottlePrices]);
+
+  useEffect(() => {
+    if (tab === 2) loadBottlePrices();
+  }, [tab, loadBottlePrices]);
 
   useEffect(() => {
     setForm((current) => ({ ...current, ...settings }));
@@ -228,6 +239,7 @@ export default function Settings() {
     setSavingPrices(true);
     try {
       await saveBottlePrices(bottlePrices);
+      await loadBottlePrices();
       toast.success('Bottle prices are now available to customers.');
     } catch (error) {
       toast.error(error.message || 'Could not save bottle prices.');

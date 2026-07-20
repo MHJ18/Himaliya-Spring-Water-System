@@ -114,7 +114,15 @@ export async function getCurrentAdminProfile() {
   const session = getStoredSession();
   const userId = session && session.user && session.user.id;
   if (!userId) throw new Error('Your session has expired. Please sign in again.');
-  const rows = await dbRequest(`/admin_profiles?auth_user_id=eq.${userId}&active=eq.true&select=*&limit=1`);
+  const [rows, customerRows] = await Promise.all([
+    dbRequest(`/admin_profiles?auth_user_id=eq.${userId}&active=eq.true&select=*&limit=1`),
+    dbRequest(`/customers?auth_user_id=eq.${userId}&select=id&limit=1`),
+  ]);
+  if (customerRows && customerRows.length) {
+    await signOut();
+    currentAdmin = null;
+    throw new Error('Customer accounts cannot access the administrator dashboard.');
+  }
   currentAdmin = rows && rows[0] ? toAdmin(rows[0]) : null;
   if (!currentAdmin) throw new Error('Your account is not allowed to access this dashboard.');
   return currentAdmin;
