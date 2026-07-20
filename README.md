@@ -121,7 +121,29 @@ npm audit --omit=dev       # Production dependency audit
 
 ## Deployment
 
-The repository includes Netlify SPA routing through `public/_redirects` and `netlify.toml`. Configure the same Supabase environment variables in the deployment provider, then deploy the generated `build` directory.
+The repository includes Netlify SPA routing through `public/_redirects` and `netlify.toml`.
+
+For a one-time local production deploy:
+
+```bash
+npx netlify login
+npx netlify link                 # select the existing Netlify site
+npm run deploy:netlify
+```
+
+The deploy command publishes the generated `build` directory. Netlify CLI reads `NETLIFY_AUTH_TOKEN` and
+`NETLIFY_SITE_ID` when running non-interactively, so the same command can be used in CI.
+
+To enable automatic production deploys from GitHub, add these repository secrets under **Settings → Secrets and variables → Actions**:
+
+- `NETLIFY_AUTH_TOKEN` — a Netlify personal access token
+- `NETLIFY_SITE_ID` — the site ID from Netlify site settings
+
+The included `.github/workflows/deploy-netlify.yml` then deploys every push to `main`. Add
+`REACT_APP_SUPABASE_URL` and `REACT_APP_SUPABASE_ANON_KEY` as GitHub Actions secrets so the production build can
+connect to Supabase. Netlify Functions use their own site environment variables (`SUPABASE_URL`,
+`SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY`); keep the service-role key in Netlify only and never expose it
+as a `REACT_APP_*` variable.
 
 ## Security notes
 

@@ -5,6 +5,7 @@
   "scripts": {
     "build": "cross-env PUBLIC_URL=/ GENERATE_SOURCEMAP=false NODE_OPTIONS=--openssl-legacy-provider node scripts/build.js",
     "build:github-pages": "cross-env PUBLIC_URL=/Himaliya-Spring-Water-System/ GENERATE_SOURCEMAP=false NODE_OPTIONS=--openssl-legacy-provider node scripts/build.js",
+    "deploy:netlify": "npm run build && npx --yes netlify-cli deploy --prod --dir=build",
     "start": "cross-env NODE_OPTIONS=--openssl-legacy-provider node scripts/start.js",
     "test": "node scripts/test.js"
   },
