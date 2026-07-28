@@ -1,23 +1,24 @@
 {
   "expo": {
-    "name": "Himaliya Admin",
+    "name": "Himaliya Staff",
     "slug": "himaliya-admin",
     "owner": "himaliya_springs",
     "scheme": "himaliya-admin",
-    "version": "1.1.0",
+    "version": "1.5.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
+    "backgroundColor": "#EEF6F8",
     "ios": {
       "supportsTablet": true
     },
     "android": {
       "package": "com.himaliyaspring.admin",
-      "versionCode": 2,
+      "versionCode": 8,
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#071B33",
         "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": true,
@@ -30,15 +31,51 @@
       "expo-sqlite",
       "expo-secure-store",
       [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Himaliya uses your location while you are delivering so customers can follow their rider.",
+          "locationAlwaysAndWhenInUsePermission": "Himaliya shares your live location only while you are online with an active delivery.",
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#078CAC",
+          "defaultChannel": "rider-orders-water-drop-vibrate",
+          "sounds": [
+            "./assets/sounds/water_drop.wav",
+            "./assets/sounds/bright_chime.wav",
+            "./assets/sounds/soft_bell.wav"
+          ]
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 180,
+          "resizeMode": "contain",
+          "backgroundColor": "#EEF6F8",
+          "dark": {
+            "backgroundColor": "#061822"
+          }
+        }
+      ],
+      [
         "expo-build-properties",
         {
           "android": {
-            "minSdkVersion": 29
+            "minSdkVersion": 29,
+            "targetSdkVersion": 35,
+            "compileSdkVersion": 35
           }
         }
       ],
       "expo-font",
-      "expo-sharing"
+      "expo-sharing",
+      "expo-status-bar"
     ],
     "extra": {
       "eas": {

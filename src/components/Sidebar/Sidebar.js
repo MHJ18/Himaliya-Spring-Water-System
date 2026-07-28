@@ -31,6 +31,11 @@ import HistoryRoundedIcon from '@mui/icons-material/HistoryRounded';
 import MyLocationRoundedIcon from '@mui/icons-material/MyLocationRounded';
 import SidebarSearch from './SidebarSearch';
 import { changeActiveSidebarItem, closeSidebar } from '../../actions/navigation';
+import {
+  ADMIN_NOTIFICATION_STATE_EVENT,
+  getAdminNavigationBadges,
+  markAdminNotificationsByTypesRead,
+} from '../../services/api/customerPortalApi';
 import s from './Sidebar.module.scss';
 
 const sections = [
@@ -53,15 +58,15 @@ const sections = [
     items: [
       { label: 'Daily sales', path: '/app/daily-sales', key: 'daily-sales', icon: PointOfSaleRoundedIcon },
       { label: 'Analytics', path: '/app/analytics', key: 'analytics', icon: InsightsRoundedIcon },
-      { label: 'Customer orders', path: '/app/customer-orders', key: 'customer-orders', icon: LocalShippingRoundedIcon },
-      { label: 'Delivery tracker', path: '/app/rider-tracking', key: 'rider-tracking', icon: MyLocationRoundedIcon },
+      { label: 'Customer orders', path: '/app/customer-orders', key: 'customer-orders', icon: LocalShippingRoundedIcon, badgeKey: 'orders', badgeTypes: ['order'] },
+      { label: 'Delivery tracker', path: '/app/rider-tracking', key: 'rider-tracking', icon: MyLocationRoundedIcon, badgeKey: 'tracking', badgeTypes: ['tracking', 'delivery'] },
       { label: 'Entry history', path: '/app/history', key: 'history', icon: HistoryRoundedIcon },
     ],
   },
   {
     title: 'Administration',
     items: [
-      { label: 'All users', path: '/app/users', key: 'users', icon: ManageAccountsRoundedIcon },
+      { label: 'All users', path: '/app/users', key: 'users', icon: ManageAccountsRoundedIcon, badgeKey: 'accounts', badgeTypes: ['account'] },
       { label: 'Settings', path: '/app/settings', key: 'settings', icon: TuneRoundedIcon },
     ],
   },
@@ -77,6 +82,8 @@ const quickLinks = [
 function Sidebar({
   sidebarOpened, dispatch, location, sidebarPosition, sidebarVisibility,
 }) {
+  const [badges, setBadges] = React.useState({ orders: false, tracking: false, accounts: false });
+  const badgeRequestRunning = React.useRef(false);
   const closeDrawer = () => dispatch(closeSidebar());
   const hidden = sidebarVisibility === 'hide';
   const isActive = (item) => {
@@ -84,8 +91,36 @@ function Sidebar({
     return location.pathname.indexOf(item.path) === 0;
   };
 
-  const handleNavigate = (key) => {
+  const loadBadges = React.useCallback(() => {
+    if (document.hidden || badgeRequestRunning.current) return Promise.resolve();
+    badgeRequestRunning.current = true;
+    return getAdminNavigationBadges()
+      .then(setBadges)
+      .catch(() => {})
+      .finally(() => { badgeRequestRunning.current = false; });
+  }, []);
+
+  React.useEffect(() => {
+    loadBadges();
+    const refreshWhenVisible = () => { if (!document.hidden) loadBadges(); };
+    const timer = window.setInterval(refreshWhenVisible, 20000);
+    document.addEventListener('visibilitychange', refreshWhenVisible);
+    window.addEventListener('online', refreshWhenVisible);
+    window.addEventListener(ADMIN_NOTIFICATION_STATE_EVENT, loadBadges);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
+      window.removeEventListener('online', refreshWhenVisible);
+      window.removeEventListener(ADMIN_NOTIFICATION_STATE_EVENT, loadBadges);
+    };
+  }, [loadBadges]);
+
+  const handleNavigate = (key, badgeKey, badgeTypes) => {
     dispatch(changeActiveSidebarItem(key));
+    if (badgeKey && badges[badgeKey]) {
+      setBadges((current) => ({ ...current, [badgeKey]: false }));
+      markAdminNotificationsByTypesRead(badgeTypes).catch(loadBadges);
+    }
     closeDrawer();
   };
 
@@ -135,13 +170,20 @@ function Sidebar({
                     component={Link}
                     to={item.path}
                     selected={active}
-                    onClick={() => handleNavigate(item.key)}
+                    onClick={() => handleNavigate(item.key, item.badgeKey, item.badgeTypes)}
                     className={s.navItem}
                     aria-current={active ? 'page' : undefined}
                   >
                     <ListItemIcon className={s.navIcon}><Icon fontSize="small" /></ListItemIcon>
                     <ListItemText
-                      primary={item.label}
+                      primary={(
+                        <span className={s.navLabel}>
+                          <span>{item.label}</span>
+                          {item.badgeKey && badges[item.badgeKey] && (
+                            <i className={s.navDot} aria-label={`New ${item.label.toLowerCase()} update`} />
+                          )}
+                        </span>
+                      )}
                       primaryTypographyProps={{ variant: 'body2', fontWeight: active ? 750 : 560 }}
                     />
                   </ListItemButton>

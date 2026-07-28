@@ -328,6 +328,20 @@
   box-shadow: 0 0 0 4px rgba(48, 184, 219, 0.12);
 }
 
+.customer-login-page .water-login-input-wrap.is-invalid {
+  border-color: rgba(248, 113, 113, .9);
+  box-shadow: 0 0 0 4px rgba(248, 113, 113, .12);
+}
+
+.customer-password-hint {
+  margin: -8px 2px 12px;
+  color: #fca5a5;
+  font-size: .76rem;
+  line-height: 1.45;
+}
+
+.customer-password-hint.is-valid { color: #86efac; }
+
 .customer-login-page .water-login-input-icon {
   width: 50px;
   color: #83e5f1;

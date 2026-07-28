@@ -70,6 +70,39 @@ function PortalSkeleton() {
   );
 }
 
+function RiderPortalSkeleton() {
+  const block = (className = '') => <span className={`hs-loading-state__rider-block${className ? ` ${className}` : ''}`} />;
+  return (
+    <div className="hs-loading-state__rider" aria-hidden="true">
+      <header className="hs-loading-state__rider-header">
+        <div>{block('is-mark')}<span>{block('is-title')}{block('is-subtitle')}</span></div>
+        <div>{block('is-header-action')}{block('is-avatar')}</div>
+      </header>
+      <div className="hs-loading-state__rider-tabs">{blocks(3, 'hs-loading-state__rider-block')}</div>
+      <section className="hs-loading-state__rider-summary">
+        <div>{block('is-eyebrow')}{block('is-summary-title')}{block('is-summary-copy')}</div>
+        <div className="hs-loading-state__rider-metrics">{blocks(3, 'hs-loading-state__rider-block')}</div>
+      </section>
+      <div className="hs-loading-state__rider-workspace">
+        <aside className="hs-loading-state__rider-list">
+          <div className="hs-loading-state__rider-panel-heading">{block('is-panel-title')}{block('is-panel-icon')}</div>
+          <div className="hs-loading-state__rider-rows">{blocks(4, 'hs-loading-state__rider-block')}</div>
+        </aside>
+        <section className="hs-loading-state__rider-route">
+          <div className="hs-loading-state__rider-route-heading">
+            <div>{block('is-eyebrow')}{block('is-route-title')}{block('is-route-copy')}</div>
+            <div>{block('is-pill')}{block('is-pill')}</div>
+          </div>
+          <div className="hs-loading-state__rider-progress">{blocks(4, 'hs-loading-state__rider-block')}</div>
+          <div className="hs-loading-state__rider-action">{block('is-action-icon')}<span>{block('is-action-label')}{block('is-action-copy')}</span>{block('is-action-button')}</div>
+          {block('is-detail-card')}
+          {block('is-address-card')}
+        </section>
+      </div>
+    </div>
+  );
+}
+
 function ProfileSkeleton() {
   return (
     <div className="hs-loading-state__profile" aria-hidden="true">
@@ -154,6 +187,8 @@ export default function LoadingState({
     content = <AuthSkeleton customer={variant === 'customer-auth'} />;
   } else if (variant === 'portal') {
     content = <PortalSkeleton />;
+  } else if (variant === 'rider-portal') {
+    content = <RiderPortalSkeleton />;
   } else if (variant === 'customer-profile') {
     content = <ProfileSkeleton />;
   } else if (variant === 'admin-shell') {
@@ -168,7 +203,7 @@ export default function LoadingState({
     content = <DashboardSkeleton />;
   }
 
-  const fullPage = ['admin-auth', 'customer-auth', 'portal', 'customer-profile', 'admin-shell'].includes(variant);
+  const fullPage = ['admin-auth', 'customer-auth', 'portal', 'rider-portal', 'customer-profile', 'admin-shell'].includes(variant);
   const Wrapper = fullPage ? 'main' : 'div';
 
   return (
@@ -192,6 +227,7 @@ LoadingState.propTypes = {
     'admin-auth',
     'customer-auth',
     'portal',
+    'rider-portal',
     'customer-profile',
     'admin-shell',
     'analytics',

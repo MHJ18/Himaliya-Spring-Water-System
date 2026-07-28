@@ -1,6 +1,7 @@
 .root {
   position: relative;
   min-height: 100dvh;
+  background: var(--hs-page-bg, linear-gradient(135deg, #061827, #03111f));
 }
 
 .wrap {
@@ -53,6 +54,7 @@
 
 .routeMotion {
   min-width: 0;
+  min-height: calc(100dvh - 150px);
   width: 100%;
   flex: 1;
 }

@@ -13,6 +13,7 @@ import {
   getSessionExpiredEventName,
   hasSessionExpiredNotice,
   hasStoredSessionType,
+  isPasswordChangeRequired,
 } from '../services/cloud/supabaseClient';
 import LoadingState from './LoadingState/LoadingState';
 import RouteBranding from './RouteBranding/RouteBranding';
@@ -27,8 +28,10 @@ const WaterLogin = React.lazy(() => import('../pages/login/WaterLogin'));
 const CustomerLogin = React.lazy(() => import('../pages/customer/CustomerLogin'));
 const CustomerProfile = React.lazy(() => import('../pages/customer/CustomerProfile'));
 const CustomerMessages = React.lazy(() => import('../pages/customer/CustomerMessages'));
+const RiderPortal = React.lazy(() => import('../pages/rider/RiderPortal'));
 const ForgotPassword = React.lazy(() => import('../pages/login/ForgotPassword'));
 const ResetPassword = React.lazy(() => import('../pages/login/ResetPassword'));
+const StaffPasswordSetup = React.lazy(() => import('../pages/login/StaffPasswordSetup'));
 const PublicRiderTracking = React.lazy(() => import('../pages/tracking/PublicRiderTracking'));
 const ErrorPage = React.lazy(() => import('../pages/error/ErrorPage'));
 
@@ -51,7 +54,10 @@ const RouteLoader = () => {
   if (pathname === '/customer/login') {
     return <LoadingState label="Loading customer sign in..." variant="customer-auth" />;
   }
-  if (pathname === '/login' || pathname === '/forgot-password' || pathname === '/reset-password') {
+  if (pathname.indexOf('/rider/app') === 0) {
+    return <LoadingState label="Preparing your rider route..." variant="rider-portal" />;
+  }
+  if (pathname === '/login' || pathname === '/forgot-password' || pathname === '/reset-password' || pathname === '/account/new-password') {
     return <LoadingState label="Loading administrator sign in..." variant="admin-auth" />;
   }
   if (pathname === '/customer/app') {
@@ -84,6 +90,7 @@ const PrivateRoute = ({ dispatch, component, ...rest }) => {
       />
     );
   }
+  if (isPasswordChangeRequired()) return <Redirect to="/account/new-password" />;
   return <Route {...rest} render={(props) => React.createElement(component, props)} />;
 };
 
@@ -97,6 +104,28 @@ const CustomerPrivateRoute = ({ component, ...rest }) => {
         }}
       />
     );
+  }
+  return <Route {...rest} render={(props) => React.createElement(component, props)} />;
+};
+
+const RiderPrivateRoute = ({ component, ...rest }) => {
+  if (!hasStoredSessionType('rider')) {
+    return (
+      <Redirect
+        to={{
+          pathname: '/login',
+          state: hasSessionExpiredNotice() ? { sessionExpired: true } : undefined,
+        }}
+      />
+    );
+  }
+  if (isPasswordChangeRequired()) return <Redirect to="/account/new-password" />;
+  return <Route {...rest} render={(props) => React.createElement(component, props)} />;
+};
+
+const StaffPasswordRoute = ({ component, ...rest }) => {
+  if (!hasStoredSessionType('admin') && !hasStoredSessionType('rider')) {
+    return <Redirect to="/login" />;
   }
   return <Route {...rest} render={(props) => React.createElement(component, props)} />;
 };
@@ -147,11 +176,14 @@ class App extends React.PureComponent {
                     <Route path="/fluid-lab" exact component={FluidLab} />
                     <Route path="/login" exact component={WaterLogin} />
                     <Route path="/customer/login" exact component={CustomerLogin} />
+                    <Redirect path="/rider/login" exact to="/login" />
                     <Route path="/forgot-password" exact component={ForgotPassword} />
                     <Route path="/reset-password" exact component={ResetPassword} />
+                    <StaffPasswordRoute path="/account/new-password" exact component={StaffPasswordSetup} />
                     <CustomerPrivateRoute path="/customer/app" exact component={CustomerPortal} />
                     <CustomerPrivateRoute path="/customer/profile" exact component={CustomerProfile} />
                     <CustomerPrivateRoute path="/customer/messages" exact component={CustomerMessages} />
+                    <RiderPrivateRoute path="/rider/app" exact component={RiderPortal} />
                     <Route path="/invoice/:invoiceNumber" exact render={(props) => <PublicInvoice {...props} />} />
                     <Route path="/track/:trackingToken" exact component={PublicRiderTracking} />
                     <PrivateRoute path="/app" dispatch={this.props.dispatch} component={LayoutComponent} />

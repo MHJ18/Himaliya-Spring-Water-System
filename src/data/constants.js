@@ -30,6 +30,8 @@ export const DEFAULT_SETTINGS = {
   businessPhone: '+92 300 0000000',
   businessAddress: 'Sialkot Cantt',
   autoAcceptOrders: false,
+  riderAssignmentMode: 'manual',
+  defaultRiderId: '',
   adminOrderNotifications: true,
   requireDeliveryConfirmation: true,
   allowCustomerCancellation: true,

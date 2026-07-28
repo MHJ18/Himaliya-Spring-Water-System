@@ -48,6 +48,7 @@ export default function CustomerSummary({ customer }) {
             <Stack direction="row" flexWrap="wrap" alignItems="center" gap={1}>
               <Typography variant="h4" sx={{ overflowWrap: 'anywhere' }}>{customer.name}</Typography>
               <Chip size="small" color={customer.active === false ? 'default' : 'success'} label={customer.active === false ? 'Inactive' : 'Active'} />
+              <Chip size="small" color="info" variant="outlined" label={`${Number(customer.bottlesHeld) || 0} bottles held`} />
             </Stack>
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={{ xs: 0.5, sm: 2 }} sx={{ mt: 1 }}>
               <Stack direction="row" alignItems="center" spacing={0.6} color="text.secondary">

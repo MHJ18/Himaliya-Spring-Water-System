@@ -14,7 +14,12 @@ const json = (statusCode, body) => ({
 const attempts = new Map();
 const WINDOW_MS = 15 * 60 * 1000;
 const MAX_ATTEMPTS = 10;
-const ALLOWED_ROLES = new Set(['Admin', 'Manager', 'Owner']);
+const ALLOWED_ROLES = new Set(['Admin', 'Manager', 'Owner', 'Rider']);
+
+const normalizeRole = (value) => {
+  const requested = String(value || '').trim().toLowerCase();
+  return [...ALLOWED_ROLES].find((role) => role.toLowerCase() === requested) || '';
+};
 
 const clientAddress = (event) => (
   event.headers['x-nf-client-connection-ip']
@@ -76,7 +81,7 @@ async function deleteAuthUser(url, serviceKey, userId) {
 }
 
 exports.handler = async (event) => {
-  if (event.httpMethod !== 'POST') return json(405, { message: 'Method not allowed.' });
+  if (!['POST', 'DELETE'].includes(event.httpMethod)) return json(405, { message: 'Method not allowed.' });
   if (Buffer.byteLength(event.body || '', 'utf8') > 8192) {
     return json(413, { message: 'Request is too large.' });
   }
@@ -103,11 +108,46 @@ exports.handler = async (event) => {
       '/auth/v1/user',
       { headers: { Authorization: authorization } },
     );
+    const callerProfiles = await supabaseRequest(
+      supabaseUrl,
+      serviceKey,
+      `/rest/v1/admin_profiles?auth_user_id=eq.${encodeURIComponent(caller.id)}&active=eq.true&role=eq.Owner&must_change_password=eq.false&select=owner_id&limit=1`,
+    );
+    const ownerId = callerProfiles && callerProfiles[0] && callerProfiles[0].owner_id;
+    if (!ownerId) {
+      return json(403, { message: 'Only an active owner can manage team accounts.' });
+    }
+
+    if (event.httpMethod === 'DELETE') {
+      const payload = JSON.parse(event.body || '{}');
+      const profileId = String(payload.profileId || '').trim();
+      if (!/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(profileId)) {
+        return json(400, { message: 'Select a valid rider account.' });
+      }
+      const targets = await supabaseRequest(
+        supabaseUrl,
+        serviceKey,
+        `/rest/v1/admin_profiles?id=eq.${encodeURIComponent(profileId)}&owner_id=eq.${encodeURIComponent(ownerId)}&role=eq.Rider&select=id,auth_user_id,name&limit=1`,
+      );
+      const target = targets && targets[0];
+      if (!target || !target.auth_user_id) {
+        return json(404, { message: 'Rider account not found.' });
+      }
+      await supabaseRequest(
+        supabaseUrl,
+        serviceKey,
+        `/auth/v1/admin/users/${encodeURIComponent(target.auth_user_id)}`,
+        { method: 'DELETE' },
+      );
+      return json(200, { deleted: true, profileId: target.id, name: target.name || 'Rider' });
+    }
+
     const payload = JSON.parse(event.body || '{}');
     const name = String(payload.name || '').trim();
     const email = String(payload.email || '').trim().toLowerCase();
     const password = String(payload.password || '');
-    const role = String(payload.role || 'Admin');
+    const role = normalizeRole(payload.role || 'Admin');
+    const phone = String(payload.phone || '').trim();
 
     if (!name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || password.length < 8) {
       return json(400, {
@@ -116,16 +156,6 @@ exports.handler = async (event) => {
     }
     if (!ALLOWED_ROLES.has(role)) {
       return json(400, { message: 'Select a valid administrator role.' });
-    }
-
-    const callerProfiles = await supabaseRequest(
-      supabaseUrl,
-      serviceKey,
-      `/rest/v1/admin_profiles?auth_user_id=eq.${encodeURIComponent(caller.id)}&active=eq.true&role=eq.Owner&select=owner_id&limit=1`,
-    );
-    const ownerId = callerProfiles && callerProfiles[0] && callerProfiles[0].owner_id;
-    if (!ownerId) {
-      return json(403, { message: 'Only an active owner can create administrator accounts.' });
     }
 
     const customerMatches = await supabaseRequest(
@@ -158,7 +188,7 @@ exports.handler = async (event) => {
           email,
           password,
           email_confirm: true,
-          app_metadata: { account_type: 'admin' },
+          app_metadata: { account_type: role === 'Rider' ? 'rider' : 'admin' },
         }),
       },
     );
@@ -170,7 +200,7 @@ exports.handler = async (event) => {
     const profiles = await supabaseRequest(
       supabaseUrl,
       serviceKey,
-      '/rest/v1/admin_profiles?select=id,auth_user_id,name,email,role,active,created_at',
+      '/rest/v1/admin_profiles?select=id,auth_user_id,name,email,phone,role,active,created_at',
       {
         method: 'POST',
         headers: { Prefer: 'return=representation' },
@@ -179,6 +209,7 @@ exports.handler = async (event) => {
           auth_user_id: createdAuthUserId,
           name,
           email,
+          phone,
           role,
           active: true,
         }),
@@ -193,6 +224,7 @@ exports.handler = async (event) => {
         authUserId: profile.auth_user_id,
         name: profile.name,
         email: profile.email,
+        phone: profile.phone,
         role: profile.role,
         active: profile.active !== false,
         createdAt: profile.created_at,

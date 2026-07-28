@@ -33,6 +33,8 @@ import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined
 import NotificationsActiveOutlinedIcon from '@mui/icons-material/NotificationsActiveOutlined';
 import HistoryRoundedIcon from '@mui/icons-material/HistoryRounded';
 import RouteRoundedIcon from '@mui/icons-material/RouteRounded';
+import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
+import MoveToInboxOutlinedIcon from '@mui/icons-material/MoveToInboxOutlined';
 import CustomerMap from '../dashboard/components/customer-map/CustomerMap';
 import { useAnalytics } from '../../context/AnalyticsContext';
 import { useCustomers } from '../../context/CustomerContext';
@@ -49,6 +51,8 @@ const statCards = [
   { key: 'orders', label: "Today's orders", icon: ShoppingCartCheckoutRoundedIcon, color: '#7b79f7' },
   { key: 'bottles', label: 'Bottles today', icon: WaterDropOutlinedIcon, color: '#27c59a' },
   { key: 'customers', label: 'Active customers', icon: Groups2OutlinedIcon, color: '#f5a524' },
+  { key: 'stock', label: 'Company bottle stock', icon: Inventory2OutlinedIcon, color: '#0ea5a4' },
+  { key: 'held', label: 'Bottles with customers', icon: MoveToInboxOutlinedIcon, color: '#f97316' },
 ];
 
 function MetricCard({
@@ -117,10 +121,15 @@ export default function Dashboard() {
     signedUpCustomers: 0,
     pendingOrders: 0,
     unreadAdminNotifications: 0,
+    companyBottleStock: 0,
+    bottlesWithCustomers: 0,
   });
 
   React.useEffect(() => {
-    getAdminCustomerPortalStats().then(setPortalStats).catch(() => {});
+    const loadStats = () => getAdminCustomerPortalStats().then(setPortalStats).catch(() => {});
+    loadStats();
+    const timer = window.setInterval(() => { if (!document.hidden) loadStats(); }, 15000);
+    return () => window.clearInterval(timer);
   }, []);
 
   const monthGrowth = useMemo(() => {
@@ -141,18 +150,24 @@ export default function Dashboard() {
     orders: todayStats.totalOrders,
     bottles: bottlesSoldToday,
     customers: `${activeCustomers}/${totalCustomers}`,
+    stock: portalStats.companyBottleStock,
+    held: portalStats.bottlesWithCustomers,
   };
   const details = {
     revenue: `${monthStats.totalOrders} orders this month`,
     orders: `${formatCurrency(todayStats.totalRevenue)} recorded today`,
     bottles: `${todayStats.totalBottles} units across all types`,
     customers: `${monthGrowth}% of registered customers active`,
+    stock: 'Available across all configured bottle types',
+    held: 'Reusable bottles currently at customer locations',
   };
   const progress = {
     revenue: Math.max(8, monthGrowth),
     orders: Math.min(100, todayStats.totalOrders * 10),
     bottles: Math.min(100, bottlesSoldToday * 2),
     customers: monthGrowth,
+    stock: Math.min(100, portalStats.companyBottleStock),
+    held: Math.min(100, portalStats.bottlesWithCustomers),
   };
   const tableRows = recentTransactions.slice(0, 6);
 
@@ -160,7 +175,7 @@ export default function Dashboard() {
     <PageShell title="Dashboard" subtitle="Live overview of customers, sales, deliveries, and billing">
       <Grid container spacing={2.5}>
         {statCards.map((item) => (
-          <Grid item xs={12} sm={6} xl={3} key={item.key}>
+          <Grid item xs={12} sm={6} xl={2} key={item.key}>
             <MetricCard
               item={item}
               value={values[item.key]}

@@ -10,6 +10,7 @@ import BreadcrumbHistory from '../BreadcrumbHistory/BreadcrumbHistory';
 import LoadingState from '../LoadingState/LoadingState';
 import { closeSidebar, changeActiveSidebarItem } from '../../actions/navigation';
 import { pageTransition } from '../../utils/motion';
+import { prefetchAdminNotifications } from '../../services/api/customerPortalApi';
 import s from './Layout.module.scss';
 
 const Dashboard = React.lazy(() => import('../../pages/himalaya/Dashboard'));
@@ -21,7 +22,8 @@ const Analytics = React.lazy(() => import('../../pages/himalaya/Analytics'));
 const Settings = React.lazy(() => import('../../pages/himalaya/Settings'));
 const AdminUsers = React.lazy(() => import('../../pages/himalaya/AdminUsers'));
 const Messages = React.lazy(() => import('../../pages/himalaya/Messages'));
-const NotificationsCenter = React.lazy(() => import('../../pages/himalaya/NotificationsCenter'));
+const loadNotificationsCenter = () => import('../../pages/himalaya/NotificationsCenter');
+const NotificationsCenter = React.lazy(loadNotificationsCenter);
 const InvoiceLookup = React.lazy(() => import('../../pages/himalaya/InvoiceLookup'));
 const Profile = React.lazy(() => import('../../pages/himalaya/Profile'));
 const CustomerOrders = React.lazy(() => import('../../pages/himalaya/CustomerOrders'));
@@ -51,7 +53,11 @@ function AnimatedRoutes({ pathname, children }) {
       animate: { opacity: 1 },
       exit: { opacity: 1 },
     }
-    : pageTransition;
+    : {
+      ...pageTransition,
+      initial: { opacity: 1, y: 6 },
+      exit: { opacity: 0.98, y: -3, transition: { duration: 0.1 } },
+    };
 
   return (
     <AnimatePresence initial={false}>
@@ -82,6 +88,10 @@ class Layout extends React.Component {
 
   componentDidMount() {
     this.syncSidebarActive(this.props.location.pathname);
+    this.notificationPreloadTimer = window.setTimeout(() => {
+      loadNotificationsCenter();
+      prefetchAdminNotifications();
+    }, 250);
   }
 
   componentDidUpdate(prevProps) {
@@ -98,6 +108,7 @@ class Layout extends React.Component {
   }
 
   componentWillUnmount() {
+    window.clearTimeout(this.notificationPreloadTimer);
     document.body.style.overflow = '';
   }
 

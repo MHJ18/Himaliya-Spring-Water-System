@@ -524,6 +524,7 @@ function FluidCanvas({
 export default function FluidSimulation({
   active = true,
   className = '',
+  eager = false,
   interactionRef,
   mode = 'hero',
   reduceMotion = false,
@@ -535,7 +536,7 @@ export default function FluidSimulation({
     () => getFluidQuality(readFluidEnvironment(reducedMotion)),
     [reducedMotion],
   );
-  const [idleReady, setIdleReady] = React.useState(false);
+  const [idleReady, setIdleReady] = React.useState(eager);
   const [canvasReady, setCanvasReady] = React.useState(false);
   const [contextFailed, setContextFailed] = React.useState(false);
   const [inView, setInView] = React.useState(true);
@@ -548,6 +549,10 @@ export default function FluidSimulation({
 
   React.useEffect(() => {
     if (isStatic) return undefined;
+    if (eager) {
+      setIdleReady(true);
+      return undefined;
+    }
     let timerId = 0;
     let idleId = 0;
     const markReady = () => setIdleReady(true);
@@ -560,7 +565,7 @@ export default function FluidSimulation({
       if (idleId && 'cancelIdleCallback' in window) window.cancelIdleCallback(idleId);
       if (timerId) window.clearTimeout(timerId);
     };
-  }, [isStatic]);
+  }, [eager, isStatic]);
 
   React.useEffect(() => {
     const element = hostRef.current;

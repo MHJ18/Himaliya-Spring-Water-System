@@ -1,10 +1,10 @@
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Methods': 'POST, DELETE, OPTIONS',
 };
 
-const allowedRoles = new Set(['Admin', 'Manager', 'Owner']);
+const allowedRoles = new Set(['Admin', 'Manager', 'Owner', 'Rider']);
 const attempts = new Map<string, { count: number; resetAt: number }>();
 const windowMs = 15 * 60 * 1000;
 const maxAttempts = 10;
@@ -14,6 +14,11 @@ function json(status: number, body: Record<string, unknown>) {
     status,
     headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
   });
+}
+
+function normalizeRole(value: unknown) {
+  const requested = String(value || '').trim().toLowerCase();
+  return Array.from(allowedRoles).find((role) => role.toLowerCase() === requested) || '';
 }
 
 function isRateLimited(key: string) {
@@ -72,7 +77,7 @@ async function deleteAuthUser(url: string, key: string, userId: string) {
 
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
-  if (request.method !== 'POST') return json(405, { message: 'Method not allowed.' });
+  if (!['POST', 'DELETE'].includes(request.method)) return json(405, { message: 'Method not allowed.' });
 
   const clientKey = request.headers.get('x-forwarded-for') || 'unknown';
   if (isRateLimited(clientKey)) return json(429, { message: 'Too many administrator creation attempts. Please wait and try again.' });
@@ -87,19 +92,37 @@ Deno.serve(async (request) => {
   let createdUserId = '';
   try {
     const caller = await supabaseRequest(url, key, '/auth/v1/user', { headers: { Authorization: authorization } }) as { id?: string };
-    const payload = await request.json() as { name?: string; email?: string; password?: string; role?: string };
+    const callerProfiles = await supabaseRequest(url, key, `/rest/v1/admin_profiles?auth_user_id=eq.${encodeURIComponent(caller.id || '')}&active=eq.true&role=eq.Owner&must_change_password=eq.false&select=owner_id&limit=1`) as Array<{ owner_id?: string }>;
+    const ownerId = callerProfiles?.[0]?.owner_id;
+    if (!ownerId) return json(403, { message: 'Only an active owner can manage team accounts.' });
+
+    if (request.method === 'DELETE') {
+      const payload = await request.json() as { profileId?: string };
+      const profileId = String(payload.profileId || '').trim();
+      if (!/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(profileId)) {
+        return json(400, { message: 'Select a valid rider account.' });
+      }
+      const targets = await supabaseRequest(
+        url,
+        key,
+        `/rest/v1/admin_profiles?id=eq.${encodeURIComponent(profileId)}&owner_id=eq.${encodeURIComponent(ownerId)}&role=eq.Rider&select=id,auth_user_id,name&limit=1`,
+      ) as Array<{ id?: string; auth_user_id?: string; name?: string }>;
+      const target = targets?.[0];
+      if (!target?.auth_user_id) return json(404, { message: 'Rider account not found.' });
+      await supabaseRequest(url, key, `/auth/v1/admin/users/${encodeURIComponent(target.auth_user_id)}`, { method: 'DELETE' });
+      return json(200, { deleted: true, profileId: target.id, name: target.name || 'Rider' });
+    }
+
+    const payload = await request.json() as { name?: string; email?: string; password?: string; role?: string; phone?: string };
     const name = String(payload.name || '').trim();
     const email = String(payload.email || '').trim().toLowerCase();
     const password = String(payload.password || '');
-    const role = String(payload.role || 'Admin');
+    const role = normalizeRole(payload.role || 'Admin');
+    const phone = String(payload.phone || '').trim();
     if (!name || !/^\S+@\S+\.\S+$/.test(email) || password.length < 8) {
       return json(400, { message: 'Name, a valid email, and a password with at least 8 characters are required.' });
     }
-    if (!allowedRoles.has(role)) return json(400, { message: 'Select a valid administrator role.' });
-
-    const callerProfiles = await supabaseRequest(url, key, `/rest/v1/admin_profiles?auth_user_id=eq.${encodeURIComponent(caller.id || '')}&active=eq.true&role=eq.Owner&select=owner_id&limit=1`) as Array<{ owner_id?: string }>;
-    const ownerId = callerProfiles?.[0]?.owner_id;
-    if (!ownerId) return json(403, { message: 'Only an active owner can create administrator accounts.' });
+    if (!allowedRoles.has(role)) return json(400, { message: 'Select a valid team role.' });
 
     const customerMatches = await supabaseRequest(url, key, `/rest/v1/customers?email=ilike.${encodeURIComponent(email)}&select=id&limit=1`) as unknown[];
     if (customerMatches?.length) return json(409, { message: 'This email belongs to a customer account and cannot be granted administrator access.' });
@@ -108,15 +131,24 @@ Deno.serve(async (request) => {
 
     const created = await supabaseRequest(url, key, '/auth/v1/admin/users', {
       method: 'POST',
-      body: JSON.stringify({ email, password, email_confirm: true, app_metadata: { account_type: 'admin' } }),
+      body: JSON.stringify({ email, password, email_confirm: true, app_metadata: { account_type: role === 'Rider' ? 'rider' : 'admin' } }),
     }) as { id?: string; user?: { id?: string } };
     createdUserId = created?.id || created?.user?.id || '';
     if (!createdUserId) throw new Error('Supabase did not return the new administrator identity.');
 
-    const profiles = await supabaseRequest(url, key, '/rest/v1/admin_profiles?select=id,auth_user_id,name,email,role,active,created_at', {
+    const profiles = await supabaseRequest(url, key, '/rest/v1/admin_profiles?select=id,auth_user_id,name,email,phone,role,active,must_change_password,created_at', {
       method: 'POST',
       headers: { Prefer: 'return=representation' },
-      body: JSON.stringify({ owner_id: ownerId, auth_user_id: createdUserId, name, email, role, active: true }),
+      body: JSON.stringify({
+        owner_id: ownerId,
+        auth_user_id: createdUserId,
+        name,
+        email,
+        phone,
+        role,
+        active: true,
+        must_change_password: true,
+      }),
     }) as Array<Record<string, unknown>>;
     const profile = profiles?.[0];
     if (!profile) throw new Error('The administrator profile could not be created.');
@@ -127,8 +159,10 @@ Deno.serve(async (request) => {
         authUserId: profile.auth_user_id,
         name: profile.name,
         email: profile.email,
+        phone: profile.phone,
         role: profile.role,
         active: profile.active !== false,
+        mustChangePassword: profile.must_change_password === true,
         createdAt: profile.created_at,
       },
     });

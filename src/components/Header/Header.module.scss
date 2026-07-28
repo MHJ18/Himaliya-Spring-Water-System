@@ -31,6 +31,11 @@
   pointer-events: auto;
 }
 
+.mobileNotification {
+  display: none !important;
+  position: relative;
+}
+
 .mobileBrand {
   overflow: hidden;
   font-size: 0.9375rem !important;
@@ -260,6 +265,9 @@
     display: flex;
     flex: 1;
   }
+
+  .mobileNotification { display: inline-flex !important; }
+  .desktopNotification { display: none !important; }
 
   .toolbar {
     min-height: 48px;

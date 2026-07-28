@@ -1,8 +1,14 @@
 import React from 'react';
+import PropTypes from 'prop-types';
+import { withRouter } from 'react-router-dom';
 import {
   Button,
   CircularProgress,
+  FormControl,
   IconButton,
+  InputLabel,
+  MenuItem,
+  Select,
   Tooltip,
 } from '@mui/material';
 import RefreshRoundedIcon from '@mui/icons-material/RefreshRounded';
@@ -22,10 +28,10 @@ import PageShell from '../../components/PageShell/PageShell';
 import LoadingState from '../../components/LoadingState/LoadingState';
 import RiderMap from '../../components/RiderMap/RiderMap';
 import {
-  getAdminCustomerOrders,
+  assignOrderToRider,
+  getActiveRiders,
   updateAdminRiderTracking,
 } from '../../services/api/customerPortalApi';
-import { getBottlePrices } from '../../services/api/bottlePriceApi';
 import { BOTTLE_TYPE_LABELS } from '../../data/constants';
 import { useSettings } from '../../context/SettingsContext';
 import { getStableCustomerCoordinates } from '../../utils/coordinates';
@@ -37,6 +43,7 @@ import {
   trackingStatusForLocation,
 } from '../../utils/riderDelivery';
 import './RiderTracking.css';
+import { useDeliveries } from '../../context/DeliveryContext';
 
 const FILTERS = [
   { value: 'active', label: 'Active' },
@@ -98,16 +105,23 @@ function matchesSearch(order, query) {
   return haystack.includes(query.trim().toLowerCase());
 }
 
-export default function RiderTracking() {
+function RiderTracking({ location }) {
   const { settings } = useSettings();
-  const [orders, setOrders] = React.useState([]);
+  const { orders: allOrders, loading, refresh, updateOrder } = useDeliveries();
+  const orders = React.useMemo(() => filterDeliveryRouteOrders(allOrders), [allOrders]);
   const [selectedId, setSelectedId] = React.useState('');
-  const [loading, setLoading] = React.useState(true);
   const [updating, setUpdating] = React.useState('');
   const [filter, setFilter] = React.useState('active');
   const [search, setSearch] = React.useState('');
   const [locating, setLocating] = React.useState(false);
   const [liveSharing, setLiveSharing] = React.useState(false);
+  const [riders, setRiders] = React.useState([]);
+  const [assigning, setAssigning] = React.useState(false);
+  const focusedOrderId = location.state && location.state.focusOrderId;
+
+  React.useEffect(() => {
+    getActiveRiders().then(setRiders).catch(() => setRiders([]));
+  }, []);
 
   const riderName = React.useMemo(
     () => (settings.businessName ? `${settings.businessName.split(' ')[0]} Rider` : 'Himaliya Rider'),
@@ -115,38 +129,27 @@ export default function RiderTracking() {
   );
   const riderPhone = settings.businessPhone || '';
 
-  const load = React.useCallback(async (silent = false) => {
-    if (!silent) setLoading(true);
-    try {
-      const prices = await getBottlePrices({});
-      const allOrders = await getAdminCustomerOrders(prices);
-      const routeOrders = filterDeliveryRouteOrders(allOrders);
-      setOrders(routeOrders);
-      setSelectedId((current) => {
-        if (current && routeOrders.some((order) => order.id === current)) return current;
-        const firstActive = routeOrders.find(isActiveDeliveryRouteOrder);
-        return (firstActive || routeOrders[0] || {}).id || '';
-      });
-    } catch (error) {
-      if (!silent) toast.error(error.message || 'Could not load delivery routes.');
-    } finally {
-      if (!silent) setLoading(false);
-    }
-  }, []);
-
-  React.useEffect(() => { load(false); }, [load]);
+  React.useEffect(() => {
+    setSelectedId((current) => {
+      if (current && orders.some((order) => order.id === current)) return current;
+      const firstActive = orders.find(isActiveDeliveryRouteOrder);
+      return (firstActive || orders[0] || {}).id || '';
+    });
+  }, [orders]);
 
   React.useEffect(() => {
-    const refreshWhenVisible = () => {
-      if (!document.hidden) load(true);
-    };
-    const interval = window.setInterval(refreshWhenVisible, 20000);
-    document.addEventListener('visibilitychange', refreshWhenVisible);
-    return () => {
-      window.clearInterval(interval);
-      document.removeEventListener('visibilitychange', refreshWhenVisible);
-    };
-  }, [load]);
+    if (!focusedOrderId || loading) return undefined;
+    const focusedOrder = orders.find((order) => order.id === focusedOrderId);
+    if (!focusedOrder) return undefined;
+    setSearch('');
+    setFilter(deliveryStage(focusedOrder) === DELIVERY_STAGE.delivered ? 'complete' : 'active');
+    setSelectedId(focusedOrder.id);
+    const timer = window.setTimeout(() => {
+      const target = document.querySelector(`[data-route-order-id="${focusedOrder.id}"]`);
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 120);
+    return () => window.clearTimeout(timer);
+  }, [focusedOrderId, loading, orders]);
 
   React.useEffect(() => {
     setLiveSharing(false);
@@ -222,8 +225,10 @@ export default function RiderTracking() {
         riderHeading: extras.riderHeading !== undefined && extras.riderHeading !== null
           ? extras.riderHeading
           : order.riderHeading,
+        bottlesCollected: order.bottlesCollected,
+        bottlesDroppedOff: order.bottlesDroppedOff,
       });
-      setOrders((current) => current.map((item) => (item.id === updated.id ? updated : item)));
+      updateOrder(updated);
       setSelectedId(updated.id);
       return updated;
     } catch (error) {
@@ -232,7 +237,7 @@ export default function RiderTracking() {
     } finally {
       setUpdating('');
     }
-  }, [riderName, riderPhone]);
+  }, [riderName, riderPhone, updateOrder]);
 
   const markReady = async (order) => {
     try {
@@ -363,6 +368,20 @@ export default function RiderTracking() {
     }
   };
 
+  const assignRider = async (riderId) => {
+    if (!selectedOrder) return;
+    setAssigning(true);
+    try {
+      const updated = await assignOrderToRider(selectedOrder, riderId);
+      updateOrder(updated);
+      toast.success(riderId ? `Assigned to ${updated.riderName || 'rider'}.` : 'Rider assignment removed.');
+    } catch (error) {
+      toast.error(error.message || 'Could not assign this rider.');
+    } finally {
+      setAssigning(false);
+    }
+  };
+
   const selectedStage = deliveryStage(selectedOrder);
   const busy = Boolean(updating);
   const currentStep = PROGRESS_STEPS.findIndex((step) => step.stage === selectedStage);
@@ -395,7 +414,7 @@ export default function RiderTracking() {
         <Button
           variant="outlined"
           startIcon={<RefreshRoundedIcon />}
-          onClick={() => load(false)}
+          onClick={() => refresh()}
           disabled={loading}
         >
           Refresh routes
@@ -469,7 +488,8 @@ export default function RiderTracking() {
                     <button
                       key={order.id}
                       type="button"
-                      className={`route-card${order.id === selectedId ? ' is-selected' : ''}`}
+                      data-route-order-id={order.id}
+                      className={`route-card${order.id === selectedId ? ' is-selected' : ''}${focusedOrderId === order.id ? ' is-notification-focus' : ''}`}
                       onClick={() => setSelectedId(order.id)}
                     >
                       <span className="route-card__number">
@@ -521,6 +541,20 @@ export default function RiderTracking() {
                       </p>
                     </div>
                     <div className="route-console__header-actions">
+                      <FormControl size="small" sx={{ minWidth: 170 }} disabled={assigning}>
+                        <InputLabel id="route-rider-label">Assigned rider</InputLabel>
+                        <Select
+                          labelId="route-rider-label"
+                          label="Assigned rider"
+                          value={selectedOrder.assignedRiderId || ''}
+                          onChange={(event) => assignRider(event.target.value)}
+                        >
+                          <MenuItem value="">Unassigned</MenuItem>
+                          {riders.map((rider) => (
+                            <MenuItem key={rider.id} value={rider.id}>{rider.name}</MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
                       <em className={`route-status route-status--${selectedStage}`}>
                         {stageLabel(selectedStage)}
                       </em>
@@ -658,3 +692,9 @@ export default function RiderTracking() {
     </PageShell>
   );
 }
+
+RiderTracking.propTypes = {
+  location: PropTypes.shape({ state: PropTypes.object }).isRequired,
+};
+
+export default withRouter(RiderTracking);

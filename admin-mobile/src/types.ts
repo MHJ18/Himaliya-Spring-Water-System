@@ -9,6 +9,7 @@ export type Sale = {
 };
 export type Order = {
   id: string; customer_id: string; bottle_type: string; quantity: number; unit_price: number;
+  items?: Array<{ bottleType: string; quantity: number; unitPrice?: number }>;
   total_amount: number; delivery_address?: string; delivery_date?: string; notes?: string;
   status: string; admin_note?: string; created_at: string; customers?: Customer;
 };
@@ -26,6 +27,7 @@ export type InvoicePayload = {
 };
 export type AdminProfile = {
   id: string; auth_user_id: string; name: string; email: string; role: string; active: boolean;
+  phone?: string; photo?: string; rider_available?: boolean; preferences?: Record<string, unknown>;
 };
 export type Notification = {
   id: string; title: string; detail: string; type?: string; read: boolean; created_at: string;

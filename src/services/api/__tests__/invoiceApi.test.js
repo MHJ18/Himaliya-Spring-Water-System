@@ -4,7 +4,24 @@ jest.mock('../../cloud/supabaseClient', () => ({
 }));
 
 const { dbRequest } = require('../../cloud/supabaseClient');
-const { invoiceApi } = require('../invoiceApi');
+const { invoiceApi, rowToInvoice } = require('../invoiceApi');
+
+describe('invoiceApi row totals', () => {
+  it('uses legacy payload line prices when the table total is zero', () => {
+    const result = rowToInvoice({
+      id: 'invoice-1',
+      invoice_number: 'HSW-OLD001',
+      total_amount: 0,
+      total_qty: 0,
+      payload: {
+        history: [{ quantity: 3, pricePerBottle: 250, totalAmount: 0 }],
+      },
+    });
+
+    expect(result.totalAmount).toBe(750);
+    expect(result.totalQty).toBe(3);
+  });
+});
 
 describe('invoiceApi.lookupByNumber', () => {
   beforeEach(() => dbRequest.mockReset());

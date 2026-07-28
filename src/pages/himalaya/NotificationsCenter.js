@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import PropTypes from 'prop-types';
+import { withRouter } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   BellRing,
@@ -7,11 +9,16 @@ import {
   Package,
   Route,
   TriangleAlert,
+  Trash2,
+  UserPlus,
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import PageShell from '../../components/PageShell/PageShell';
 import {
+  clearAdminNotifications,
+  getCachedAdminNotifications,
   getAdminNotifications,
+  markAdminNotificationRead,
   markAdminNotificationsRead,
 } from '../../services/api/customerPortalApi';
 import LoadingState from '../../components/LoadingState/LoadingState';
@@ -43,6 +50,7 @@ function notificationIcon(type) {
   if (type === 'tracking') return Route;
   if (type === 'message') return MessageCircle;
   if (type === 'order') return Package;
+  if (type === 'account') return UserPlus;
   return BellRing;
 }
 
@@ -52,34 +60,86 @@ function notificationTypeLabel(type) {
   if (type === 'tracking') return 'Delivery';
   if (type === 'message') return 'Message';
   if (type === 'order') return 'Order';
+  if (type === 'account') return 'Account';
   return 'Alert';
 }
 
-export default function NotificationsCenter() {
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
+function notificationDestination(item) {
+  if (item.type === 'order') return { pathname: '/app/customer-orders', state: { focusOrderId: item.orderId } };
+  if (item.type === 'tracking' || item.type === 'delivery') return { pathname: '/app/rider-tracking', state: { focusOrderId: item.orderId } };
+  if (item.type === 'message') return { pathname: '/messages' };
+  if (item.type === 'stock') return { pathname: '/app/settings' };
+  if (item.type === 'account') return { pathname: '/app/users' };
+  if (item.type === 'payment') return { pathname: '/app/invoice' };
+  return null;
+}
+
+function NotificationsCenter({ history }) {
+  const initialItems = React.useMemo(() => getCachedAdminNotifications(), []);
+  const [items, setItems] = useState(initialItems || []);
+  const [loading, setLoading] = useState(initialItems === null);
+  const [marking, setMarking] = useState('');
 
   useEffect(() => {
-    getAdminNotifications()
-      .then(async (nextItems) => {
-        setItems(nextItems);
-        if (nextItems.some((item) => !item.read)) {
-          await markAdminNotificationsRead();
-          setItems((current) => current.map((item) => ({ ...item, read: true })));
-        }
-      })
-      .catch((error) => toast.error(error.message || 'Could not load notifications.'))
-      .finally(() => setLoading(false));
-  }, []);
+    let active = true;
+    getAdminNotifications({ forceRefresh: initialItems !== null })
+      .then((nextItems) => { if (active) setItems(nextItems); })
+      .catch((error) => { if (active) toast.error(error.message || 'Could not load notifications.'); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [initialItems]);
 
   const unread = items.filter((item) => !item.read).length;
-  const markRead = (id) => setItems((current) => current.map((item) => (
-    item.id === id ? { ...item, read: true } : item
-  )));
+  const markRead = async (item) => {
+    if (item.read || marking) return true;
+    setMarking(item.id);
+    try {
+      await markAdminNotificationRead(item.id);
+      setItems((current) => current.map((currentItem) => (
+        currentItem.id === item.id ? { ...currentItem, read: true } : currentItem
+      )));
+      return true;
+    } catch (error) {
+      toast.error(error.message || 'Could not mark this notification as read.');
+      return false;
+    } finally {
+      setMarking('');
+    }
+  };
+
+  const openNotification = async (item) => {
+    const destination = notificationDestination(item);
+    await markRead(item);
+    if (destination) history.push(destination.pathname, destination.state);
+  };
 
   const markAllRead = async () => {
-    await markAdminNotificationsRead();
-    setItems((current) => current.map((item) => ({ ...item, read: true })));
+    if (!unread || marking) return;
+    setMarking('all');
+    try {
+      await markAdminNotificationsRead();
+      setItems((current) => current.map((item) => ({ ...item, read: true })));
+    } catch (error) {
+      toast.error(error.message || 'Could not mark notifications as read.');
+    } finally {
+      setMarking('');
+    }
+  };
+
+  const clearAll = async () => {
+    if (!items.length || marking) return;
+    const confirmed = window.confirm('Clear all admin notifications? This cannot be undone.');
+    if (!confirmed) return;
+    setMarking('clear');
+    try {
+      await clearAdminNotifications();
+      setItems([]);
+      toast.success('All notifications cleared.');
+    } catch (error) {
+      toast.error(error.message || 'Could not clear notifications.');
+    } finally {
+      setMarking('');
+    }
   };
 
   return (
@@ -95,7 +155,28 @@ export default function NotificationsCenter() {
               )}
             </h2>
           </div>
-          <button type="button" className="water-action" onClick={markAllRead}>Mark all as read</button>
+          <div className="notification-actions">
+            <button
+              type="button"
+              className="water-action"
+              onClick={markAllRead}
+              disabled={unread === 0 || Boolean(marking)}
+              aria-busy={marking === 'all'}
+            >
+              {marking === 'all' ? 'Marking…' : 'Mark all as read'}
+            </button>
+            <button
+              type="button"
+              className="water-action water-action--danger water-action--icon"
+              onClick={clearAll}
+              disabled={items.length === 0 || Boolean(marking)}
+              aria-busy={marking === 'clear'}
+              aria-label={marking === 'clear' ? 'Clearing notifications' : 'Clear all notifications'}
+              title="Clear all notifications"
+            >
+              <Trash2 size={16} aria-hidden="true" />
+            </button>
+          </div>
         </div>
         <div className="notification-list">
           {loading && <LoadingState label="Loading notifications..." variant="table" compact />}
@@ -112,12 +193,16 @@ export default function NotificationsCenter() {
                     return (
                       <article
                         key={item.id}
-                        className={`notification-item ${item.read ? 'is-read' : ''}`}
+                        className={`notification-item notification-item--${item.type} ${item.read ? 'is-read' : ''}`}
                         role="button"
                         tabIndex={0}
-                        onClick={() => markRead(item.id)}
+                        aria-label={`${item.read ? 'Read' : 'Unread'} notification: ${item.title}`}
+                        onClick={() => openNotification(item)}
                         onKeyDown={(event) => {
-                          if (event.key === 'Enter' || event.key === ' ') markRead(item.id);
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            openNotification(item);
+                          }
                         }}
                       >
                         <span className={`notification-icon notification-icon--${item.type}`}>
@@ -146,3 +231,9 @@ export default function NotificationsCenter() {
     </PageShell>
   );
 }
+
+NotificationsCenter.propTypes = {
+  history: PropTypes.shape({ push: PropTypes.func.isRequired }).isRequired,
+};
+
+export default withRouter(NotificationsCenter);

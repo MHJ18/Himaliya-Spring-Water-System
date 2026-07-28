@@ -26,6 +26,8 @@ import { normalizePhone, validateCustomerForm } from '../../utils/validation';
 import { getInitials } from '../../utils/formatters';
 import { compressImageFile } from '../../utils/imageCompression';
 import LoadingState from '../../components/LoadingState/LoadingState';
+import { BOTTLE_TYPES, BOTTLE_TYPE_LABELS } from '../../data/constants';
+import { getCustomerBottlePrices, saveCustomerBottlePrices } from '../../services/api/customerBottlePriceApi';
 import './EditCustomer.css';
 
 const emptyForm = { name: '', phone: '+92', address: '', email: '', photo: '' };
@@ -42,6 +44,8 @@ export default function EditCustomer({ match, history }) {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
   const [deleting, setDeleting] = useState(false);
+  const [customerPrices, setCustomerPrices] = useState({});
+  const [pricesLoading, setPricesLoading] = useState(true);
 
   useEffect(() => {
     if (!customer) return;
@@ -52,6 +56,21 @@ export default function EditCustomer({ match, history }) {
       email: customer.email || '',
       photo: customer.photo || '',
     });
+  }, [customer]);
+
+  useEffect(() => {
+    if (!customer) return undefined;
+    let active = true;
+    setPricesLoading(true);
+    getCustomerBottlePrices(customer.id)
+      .then((assignedPrices) => {
+        if (active) setCustomerPrices(assignedPrices);
+      })
+      .catch((error) => {
+        if (active) toast.error(error.message || 'Could not load customer bottle prices.');
+      })
+      .finally(() => { if (active) setPricesLoading(false); });
+    return () => { active = false; };
   }, [customer]);
 
   const setField = (name, value) => {
@@ -80,8 +99,9 @@ export default function EditCustomer({ match, history }) {
     }
     setSaving(true);
     try {
+      await saveCustomerBottlePrices(customerId, customerPrices);
       await updateCustomer(customerId, form);
-      toast.success('Customer details updated.');
+      toast.success('Customer details and assigned bottle prices updated.');
       history.push('/app/customers');
     } catch (error) {
       toast.error(error.message || 'Could not update customer.');
@@ -253,6 +273,32 @@ export default function EditCustomer({ match, history }) {
             </Grid>
           </Grid>
 
+          <Box sx={{ mt: 3, p: 2.25, border: '1px solid', borderColor: 'divider', borderRadius: 2, bgcolor: 'action.hover' }}>
+            <Typography variant="h6">Assigned bottle prices</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Set the agreed price for this customer. These prices are used in their ordering portal.
+            </Typography>
+            {pricesLoading ? <LoadingState compact label="Loading assigned prices..." variant="form" /> : (
+              <Grid container spacing={2}>
+                {BOTTLE_TYPES.map((type) => (
+                  <Grid item xs={12} sm={6} key={type}>
+                    <TextField
+                      fullWidth
+                      label={`${BOTTLE_TYPE_LABELS[type] || type} price`}
+                      type="number"
+                      value={customerPrices[type] === undefined ? '' : customerPrices[type]}
+                      onChange={(event) => setCustomerPrices((current) => ({ ...current, [type]: event.target.value }))}
+                      InputProps={{
+                        startAdornment: <Box component="span" sx={{ mr: 0.75, color: 'text.secondary' }}>PKR</Box>,
+                        inputProps: { min: 0, step: '0.01' },
+                      }}
+                    />
+                  </Grid>
+                ))}
+              </Grid>
+            )}
+          </Box>
+
           <Stack direction={{ xs: 'column-reverse', sm: 'row' }} justifyContent="space-between" spacing={1.5} sx={{ mt: 3 }}>
             <Button
               color="error"
@@ -264,7 +310,7 @@ export default function EditCustomer({ match, history }) {
             </Button>
             <Stack direction={{ xs: 'column-reverse', sm: 'row' }} spacing={1.5}>
               <Button color="inherit" onClick={() => history.push('/app/customers')}>Cancel</Button>
-              <Button type="submit" variant="contained" startIcon={<SaveRoundedIcon />} disabled={saving}>
+              <Button type="submit" variant="contained" startIcon={<SaveRoundedIcon />} disabled={saving || pricesLoading}>
                 {saving ? 'Saving...' : 'Save changes'}
               </Button>
             </Stack>

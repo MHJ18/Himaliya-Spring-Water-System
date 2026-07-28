@@ -22,6 +22,7 @@ import {
   consumeSessionExpiredNotice,
   hasStoredSessionType,
 } from '../../services/cloud/supabaseClient';
+import { isValidPhone } from '../../utils/validation';
 import '../login/WaterLogin.css';
 import './CustomerPortal.css';
 import './CustomerLogin.css';
@@ -51,7 +52,25 @@ function CustomerLogin({ location, history }) {
     return <Redirect to="/customer/app" />;
   }
 
-  const update = (field, value) => setForm((current) => ({ ...current, [field]: value }));
+  const update = (field, value) => {
+    setError('');
+    setForm((current) => ({ ...current, [field]: value }));
+  };
+
+  const passwordValid = form.password.length >= 8;
+  const formErrors = mode === 'signup'
+    ? {
+      ...(!form.name.trim() ? { name: 'Full name is required.' } : {}),
+      ...(!isValidPhone(form.phone) ? { phone: 'Enter a valid phone number (+92 and 10 digits).' } : {}),
+      ...(!form.address.trim() ? { address: 'Delivery address is required.' } : {}),
+      ...(!form.email.trim() ? { email: 'Email address is required.' } : (!/^\S+@\S+\.\S+$/.test(form.email.trim()) ? { email: 'Enter a valid email address.' } : {})),
+      ...(!profileCompletionRequired && !passwordValid ? { password: 'Password must contain at least 8 characters.' } : {}),
+    }
+    : {
+      ...(!form.email.trim() ? { identifier: 'Enter your email or phone number.' } : (!/^\S+@\S+\.\S+$/.test(form.email.trim()) && !isValidPhone(form.email) ? { identifier: 'Enter a valid email or phone number.' } : {})),
+      ...(!form.password ? { password: 'Enter your password.' } : {}),
+    };
+  const canSubmit = !loading && Object.keys(formErrors).length === 0;
 
   const switchMode = (nextMode) => {
     setMode(nextMode);
@@ -60,9 +79,13 @@ function CustomerLogin({ location, history }) {
 
   const submit = async (event) => {
     event.preventDefault();
+    if (!canSubmit) {
+      return;
+    }
     setLoading(true);
     setError('');
     try {
+      let requiresSignIn = false;
       if (mode === 'signup') {
         if (profileCompletionRequired || hasStoredSessionType('customer')) {
           await saveCustomerProfile({
@@ -74,7 +97,8 @@ function CustomerLogin({ location, history }) {
           toast.success('Customer profile completed. Welcome to Himaliya Spring Water.');
         } else {
           await registerCustomer(form);
-          toast.success('Customer account created. Welcome to Himaliya Spring Water.');
+          requiresSignIn = true;
+          toast.success('Customer account created. Please sign in to continue.');
         }
       } else {
         const profile = await signInCustomer(form.email, form.password);
@@ -84,7 +108,13 @@ function CustomerLogin({ location, history }) {
           throw new Error('No customer profile found. Complete your details to activate your customer portal.');
         }
       }
-      history.replace('/customer/app');
+      if (requiresSignIn) {
+        setMode('signin');
+        setForm((current) => ({ ...current, password: '' }));
+        history.replace('/customer/login', { accountCreated: true });
+      } else {
+        history.replace('/customer/app');
+      }
     } catch (err) {
       const message = err.message || 'Could not continue. Please check your details.';
       setError(message.includes('Email not confirmed')
@@ -96,9 +126,14 @@ function CustomerLogin({ location, history }) {
   };
 
   const visibleError = error || (sessionExpired ? 'Your session has expired. Log in again.' : '');
+  const accountDeactivated = location.state && location.state.accountDeactivated
+    ? 'This customer account has been deactivated. Contact Himaliya Spring Water.'
+    : '';
   const loginNotice = location.state && location.state.passwordChanged
     ? 'Password updated. Sign in with your new password.'
-    : '';
+    : location.state && location.state.accountCreated
+      ? 'Account created. Sign in with your email and password.'
+      : '';
 
   return (
     <main className="water-login-page customer-login-page">
@@ -164,11 +199,11 @@ function CustomerLogin({ location, history }) {
           </div>
 
           <form className="water-login-form customer-login-form" method="post" onSubmit={submit} autoComplete="on">
-            {(visibleError || loginNotice) && (
-              <ShakeX key={visibleError} duration={0.4}>
-                <div className={`water-login-alert ${loginNotice && !visibleError ? 'is-success' : ''}`} role="alert" aria-live="assertive">
+            {(visibleError || accountDeactivated || loginNotice) && (
+              <ShakeX key={visibleError || accountDeactivated} duration={0.4}>
+                <div className={`water-login-alert ${loginNotice && !visibleError && !accountDeactivated ? 'is-success' : ''}`} role="alert" aria-live="assertive">
                   <span className="water-login-alert-icon" aria-hidden="true">!</span>
-                  <span>{visibleError || loginNotice}</span>
+                  <span>{visibleError || accountDeactivated || loginNotice}</span>
                 </div>
               </ShakeX>
             )}
@@ -193,7 +228,7 @@ function CustomerLogin({ location, history }) {
                     }}
                   >
                     <div className="customer-signup-fields__inner">
-                      <label className="water-login-label" htmlFor="customer-name">Full name</label>
+                      <label className="water-login-label" htmlFor="customer-name">Full name <span aria-hidden="true">*</span></label>
                       <div className="water-login-input-wrap">
                         <span className="water-login-input-icon" aria-hidden="true"><UserRound size={18} /></span>
                         <input
@@ -208,7 +243,7 @@ function CustomerLogin({ location, history }) {
                         />
                       </div>
 
-                      <label className="water-login-label" htmlFor="customer-phone">Phone number</label>
+                      <label className="water-login-label" htmlFor="customer-phone">Phone number <span aria-hidden="true">*</span></label>
                       <div className="water-login-input-wrap">
                         <span className="water-login-input-icon" aria-hidden="true"><Phone size={18} /></span>
                         <input
@@ -225,7 +260,7 @@ function CustomerLogin({ location, history }) {
                         />
                       </div>
 
-                      <label className="water-login-label" htmlFor="customer-address">Delivery address</label>
+                      <label className="water-login-label" htmlFor="customer-address">Delivery address <span aria-hidden="true">*</span></label>
                       <div className="water-login-input-wrap">
                         <span className="water-login-input-icon" aria-hidden="true"><MapPin size={18} /></span>
                         <input
@@ -244,7 +279,7 @@ function CustomerLogin({ location, history }) {
                 )}
               </AnimatePresence>
 
-              <label className="water-login-label" htmlFor="customer-email">{mode === 'signup' ? 'Email address' : 'Email or phone number'}</label>
+              <label className="water-login-label" htmlFor="customer-email">{mode === 'signup' ? <>Email address <span aria-hidden="true">*</span></> : 'Email or phone number'}</label>
               <div className="water-login-input-wrap">
                 <span className="water-login-input-icon" aria-hidden="true"><AtSign size={18} /></span>
                 <input
@@ -261,8 +296,8 @@ function CustomerLogin({ location, history }) {
                 />
               </div>
 
-              <label className="water-login-label" htmlFor="customer-password">Password</label>
-              <div className="water-login-input-wrap">
+              <label className="water-login-label" htmlFor="customer-password">Password {mode === 'signup' && <span aria-hidden="true">*</span>}</label>
+              <div className={`water-login-input-wrap${mode === 'signup' && form.password && !passwordValid ? ' is-invalid' : ''}`}>
                 <span className="water-login-input-icon" aria-hidden="true"><LockKeyhole size={18} /></span>
                 <input
                   id="customer-password"
@@ -273,12 +308,18 @@ function CustomerLogin({ location, history }) {
                   onChange={(e) => update('password', e.target.value)}
                   placeholder={mode === 'signup' ? 'Create a password' : 'Enter your password'}
                   autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+                  aria-invalid={mode === 'signup' && form.password ? !passwordValid : undefined}
                   required
                 />
               </div>
+              {mode === 'signup' && (
+                <p className={`customer-password-hint${passwordValid ? ' is-valid' : ''}`}>
+                  Use at least 8 characters. Fields marked * are required.
+                </p>
+              )}
             </motion.div>
 
-            <button type="submit" className="water-login-submit" disabled={loading} aria-busy={loading}>
+            <button type="submit" className="water-login-submit" disabled={!canSubmit} aria-busy={loading}>
               <span>{loading ? 'Please wait...' : mode === 'signup' ? 'Create customer account' : 'Sign in and order'}</span>
               {!loading && <ArrowRight size={18} aria-hidden="true" />}
             </button>

@@ -104,11 +104,11 @@ function CustomerMessages({ history }) {
   };
 
   if (loading) {
-    return <LoadingState label="Opening your messages..." variant="portal" className={`customer-theme--${theme}`} />;
+    return <LoadingState label="Opening your messages..." variant="portal" className={`customer-theme--${theme}${theme === 'dark-gradient' ? ' customer-theme--dark' : ''}`} />;
   }
 
   return (
-    <main className={`customer-messages-page customer-theme--${theme}`}>
+    <main className={`customer-messages-page customer-theme--${theme}${theme === 'dark-gradient' ? ' customer-theme--dark' : ''}`}>
       <div className="customer-messages-shell">
         <header className="customer-messages-topbar">
           <button type="button" className="customer-messages-back" onClick={() => history.push('/customer/app')}>
@@ -133,7 +133,7 @@ function CustomerMessages({ history }) {
             <span className="customer-messages-mark" aria-hidden="true"><Droplets size={22} /></span>
             <div>
               <strong>Himaliya Support</strong>
-              <span>Usually replies during delivery hours</span>
+              <span>Private chat with Himaliya Spring Water</span>
             </div>
             <em><ShieldCheck size={15} /> Secure chat</em>
           </header>
@@ -151,6 +151,9 @@ function CustomerMessages({ history }) {
                 className={`customer-messages-bubble-row${message.senderRole === 'customer' ? ' is-mine' : ''}`}
               >
                 <div className="customer-messages-bubble">
+                  <small className="customer-messages-sender">
+                    {message.senderRole === 'customer' ? 'You' : 'Himaliya Support'}
+                  </small>
                   <p>{message.body}</p>
                   <time>{messageTime(message.createdAt)}</time>
                 </div>

@@ -3,7 +3,6 @@ import PropTypes from 'prop-types';
 import { Link } from 'react-router-dom';
 import {
   ArrowLeft,
-  Check,
   Clock3,
   Droplets,
   MapPin,
@@ -15,14 +14,10 @@ import {
 } from 'lucide-react';
 import RiderMap from '../../components/RiderMap/RiderMap';
 import { getPublicRiderTracking } from '../../services/api/customerPortalApi';
+import { subscribeToPublicDeliveryTracking } from '../../services/cloud/supabaseRealtime';
+import { hasStoredSessionType } from '../../services/cloud/supabaseClient';
 import { BOTTLE_TYPE_LABELS } from '../../data/constants';
 import './PublicRiderTracking.css';
-
-const steps = [
-  { key: 'assigned', label: 'Ready' },
-  { key: 'picked_up', label: 'Picked up' },
-  { key: 'delivered', label: 'Delivered' },
-];
 
 const statusCopy = {
   unassigned: ['Order received', 'Your delivery address is saved from your profile. We will mark it ready shortly.'],
@@ -33,7 +28,20 @@ const statusCopy = {
   delivered: ['Delivery completed', 'Your order has arrived. Thank you for choosing Himaliya Spring Water.'],
 };
 
-function stepIndexForStatus(status) {
+function progressForStatus(status) {
+  return ({
+    unassigned: 8,
+    assigned: 25,
+    picked_up: 50,
+    en_route: 70,
+    nearby: 90,
+    delivered: 100,
+  })[status] || 8;
+}
+
+const deliverySteps = ['Ready', 'Picked up', 'Delivered'];
+
+function activeDeliveryStep(status) {
   if (status === 'delivered') return 2;
   if (['picked_up', 'en_route', 'nearby'].includes(status)) return 1;
   if (status === 'assigned') return 0;
@@ -49,8 +57,9 @@ function dateLabel(value) {
   });
 }
 
-function updateLabel(value) {
-  if (!value) return 'Waiting for first rider location';
+function updateLabel(value, status) {
+  if (status === 'delivered') return 'Delivery route closed';
+  if (!value) return 'Live GPS starts when the rider begins the route';
   return `Location updated ${new Date(value).toLocaleTimeString([], {
     hour: '2-digit',
     minute: '2-digit',
@@ -77,6 +86,10 @@ export default function PublicRiderTracking({ match }) {
   const [refreshing, setRefreshing] = React.useState(false);
   const [error, setError] = React.useState('');
   const requestRunning = React.useRef(false);
+  const hiddenAt = React.useRef(0);
+  const customerSignedIn = hasStoredSessionType('customer');
+  const homeTarget = customerSignedIn ? '/customer/app' : '/';
+  const homeLabel = customerSignedIn ? 'Back to dashboard' : 'Back to home';
 
   const load = React.useCallback(async (initial = false) => {
     if (requestRunning.current) return;
@@ -100,15 +113,35 @@ export default function PublicRiderTracking({ match }) {
 
   React.useEffect(() => {
     const refreshWhenVisible = () => {
-      if (!document.hidden) load(false);
+      if (document.hidden) {
+        hiddenAt.current = Date.now();
+      } else if (Date.now() - hiddenAt.current > 120000) {
+        load(false);
+      }
     };
-    const interval = window.setInterval(refreshWhenVisible, 15000);
     document.addEventListener('visibilitychange', refreshWhenVisible);
     return () => {
-      window.clearInterval(interval);
       document.removeEventListener('visibilitychange', refreshWhenVisible);
     };
   }, [load]);
+
+  React.useEffect(() => (
+    subscribeToPublicDeliveryTracking(match.params.trackingToken, (delta) => {
+      setTracking((current) => {
+        if (!current || !delta || delta.orderId !== current.orderId) return current;
+        const changed = (value, fallback) => (value === undefined ? fallback : value);
+        return {
+          ...current,
+          trackingStatus: changed(delta.trackingStatus, current.trackingStatus),
+          riderLat: changed(delta.riderLat, current.riderLat),
+          riderLng: changed(delta.riderLng, current.riderLng),
+          riderHeading: changed(delta.riderHeading, current.riderHeading),
+          locationUpdatedAt: changed(delta.locationUpdatedAt, current.locationUpdatedAt),
+          deliveredAt: changed(delta.deliveredAt, current.deliveredAt),
+        };
+      });
+    })
+  ), [match.params.trackingToken]);
 
   if (loading) return <TrackingLoading />;
 
@@ -122,16 +155,21 @@ export default function PublicRiderTracking({ match }) {
           <span>{error || 'Check the link and try again.'}</span>
           <div>
             <button type="button" onClick={() => load(true)}><RefreshCw size={17} /> Try again</button>
-            <Link to="/"><ArrowLeft size={17} /> Back to Himaliya</Link>
+            <Link to={homeTarget}><ArrowLeft size={17} /> {homeLabel}</Link>
           </div>
         </div>
       </main>
     );
   }
 
-  const currentStep = stepIndexForStatus(tracking.trackingStatus);
+  const progress = progressForStatus(tracking.trackingStatus);
+  const activeStep = activeDeliveryStep(tracking.trackingStatus);
   const copy = statusCopy[tracking.trackingStatus] || statusCopy.unassigned;
-  const bottle = BOTTLE_TYPE_LABELS[tracking.bottleType] || tracking.bottleType;
+  const bottleSummary = (Array.isArray(tracking.items) && tracking.items.length
+    ? tracking.items
+    : [{ bottleType: tracking.bottleType, quantity: tracking.quantity }])
+    .map((item) => `${item.quantity} × ${BOTTLE_TYPE_LABELS[item.bottleType] || item.bottleType}`)
+    .join(' + ');
   const hasLocation = tracking.riderLat !== null && tracking.riderLng !== null;
 
   return (
@@ -142,10 +180,16 @@ export default function PublicRiderTracking({ match }) {
             <span><Droplets size={23} /></span>
             <div><strong>Himaliya Spring</strong><small>Live delivery</small></div>
           </Link>
-          <button type="button" onClick={() => load(false)} disabled={refreshing}>
-            <RefreshCw size={17} className={refreshing ? 'is-spinning' : ''} />
-            <span>{refreshing ? 'Updating' : 'Refresh'}</span>
-          </button>
+          <div className="public-tracking-actions">
+            <Link to={homeTarget} className="public-tracking-home">
+              <ArrowLeft size={17} />
+              <span>{homeLabel}</span>
+            </Link>
+            <button type="button" onClick={() => load(false)} disabled={refreshing}>
+              <RefreshCw size={17} className={refreshing ? 'is-spinning' : ''} />
+              <span>{refreshing ? 'Updating' : 'Refresh'}</span>
+            </button>
+          </div>
         </header>
 
         <section className="public-tracking-hero">
@@ -157,34 +201,41 @@ export default function PublicRiderTracking({ match }) {
             <p>Order for {tracking.customerName}</p>
             <h1>{copy[0]}</h1>
             <div>{copy[1]}</div>
-            <small><Clock3 size={15} /> {updateLabel(tracking.locationUpdatedAt)}</small>
+            <div
+              className="public-tracking-progress"
+              role="progressbar"
+              aria-label="Delivery progress"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              aria-valuenow={progress}
+            >
+              <span style={{ width: `${progress}%` }} />
+              <i /><i /><i />
+              <strong className="sr-only">Delivery is {progress}% complete</strong>
+            </div>
+            <ol className="public-tracking-status-steps" aria-label="Delivery status steps">
+              {deliverySteps.map((step, index) => (
+                <li key={step} className={`${index < activeStep ? 'is-complete' : ''}${index === activeStep ? ' is-current' : ''}`}>
+                  <span>{index < activeStep ? '✓' : index + 1}</span>
+                  <strong>{step}</strong>
+                </li>
+              ))}
+            </ol>
+            <small><Clock3 size={15} /> {updateLabel(tracking.locationUpdatedAt, tracking.trackingStatus)}</small>
           </div>
           <div className="public-tracking-hero__order">
             <Droplets />
             <span>Your order</span>
-            <strong>{tracking.quantity} × {bottle}</strong>
+            <strong>{bottleSummary}</strong>
             <small>{dateLabel(tracking.deliveryDate)}</small>
           </div>
-        </section>
-
-        <section className="public-tracking-progress" aria-label="Delivery progress">
-          {steps.map((step, index) => {
-            const complete = index < currentStep || tracking.trackingStatus === 'delivered';
-            const current = index === currentStep && tracking.trackingStatus !== 'delivered';
-            return (
-              <div key={step.key} className={`${complete ? 'is-complete' : ''}${current ? ' is-current' : ''}`}>
-                <span>{complete ? <Check size={15} /> : index + 1}</span>
-                <strong>{step.label}</strong>
-              </div>
-            );
-          })}
         </section>
 
         <div className="public-tracking-grid">
           <section className="public-tracking-map-card">
             <div className="public-tracking-section-heading">
               <div><Navigation size={19} /><span><strong>Live route map</strong><small>{hasLocation ? 'Rider and destination' : 'Destination ready'}</small></span></div>
-              {hasLocation && <em>Auto-updates every 15s</em>}
+              {hasLocation && <em><i /> Live GPS</em>}
             </div>
             <RiderMap
               riderLat={tracking.riderLat}

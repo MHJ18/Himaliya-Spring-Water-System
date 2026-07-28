@@ -17,7 +17,7 @@
 }
 
 .public-tracking-shell {
-  width: min(1180px, 100%);
+  width: min(980px, 100%);
   margin: 0 auto;
 }
 
@@ -65,7 +65,14 @@
   font-weight: 650;
 }
 
-.public-tracking-header > button,
+.public-tracking-actions {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.public-tracking-actions > button,
+.public-tracking-home,
 .public-tracking-error button,
 .public-tracking-error a {
   display: inline-flex;
@@ -83,9 +90,22 @@
   border: 1px solid rgba(11, 100, 127, 0.15);
   border-radius: 999px;
   box-shadow: 0 8px 24px rgba(12, 79, 98, 0.08);
+  text-decoration: none;
 }
 
-.public-tracking-header > button:disabled {
+.public-tracking-home {
+  color: #eefcff;
+  background: linear-gradient(135deg, #076d8b, #08a6bd);
+  border-color: rgba(7, 109, 139, .3);
+}
+
+.public-tracking-actions > button:focus-visible,
+.public-tracking-home:focus-visible {
+  outline: 3px solid rgba(8, 166, 189, .26);
+  outline-offset: 2px;
+}
+
+.public-tracking-actions > button:disabled {
   cursor: wait;
   opacity: 0.65;
 }
@@ -98,18 +118,18 @@
 .public-tracking-hero {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(220px, 310px);
-  min-height: 274px;
+  grid-template-columns: minmax(0, 1fr) minmax(190px, 250px);
+  min-height: 220px;
   align-items: center;
-  gap: clamp(24px, 5vw, 70px);
+  gap: clamp(22px, 4vw, 44px);
   overflow: hidden;
-  padding: clamp(26px, 5vw, 58px);
+  padding: clamp(25px, 4vw, 38px);
   color: #effdff;
   background:
     radial-gradient(circle at 86% 16%, rgba(124, 239, 255, 0.2), transparent 20rem),
     linear-gradient(125deg, #052f47 0%, #07627c 58%, #0889a0 100%);
   border: 1px solid rgba(79, 184, 205, 0.3);
-  border-radius: 28px;
+  border-radius: 24px;
   box-shadow: 0 26px 70px rgba(13, 76, 94, 0.19);
 }
 
@@ -163,7 +183,7 @@
 }
 
 .public-tracking-hero__copy > p {
-  margin: 19px 0 4px;
+  margin: 15px 0 4px;
   color: #9cecf7;
   font-size: 0.76rem;
   font-weight: 800;
@@ -175,7 +195,7 @@
   max-width: 680px;
   margin: 0;
   color: #fff !important;
-  font-size: clamp(2rem, 5vw, 3.55rem);
+  font-size: clamp(1.8rem, 4.2vw, 2.85rem);
   font-weight: 850;
   letter-spacing: -0.045em;
   line-height: 1.02;
@@ -183,17 +203,17 @@
 
 .public-tracking-hero__copy > div {
   max-width: 620px;
-  margin-top: 13px;
+  margin-top: 9px;
   color: rgba(233, 251, 255, 0.76);
-  font-size: 0.93rem;
-  line-height: 1.65;
+  font-size: 0.84rem;
+  line-height: 1.55;
 }
 
 .public-tracking-hero__copy > small {
   display: flex;
   align-items: center;
   gap: 7px;
-  margin-top: 21px;
+  margin-top: 12px;
   color: #c4f2f7;
   font-size: 0.72rem;
   font-weight: 700;
@@ -201,12 +221,12 @@
 
 .public-tracking-hero__order {
   display: grid;
-  min-height: 168px;
+  min-height: 138px;
   align-content: center;
-  padding: 24px;
+  padding: 20px;
   background: rgba(3, 43, 57, 0.4);
   border: 1px solid rgba(195, 248, 255, 0.15);
-  border-radius: 21px;
+  border-radius: 18px;
   backdrop-filter: blur(15px);
 }
 
@@ -230,76 +250,85 @@
   font-size: 1.08rem;
 }
 
-.public-tracking-progress {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 0;
-  margin: 18px 0;
-  overflow: hidden;
-  background: rgba(14, 95, 120, 0.12);
-  border: 1px solid rgba(15, 102, 128, 0.13);
-  border-radius: 20px;
-}
-
-.public-tracking-progress > div {
+.public-tracking-hero__copy > .public-tracking-progress {
   position: relative;
-  display: flex;
-  min-height: 78px;
-  align-items: center;
-  gap: 9px;
-  padding: 13px;
-  background: rgba(255, 255, 255, 0.76);
+  width: min(500px, 100%);
+  height: 8px;
+  margin-top: 17px;
+  overflow: visible;
+  background: rgba(221, 250, 255, 0.16);
+  border: 1px solid rgba(219, 251, 255, 0.2);
+  border-radius: 999px;
 }
 
-.public-tracking-progress > div + div {
-  border-left: 1px solid rgba(10, 91, 116, 0.1);
+.public-tracking-progress > span {
+  position: absolute;
+  inset: -1px auto -1px -1px;
+  min-width: 8px;
+  background: linear-gradient(90deg, #40d2e7, #75f0c0);
+  border-radius: inherit;
+  box-shadow: 0 0 18px rgba(101, 242, 189, 0.26);
+  transition: width 450ms ease;
 }
 
-.public-tracking-progress > div > span {
-  display: grid;
-  width: 28px;
-  height: 28px;
-  flex: 0 0 28px;
-  place-items: center;
-  color: #718891;
-  font-size: 0.68rem;
-  font-weight: 850;
-  background: #edf5f6;
-  border: 1px solid rgba(19, 95, 116, 0.1);
+.public-tracking-progress > i {
+  position: absolute;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  background: #315e6e;
+  border: 2px solid #8fb7c2;
   border-radius: 50%;
+  transform: translate(-50%, -50%);
 }
 
-.public-tracking-progress strong {
-  color: #78909a;
-  font-size: 0.67rem;
-  font-weight: 800;
+.public-tracking-progress > i:nth-of-type(1) { left: 25%; }
+.public-tracking-progress > i:nth-of-type(2) { left: 50%; }
+.public-tracking-progress > i:nth-of-type(3) { left: 100%; }
+
+.public-tracking-progress[aria-valuenow="25"] > i:nth-of-type(1),
+.public-tracking-progress[aria-valuenow="50"] > i:nth-of-type(-n+2),
+.public-tracking-progress[aria-valuenow="70"] > i:nth-of-type(-n+2),
+.public-tracking-progress[aria-valuenow="90"] > i:nth-of-type(-n+2),
+.public-tracking-progress[aria-valuenow="100"] > i {
+  background: #70eebf;
+  border-color: #c8ffe9;
 }
 
-.public-tracking-progress .is-complete > span {
-  color: #fff;
-  background: #0792ad;
-  border-color: #0792ad;
+.public-tracking-status-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .5rem;
+  width: min(500px, 100%);
+  margin: .85rem 0 0;
+  padding: 0;
+  list-style: none;
 }
-
-.public-tracking-progress .is-complete strong {
-  color: #165165;
+.public-tracking-status-steps li {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 1.25rem minmax(0, 1fr);
+  align-items: center;
+  gap: .35rem;
+  color: rgba(220, 243, 248, .68);
+  font-size: .72rem;
+  font-weight: 700;
 }
-
-.public-tracking-progress .is-current {
-  background: #f8fdfe;
-  box-shadow: inset 0 -3px 0 #08a2bd;
+.public-tracking-status-steps li > span {
+  display: grid;
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #b9d7df;
+  background: #315e6e;
+  border: 1px solid #8fb7c2;
+  border-radius: 50%;
+  font-size: .68rem;
+  font-weight: 900;
+  place-items: center;
 }
-
-.public-tracking-progress .is-current > span {
-  color: #057994;
-  background: #dff8fb;
-  border-color: rgba(8, 162, 189, 0.22);
-  box-shadow: 0 0 0 5px rgba(8, 162, 189, 0.08);
-}
-
-.public-tracking-progress .is-current strong {
-  color: #075b72;
-}
+.public-tracking-status-steps li > strong { min-width: 0; overflow-wrap: anywhere; }
+.public-tracking-status-steps li.is-complete, .public-tracking-status-steps li.is-current { color: #fff; }
+.public-tracking-status-steps li.is-complete > span, .public-tracking-status-steps li.is-current > span { color: #062a38; background: #70eebf; border-color: #c8ffe9; }
 
 .public-tracking-grid {
   display: grid;
@@ -350,10 +379,21 @@
 }
 
 .public-tracking-section-heading em {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   color: #52808f;
   font-size: 0.62rem;
   font-style: normal;
   font-weight: 750;
+}
+
+.public-tracking-section-heading em i {
+  width: 7px;
+  height: 7px;
+  background: #18b77a;
+  border-radius: 50%;
+  box-shadow: 0 0 0 4px rgba(24, 183, 122, 0.11);
 }
 
 .public-tracking-details {
@@ -535,8 +575,8 @@
 }
 
 .public-tracking-loading > span { width: 220px; height: 52px; border-radius: 16px; }
-.public-tracking-loading > i:first-of-type { height: 274px; border-radius: 28px; }
-.public-tracking-loading > i:last-of-type { height: 78px; border-radius: 20px; }
+.public-tracking-loading > i:first-of-type { height: 220px; border-radius: 24px; }
+.public-tracking-loading > i:last-of-type { height: 8px; border-radius: 999px; }
 .public-tracking-loading > div { display: grid; grid-template-columns: 1.55fr .65fr; gap: 18px; }
 .public-tracking-loading > div > i { min-height: 410px; border-radius: 24px; }
 
@@ -563,10 +603,6 @@
     grid-template-columns: 1fr;
   }
 
-  .public-tracking-progress {
-    overflow-x: auto;
-    grid-template-columns: repeat(5, minmax(130px, 1fr));
-  }
 }
 
 @media (max-width: 560px) {
@@ -579,11 +615,12 @@
     padding: 0 4px;
   }
 
-  .public-tracking-header > button span {
+  .public-tracking-actions span {
     display: none;
   }
 
-  .public-tracking-header > button {
+  .public-tracking-actions > button,
+  .public-tracking-home {
     width: 43px;
     padding: 0;
   }
@@ -597,11 +634,6 @@
   .public-tracking-hero__order {
     padding: 18px;
     border-radius: 17px;
-  }
-
-  .public-tracking-progress {
-    margin: 10px 0;
-    border-radius: 16px;
   }
 
   .public-tracking-map-card,

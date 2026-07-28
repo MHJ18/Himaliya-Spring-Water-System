@@ -50,4 +50,18 @@ describe('Supabase session expiry', () => {
     })).rejects.toThrow('Administrator service is unavailable on this deployment');
     delete global.fetch;
   });
+
+  it('stores and clears the temporary-password requirement with the session', () => {
+    const {
+      clearStoredSession,
+      isPasswordChangeRequired,
+      setPasswordChangeRequired,
+    } = require('../supabaseClient');
+
+    expect(isPasswordChangeRequired()).toBe(false);
+    setPasswordChangeRequired(true);
+    expect(isPasswordChangeRequired()).toBe(true);
+    clearStoredSession();
+    expect(isPasswordChangeRequired()).toBe(false);
+  });
 });

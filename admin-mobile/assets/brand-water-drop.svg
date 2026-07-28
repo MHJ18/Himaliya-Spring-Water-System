@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="Himaliya Spring Water drop">
+  <defs>
+    <linearGradient id="drop" x1="0.18" y1="0.08" x2="0.82" y2="0.92">
+      <stop offset="0" stop-color="#72E3FF"/>
+      <stop offset="0.52" stop-color="#20B9E7"/>
+      <stop offset="1" stop-color="#0786C8"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="170%">
+      <feDropShadow dx="0" dy="34" stdDeviation="30" flood-color="#00101D" flood-opacity="0.42"/>
+    </filter>
+  </defs>
+  <rect width="1024" height="1024" fill="#071B33"/>
+  <circle cx="512" cy="512" r="326" fill="#0A2941"/>
+  <circle cx="512" cy="512" r="278" fill="none" stroke="#174663" stroke-width="4"/>
+  <path
+    d="M512 276C418 394 342 486 342 594c0 102 76 172 170 172s170-70 170-172C682 486 606 394 512 276Z"
+    fill="url(#drop)"
+    filter="url(#shadow)"
+  />
+  <path
+    d="M410 600c11 53 49 86 103 94"
+    fill="none"
+    stroke="#BDF4FF"
+    stroke-linecap="round"
+    stroke-width="28"
+    opacity="0.82"
+  />
+</svg>

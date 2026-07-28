@@ -332,9 +332,9 @@ export default function AddCustomer({ history }) {
                       />
                       <Stack direction="row" spacing={0.75} sx={{ display: { xs: 'none', sm: 'flex' } }}>
                         {(customer.source === 'portal' || customer.source === 'both') && (
-                          <Chip size="small" label={customer.source === 'both' ? 'Admin + app' : 'App signup'} color="info" variant="outlined" />
+                          <Chip size="small" label="App customer" color="info" variant="outlined" />
                         )}
-                        <Chip size="small" label={`${(customer.purchaseHistory || []).length} orders`} />
+                        <Chip size="small" label={`${customer.orderCount === undefined ? (customer.purchaseHistory || []).length : customer.orderCount} orders`} />
                       </Stack>
                     </ListItemButton>
                   </ListItem>
@@ -375,7 +375,7 @@ export default function AddCustomer({ history }) {
                   </Grid>
                   <Grid item xs={12} sm={6}>
                     <DetailRow icon={<PersonOutlineRounded />} label="Account source">
-                      {selected.source === 'both' ? 'Admin and customer app' : selected.source === 'portal' ? 'Customer app signup' : 'Created by admin'}
+                      {selected.source === 'both' ? 'Customer app account' : selected.source === 'portal' ? 'Customer app signup' : 'Created by admin'}
                     </DetailRow>
                   </Grid>
                 </Grid>

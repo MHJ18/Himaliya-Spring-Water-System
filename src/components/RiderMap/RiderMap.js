@@ -57,7 +57,9 @@ export default function RiderMap({
 }) {
   const mapElement = React.useRef(null);
   const mapInstance = React.useRef(null);
+  const tileLayer = React.useRef(null);
   const layers = React.useRef([]);
+  const [darkMap, setDarkMap] = React.useState(false);
   const hasRiderLocation = isCoordinate(riderLat) && isCoordinate(riderLng);
 
   const mappedStops = React.useMemo(() => {
@@ -96,7 +98,7 @@ export default function RiderMap({
       attributionControl: true,
     });
     L.control.zoom({ position: 'bottomright' }).addTo(map);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    tileLayer.current = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
       subdomains: 'abcd',
       maxZoom: 19,
       attribution: '&copy; OpenStreetMap &copy; CARTO',
@@ -109,6 +111,22 @@ export default function RiderMap({
       layers.current = [];
     };
   }, []);
+
+  React.useEffect(() => {
+    const map = mapInstance.current;
+    if (!map) return;
+    if (tileLayer.current) tileLayer.current.remove();
+    tileLayer.current = L.tileLayer(
+      darkMap
+        ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+        : 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+      {
+        subdomains: 'abcd',
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap &copy; CARTO',
+      },
+    ).addTo(map);
+  }, [darkMap]);
 
   React.useEffect(() => {
     const map = mapInstance.current;
@@ -174,13 +192,18 @@ export default function RiderMap({
   ]);
 
   return (
-    <div className={`rider-map${className ? ` ${className}` : ''}`}>
+    <div className={`rider-map${darkMap ? ' rider-map--dark' : ''}${className ? ` ${className}` : ''}`}>
       <div
         ref={mapElement}
         className="rider-map__canvas"
         role="application"
         aria-label={hasRiderLocation ? 'Live rider and delivery destination map' : 'Delivery destinations map'}
       />
+      <div className="rider-map__controls">
+        <button type="button" onClick={() => setDarkMap((isDark) => !isDark)} aria-pressed={darkMap}>
+          {darkMap ? 'Light map' : 'Dark map'}
+        </button>
+      </div>
       {!mappedStops.length && (
         <div className="rider-map__waiting">
           <span />

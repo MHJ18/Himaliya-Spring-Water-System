@@ -5,7 +5,75 @@ function requireCloud() {
   if (!isSupabaseConfigured()) throw new Error('Supabase configuration is required.');
 }
 
-function toCustomer(row, sales) {
+const NON_BILLABLE_ORDER_STATUSES = new Set(['canceled', 'rejected']);
+
+function number(value) {
+  const parsed = Number(value || 0);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+}
+
+export function toCustomerOrderHistory(order) {
+  if (!order || NON_BILLABLE_ORDER_STATUSES.has(order.status)) return [];
+
+  const savedItems = Array.isArray(order.items) ? order.items : [];
+  const items = savedItems.length ? savedItems : [{
+    bottleType: order.bottle_type,
+    quantity: order.quantity,
+    unitPrice: order.unit_price,
+  }];
+
+  return items
+    .map((item, index) => {
+      const quantity = number(item && (item.quantity !== undefined ? item.quantity : item.qty));
+      const pricePerBottle = number(item && (
+        item.unitPrice !== undefined ? item.unitPrice : item.unit_price
+      )) || (items.length === 1 ? number(order.unit_price) : 0);
+      const savedTotal = number(item && (
+        item.totalAmount !== undefined ? item.totalAmount : item.total_amount
+      ));
+      const totalAmount = savedTotal
+        || (quantity * pricePerBottle)
+        || (items.length === 1 ? number(order.total_amount) : 0);
+      const bottleType = String(
+        (item && (item.bottleType || item.bottle_type)) || order.bottle_type || ''
+      ).trim();
+
+      if (!bottleType || quantity <= 0) return null;
+      return {
+        id: `customer-order:${order.id}:${index}`,
+        orderId: order.id,
+        recordType: 'customer_order',
+        readOnly: true,
+        status: order.status || 'pending',
+        date: order.created_at,
+        bottleType,
+        quantity,
+        pricePerBottle,
+        totalAmount,
+        notes: order.notes || '',
+      };
+    })
+    .filter(Boolean);
+}
+
+function toCustomer(row, sales, orders) {
+  const customerSales = sales
+    .filter((sale) => sale.customer_id === row.id)
+    .map((sale) => ({
+      id: sale.id,
+      recordType: 'sale',
+      date: sale.created_at,
+      bottleType: sale.bottle_type,
+      quantity: Number(sale.quantity) || 0,
+      pricePerBottle: Number(sale.price_per_bottle) || 0,
+      totalAmount: Number(sale.total_amount) || 0,
+      notes: sale.notes || '',
+    }));
+  const customerOrders = orders.filter((order) => (
+    order.customer_id === row.id && !NON_BILLABLE_ORDER_STATUSES.has(order.status)
+  ));
+  const orderHistory = customerOrders.flatMap(toCustomerOrderHistory);
+
   return {
     id: row.id,
     name: row.name,
@@ -13,20 +81,14 @@ function toCustomer(row, sales) {
     address: row.address || '',
     email: row.email || '',
     photo: row.photo || '',
+    bottlesHeld: Number(row.bottles_held) || 0,
     source: row.source || 'admin',
     authUserId: row.auth_user_id || null,
+    active: row.active !== false,
     createdAt: row.created_at,
-    purchaseHistory: sales
-      .filter((sale) => sale.customer_id === row.id)
-      .map((sale) => ({
-        id: sale.id,
-        date: sale.created_at,
-        bottleType: sale.bottle_type,
-        quantity: Number(sale.quantity) || 0,
-        pricePerBottle: Number(sale.price_per_bottle) || 0,
-        totalAmount: Number(sale.total_amount) || 0,
-        notes: sale.notes || '',
-      })),
+    orderCount: customerSales.length + customerOrders.length,
+    purchaseHistory: [...customerSales, ...orderHistory]
+      .sort((left, right) => new Date(left.date) - new Date(right.date)),
   };
 }
 
@@ -38,8 +100,10 @@ function toCustomerRow(customer) {
     address: customer.address || '',
     email: customer.email || '',
     photo: customer.photo || '',
+    bottles_held: Number(customer.bottlesHeld) || 0,
     source: customer.source || 'admin',
     auth_user_id: customer.authUserId || null,
+    active: customer.active !== false,
     created_at: customer.createdAt || new Date().toISOString(),
   };
 }
@@ -67,21 +131,24 @@ function isAdministratorIdentity(customer, adminRows) {
 
 export async function getCloudCustomers() {
   requireCloud();
-  const [customers, sales, adminRows] = await Promise.all([
+  const [customers, sales, orders, adminRows] = await Promise.all([
     dbRequest('/customers?select=*&order=created_at.asc'),
     dbRequest('/sales?select=*&order=created_at.asc'),
+    dbRequest('/customer_orders?select=*&order=created_at.asc'),
     dbRequest('/admin_profiles?select=auth_user_id,email'),
   ]);
   return customers
     .filter((customer) => !isAdministratorIdentity(customer, adminRows))
-    .map((customer) => toCustomer(customer, sales));
+    .map((customer) => toCustomer(customer, sales, orders));
 }
 
 export async function saveCloudCustomers(customers) {
   requireCloud();
   const customerRows = customers.map(toCustomerRow);
   const saleRows = customers.flatMap((customer) =>
-    (customer.purchaseHistory || []).map((sale) => toSaleRow(customer, sale))
+    (customer.purchaseHistory || [])
+      .filter((sale) => sale.recordType !== 'customer_order')
+      .map((sale) => toSaleRow(customer, sale))
   );
 
   if (customerRows.length) {

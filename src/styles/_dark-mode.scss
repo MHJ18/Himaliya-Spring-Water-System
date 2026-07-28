@@ -1,4 +1,5 @@
 body.dashboard-light {
+  --hs-page-bg: radial-gradient(circle at 18% 0%, rgba(80, 150, 255, 0.13), transparent 32rem), linear-gradient(135deg, #f6f9ff 0%, #eaf1fb 100%);
   --hs-page-text: #182033;
   --hs-page-muted: #667085;
   --hs-icon-muted: #8a95aa;
@@ -132,6 +133,7 @@ body.dashboard-light {
 }
 
 body.dashboard-dark {
+  --hs-page-bg: radial-gradient(circle at 12% 0%, rgba(0, 194, 255, 0.18), transparent 28rem), radial-gradient(circle at 82% 8%, rgba(56, 124, 255, 0.13), transparent 34rem), linear-gradient(135deg, #061827 0%, #082238 48%, #03111f 100%);
   --hs-page-text: #f2fbff;
   --hs-page-muted: rgba(205, 232, 246, 0.68);
   --hs-icon-muted: rgba(177, 215, 235, 0.48);

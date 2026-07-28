@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "277407513762",
+    "project_id": "himaliya",
+    "storage_bucket": "himaliya.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:277407513762:android:be632f64a1b9d1b75eebfb",
+        "android_client_info": {
+          "package_name": "com.himaliyaspring.admin"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAJzoAA4E6_7joY0h-JFJM4WKmjHADYAQk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

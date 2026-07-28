@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Button,
@@ -14,7 +14,7 @@ import { formatCurrency } from '../../utils/formatters';
 
 const initial = { bottleType: '', quantity: 1, pricePerBottle: '', notes: '' };
 
-export default function SalesForm({ onSubmit, loading }) {
+export default function SalesForm({ onSubmit, loading, assignedPrices = {} }) {
   const [form, setForm] = useState(initial);
   const [errors, setErrors] = useState({});
   const total = useMemo(
@@ -22,9 +22,26 @@ export default function SalesForm({ onSubmit, loading }) {
     [form]
   );
 
+  useEffect(() => {
+    const savedPrice = Number(assignedPrices[form.bottleType] || 0);
+    if (!form.pricePerBottle && savedPrice) {
+      setForm((current) => ({ ...current, pricePerBottle: String(savedPrice) }));
+    }
+  }, [assignedPrices, form.bottleType, form.pricePerBottle]);
+
   const setField = (field, value) => {
     setForm((current) => ({ ...current, [field]: value }));
     setErrors((current) => ({ ...current, [field]: undefined }));
+  };
+
+  const selectBottleType = (bottleType) => {
+    const savedPrice = Number(assignedPrices[bottleType] || 0);
+    setForm((current) => ({
+      ...current,
+      bottleType,
+      pricePerBottle: savedPrice ? String(savedPrice) : '',
+    }));
+    setErrors((current) => ({ ...current, bottleType: undefined, pricePerBottle: undefined }));
   };
 
   const handleSubmit = async (event) => {
@@ -46,7 +63,7 @@ export default function SalesForm({ onSubmit, loading }) {
             select
             label="Bottle type"
             value={form.bottleType}
-            onChange={(event) => setField('bottleType', event.target.value)}
+            onChange={(event) => selectBottleType(event.target.value)}
             error={Boolean(errors.bottleType)}
             helperText={errors.bottleType || 'Select the delivered bottle or gallon type.'}
             required
@@ -78,7 +95,9 @@ export default function SalesForm({ onSubmit, loading }) {
             value={form.pricePerBottle}
             onChange={(event) => setField('pricePerBottle', event.target.value)}
             error={Boolean(errors.pricePerBottle)}
-            helperText={errors.pricePerBottle}
+            helperText={errors.pricePerBottle || (Number(assignedPrices[form.bottleType] || 0) > 0
+              ? 'Saved customer price. Change it here to update future entries.'
+              : 'This price will be saved for this customer.')}
             InputProps={{
               inputProps: { min: 1, step: 1 },
               startAdornment: <InputAdornment position="start">PKR</InputAdornment>,
@@ -110,7 +129,7 @@ export default function SalesForm({ onSubmit, loading }) {
         {total > 0 && (
           <Grid item xs={12}>
             <Alert severity="info">
-              This individual price creates a {formatCurrency(total)} entry in the customer sales history.
+              This creates a {formatCurrency(total)} sale and saves the unit price for this customer&apos;s future entries.
             </Alert>
           </Grid>
         )}

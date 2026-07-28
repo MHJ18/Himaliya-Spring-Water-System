@@ -49,13 +49,13 @@ export default function PurchaseHistoryTable({ transactions, onDelete, deletingT
               <TableCell align="right" sx={{ fontWeight: 800 }}>{formatCurrency(transaction.totalAmount)}</TableCell>
               {showActions && (
                 <TableCell align="right">
-                  <Tooltip title="Delete sale entry">
+                  <Tooltip title={transaction.readOnly ? 'Portal orders are managed from Customer Orders' : 'Delete sale entry'}>
                     <span>
                       <IconButton
                         size="small"
                         color="error"
                         aria-label={`Delete sale entry from ${formatDate(transaction.date)}`}
-                        disabled={deletingTransactionId === transaction.id}
+                        disabled={transaction.readOnly || deletingTransactionId === transaction.id}
                         onClick={() => onDelete(transaction)}
                       >
                         <DeleteOutlineRoundedIcon fontSize="small" />

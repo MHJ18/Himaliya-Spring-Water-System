@@ -1,5 +1,19 @@
 'use strict';
 
+// CRA's dev server stack still expects the legacy http_parser binding.
+// Node 24 removes it, so we provide the pure-JS replacement before any
+// websocket-related dependencies are loaded.
+const originalBinding = process.binding;
+process.binding = function(name) {
+  if (name === 'http_parser') {
+    return {
+      HTTPParser: require('http-parser-js').HTTPParser
+    };
+  }
+
+  return originalBinding.apply(process, arguments);
+};
+
 // Do this as the first thing so that any code reading it knows the right env.
 process.env.BABEL_ENV = 'development';
 process.env.NODE_ENV = 'development';

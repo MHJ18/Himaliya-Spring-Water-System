@@ -28,7 +28,10 @@ import { openSidebar, closeSidebar } from '../../actions/navigation';
 import { logoutUser } from '../../actions/user';
 import { getCurrentAdmin, getCurrentAdminProfile } from '../../utils/adminAuth';
 import { getCustomerAvatar } from '../../utils/customerPhotos';
-import { getAdminNotifications } from '../../services/api/customerPortalApi';
+import {
+  ADMIN_NOTIFICATION_STATE_EVENT,
+  getAdminNotifications,
+} from '../../services/api/customerPortalApi';
 import { getAdminUnreadMessageCount } from '../../services/api/messagingApi';
 import s from './Header.module.scss';
 
@@ -41,11 +44,11 @@ function Header({
   const [unreadMessages, setUnreadMessages] = React.useState(0);
   const notificationRequestRunning = React.useRef(false);
 
-  const loadUnreadNotifications = React.useCallback(() => {
+  const loadUnreadNotifications = React.useCallback((forceRefresh = false) => {
     if (document.hidden || notificationRequestRunning.current) return Promise.resolve();
     notificationRequestRunning.current = true;
     return Promise.all([
-      getAdminNotifications().then((items) => setUnreadNotifications(items.filter((item) => !item.read).length)),
+      getAdminNotifications({ forceRefresh }).then((items) => setUnreadNotifications(items.filter((item) => !item.read).length)),
       getAdminUnreadMessageCount().then(setUnreadMessages).catch(() => setUnreadMessages(0)),
     ])
       .catch(() => {})
@@ -56,15 +59,17 @@ function Header({
     getCurrentAdminProfile().then(setAdmin).catch(() => {});
     loadUnreadNotifications();
     const refreshWhenVisible = () => {
-      if (!document.hidden) loadUnreadNotifications();
+      if (!document.hidden) loadUnreadNotifications(true);
     };
     const timer = window.setInterval(refreshWhenVisible, 20000);
     document.addEventListener('visibilitychange', refreshWhenVisible);
     window.addEventListener('online', refreshWhenVisible);
+    window.addEventListener(ADMIN_NOTIFICATION_STATE_EVENT, refreshWhenVisible);
     return () => {
       window.clearInterval(timer);
       document.removeEventListener('visibilitychange', refreshWhenVisible);
       window.removeEventListener('online', refreshWhenVisible);
+      window.removeEventListener(ADMIN_NOTIFICATION_STATE_EVENT, refreshWhenVisible);
     };
   }, [loadUnreadNotifications]);
 
@@ -96,6 +101,22 @@ function Header({
   return (
     <Box component="header" className={s.header}>
       <Box className={s.mobileIdentity}>
+        <Tooltip title="Notifications">
+          <IconButton
+            component={Link}
+            to="/notifications"
+            color="inherit"
+            aria-label={`${unreadNotifications} unread notifications`}
+            className={[s.mobileNotification, unreadNotifications ? s.notificationActive : ''].filter(Boolean).join(' ')}
+          >
+            <NotificationsNoneRoundedIcon fontSize="small" />
+            {unreadNotifications > 0 && (
+              <span className={s.notificationBadge} aria-hidden="true">
+                {unreadNotifications > 9 ? '9+' : unreadNotifications}
+              </span>
+            )}
+          </IconButton>
+        </Tooltip>
         <IconButton color="inherit" onClick={toggleSidebar} aria-label="Open navigation menu">
           <MenuRoundedIcon />
         </IconButton>
@@ -129,7 +150,7 @@ function Header({
             to="/notifications"
             color="inherit"
             aria-label={`${unreadNotifications} unread notifications`}
-            className={[s.notificationButton, unreadNotifications ? s.notificationActive : ''].filter(Boolean).join(' ')}
+            className={[s.notificationButton, s.desktopNotification, unreadNotifications ? s.notificationActive : ''].filter(Boolean).join(' ')}
           >
             <NotificationsNoneRoundedIcon fontSize="small" />
             {unreadNotifications > 0 && (

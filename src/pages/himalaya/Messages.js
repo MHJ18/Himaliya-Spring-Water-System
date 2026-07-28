@@ -127,7 +127,9 @@ export default function Messages() {
       const updated = await markConversationRead(conversationId, 'admin');
       if (updated) {
         setConversations((current) => current.map((item) => (
-          item.id === updated.id ? { ...item, ...updated, customer: item.customer } : item
+          item.id === updated.id
+            ? { ...item, ...updated, customer: item.customer }
+            : item
         )));
       }
     } catch (error) {
@@ -227,7 +229,7 @@ export default function Messages() {
 
   if (loading) {
     return (
-      <PageShell title="Messages" subtitle="Chat with your customers in real time">
+      <PageShell title="Messages" subtitle="Customer support conversations">
         <LoadingState label="Loading conversations..." variant="form" compact />
       </PageShell>
     );
@@ -236,11 +238,11 @@ export default function Messages() {
   return (
     <PageShell
       title="Messages"
-      subtitle="Two-way chat with customer portal accounts"
+      subtitle="Customer support conversations"
       actions={(
         <button type="button" className="msg-new-chat" onClick={() => setComposerOpen(true)}>
           <Plus size={17} />
-          New chat
+          Message customer
         </button>
       )}
     >
@@ -315,7 +317,7 @@ export default function Messages() {
                 <Avatar person={active.customer} index={0} />
                 <div className="msg-header__copy">
                   <strong>{active.customer?.name || 'Customer'}</strong>
-                  <span>Customer portal · Online messaging</span>
+                  <span>Customer portal · Private company conversation</span>
                 </div>
                 <div className="msg-header__facts">
                   {active.customer?.phone && (
@@ -340,6 +342,9 @@ export default function Messages() {
                     className={`msg-bubble-row${message.senderRole === 'admin' ? ' is-mine' : ''}`}
                   >
                     <div className="msg-bubble">
+                      <small className="msg-bubble__sender">
+                        {message.senderRole === 'admin' ? 'You' : 'Customer'}
+                      </small>
                       <p>{message.body}</p>
                       <time>{messageTime(message.createdAt)}</time>
                     </div>

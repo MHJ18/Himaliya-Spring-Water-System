@@ -191,6 +191,20 @@
   line-height: 1.45;
 }
 
+.customer-messages-sender {
+  display: block;
+  margin-bottom: 0.2rem;
+  color: #73dff3;
+  font-size: 0.57rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.customer-messages-bubble-row.is-mine .customer-messages-sender {
+  color: #075b78;
+}
+
 .customer-messages-bubble time {
   display: block;
   margin-top: 0.35rem;
@@ -257,6 +271,17 @@
   background:
     radial-gradient(circle at 12% 0%, rgba(61, 178, 255, 0.14), transparent 24rem),
     linear-gradient(180deg, #edf6fa 0%, #e5f0f5 100%);
+}
+
+.customer-theme--dark.customer-messages-page {
+  background: linear-gradient(180deg, #07111f 0%, #0a1724 100%);
+}
+
+.customer-theme--dark-gradient.customer-messages-page {
+  background:
+    radial-gradient(circle at 8% 0%, rgba(0, 221, 255, 0.22), transparent 28rem),
+    radial-gradient(circle at 92% 10%, rgba(123, 92, 255, 0.22), transparent 32rem),
+    linear-gradient(145deg, #061927 0%, #0b1630 48%, #140d2b 100%);
 }
 
 .customer-theme--light .customer-messages-card {

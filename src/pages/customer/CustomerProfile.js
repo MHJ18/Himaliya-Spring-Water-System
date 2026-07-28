@@ -31,6 +31,7 @@ import TuneRoundedIcon from '@mui/icons-material/TuneRounded';
 import SecurityRoundedIcon from '@mui/icons-material/SecurityRounded';
 import LightModeRoundedIcon from '@mui/icons-material/LightModeRounded';
 import DarkModeRoundedIcon from '@mui/icons-material/DarkModeRounded';
+import GradientRoundedIcon from '@mui/icons-material/GradientRounded';
 import SaveRoundedIcon from '@mui/icons-material/SaveRounded';
 import NotificationsActiveRoundedIcon from '@mui/icons-material/NotificationsActiveRounded';
 import LocalShippingRoundedIcon from '@mui/icons-material/LocalShippingRounded';
@@ -44,7 +45,7 @@ import PasswordChangeForm from '../../components/PasswordChangeForm/PasswordChan
 import { BOTTLE_TYPES, BOTTLE_TYPE_LABELS } from '../../data/constants';
 
 function buildCustomerTheme(theme) {
-  const dark = theme === 'dark';
+  const dark = theme !== 'light';
   return createTheme({
     palette: {
       mode: dark ? 'dark' : 'light',
@@ -184,7 +185,6 @@ function CustomerProfile({ history }) {
   const [profile, setProfile] = React.useState(null);
   const [form, setForm] = React.useState({ name: '', email: '', phone: '', address: '' });
   const [preferences, setPreferences] = React.useState({
-    theme: 'dark',
     browserNotifications: true,
     orderUpdates: true,
     invoiceAlerts: true,
@@ -213,12 +213,11 @@ function CustomerProfile({ history }) {
           address: nextProfile.address || '',
         });
         setPreferences((current) => ({ ...current, ...(nextProfile.preferences || {}) }));
-        setTheme(nextProfile.preferences && nextProfile.preferences.theme);
       })
       .catch((error) => toast.error(error.message || 'Could not load your profile.'))
       .finally(() => active && setLoading(false));
     return () => { active = false; };
-  }, [history, setTheme]);
+  }, [history]);
 
   const update = (field) => (event) => {
     setForm((current) => ({ ...current, [field]: event.target.value }));
@@ -226,7 +225,6 @@ function CustomerProfile({ history }) {
 
   const updatePreference = (field, value) => {
     setPreferences((current) => ({ ...current, [field]: value }));
-    if (field === 'theme') setTheme(value);
   };
 
   const save = async (event, successMessage) => {
@@ -258,9 +256,12 @@ function CustomerProfile({ history }) {
           p: { xs: 1.5, sm: 2.5, md: 4 },
           color: 'text.primary',
           bgcolor: 'background.default',
-          backgroundImage: theme === 'dark'
-            ? 'radial-gradient(circle at 12% 0%, rgba(41,171,255,.15), transparent 30rem), radial-gradient(circle at 90% 8%, rgba(77,95,255,.12), transparent 30rem)'
-            : 'radial-gradient(circle at 10% 0%, rgba(61,190,239,.13), transparent 28rem), radial-gradient(circle at 94% 18%, rgba(14,116,144,.09), transparent 30rem)',
+          backgroundImage: theme === 'dark-gradient'
+            ? 'radial-gradient(circle at 8% 0%, rgba(0, 221, 255, .22), transparent 30rem), radial-gradient(circle at 92% 10%, rgba(123, 92, 255, .22), transparent 34rem), linear-gradient(145deg, #061927 0%, #0b1630 48%, #140d2b 100%)'
+            : theme === 'dark'
+              ? 'linear-gradient(180deg, #07111f 0%, #0a1724 100%)'
+              : 'radial-gradient(circle at 10% 0%, rgba(61,190,239,.13), transparent 28rem), radial-gradient(circle at 94% 18%, rgba(14,116,144,.09), transparent 30rem)',
+          backgroundAttachment: 'fixed',
         }}
       >
         <Box sx={{ width: '100%', maxWidth: 1040, mx: 'auto' }}>
@@ -276,10 +277,19 @@ function CustomerProfile({ history }) {
             }}
           >
             <Button
-              color="inherit"
+              color="primary"
               variant="outlined"
               startIcon={<ArrowBackRoundedIcon />}
               onClick={() => history.push('/customer/app')}
+              sx={{
+                color: theme === 'light' ? '#075675' : '#dff8ff',
+                bgcolor: theme === 'light' ? 'rgba(255,255,255,.78)' : 'rgba(125,223,255,.1)',
+                borderColor: theme === 'light' ? 'rgba(7,86,117,.28)' : 'rgba(125,223,255,.38)',
+                '&:hover': {
+                  bgcolor: theme === 'light' ? '#fff' : 'rgba(125,223,255,.17)',
+                  borderColor: theme === 'light' ? '#078eb4' : '#7ddfff',
+                },
+              }}
             >
               Back to dashboard
             </Button>
@@ -372,7 +382,7 @@ function CustomerProfile({ history }) {
               <Card>
                 <CardHeader
                   title="Portal preferences"
-                  subheader="These settings follow your account across devices."
+                  subheader="Delivery preferences follow your account. Appearance stays on this device."
                 />
                 <CardContent>
                   <Box component="form" onSubmit={(event) => save(event, 'Portal preferences saved.')}>
@@ -380,13 +390,17 @@ function CustomerProfile({ history }) {
                     <ToggleButtonGroup
                       exclusive
                       fullWidth
-                      value={preferences.theme}
-                      onChange={(event, value) => value && updatePreference('theme', value)}
+                      value={theme}
+                      onChange={(event, value) => value && setTheme(value)}
                       sx={{ mt: 0.5, mb: 2 }}
                     >
                       <ToggleButton value="light"><LightModeRoundedIcon sx={{ mr: 1 }} />Light</ToggleButton>
                       <ToggleButton value="dark"><DarkModeRoundedIcon sx={{ mr: 1 }} />Dark</ToggleButton>
+                      <ToggleButton value="dark-gradient"><GradientRoundedIcon sx={{ mr: 1 }} />Dark gradient</ToggleButton>
                     </ToggleButtonGroup>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: -1, mb: 2 }}>
+                      Saved only in this browser, so it can be different on each device.
+                    </Typography>
 
                     <Divider />
                     <Stack spacing={1} sx={{ mt: 1.5, mb: 2 }}>

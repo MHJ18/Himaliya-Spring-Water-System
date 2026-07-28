@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Avatar,
@@ -25,6 +25,7 @@ import { useSales } from '../../context/SalesContext';
 import { normalizePhone } from '../../utils/validation';
 import { getCustomerAvatar } from '../../utils/customerPhotos';
 import LoadingState from '../../components/LoadingState/LoadingState';
+import { getCustomerBottlePrices } from '../../services/api/customerBottlePriceApi';
 
 export default function DailySales() {
   const {
@@ -36,10 +37,25 @@ export default function DailySales() {
   const [selectedId, setSelectedId] = useState(null);
   const [searched, setSearched] = useState(false);
   const [saleLoading, setSaleLoading] = useState(false);
+  const [assignedPrices, setAssignedPrices] = useState({});
 
   const customer = useMemo(() => (
     selectedId ? customers.find((item) => item.id === selectedId) || null : null
   ), [customers, selectedId]);
+
+  useEffect(() => {
+    let active = true;
+    if (!selectedId) {
+      setAssignedPrices({});
+      return () => { active = false; };
+    }
+    getCustomerBottlePrices(selectedId)
+      .then((prices) => { if (active) setAssignedPrices(prices); })
+      .catch((error) => {
+        if (active) toast.error(error.message || 'Could not load this customer\'s saved prices.');
+      });
+    return () => { active = false; };
+  }, [selectedId]);
 
   const resolveMatches = (query) => {
     const value = query.trim();
@@ -66,6 +82,10 @@ export default function DailySales() {
     setSaleLoading(true);
     try {
       await recordSale({ customerId: customer.id, ...form });
+      setAssignedPrices((current) => ({
+        ...current,
+        [form.bottleType]: Number(form.pricePerBottle) || 0,
+      }));
       toast.success('Sale recorded successfully.');
       return true;
     } catch (error) {
@@ -185,7 +205,12 @@ export default function DailySales() {
                 subheader={`Set this entry's bottle price and add the purchase to ${customer.name}'s history`}
               />
               <CardContent sx={{ pt: 0 }}>
-                <SalesForm onSubmit={handleSale} loading={saleLoading} />
+                <SalesForm
+                  key={customer.id}
+                  onSubmit={handleSale}
+                  loading={saleLoading}
+                  assignedPrices={assignedPrices}
+                />
               </CardContent>
             </Card>
           </Grid>

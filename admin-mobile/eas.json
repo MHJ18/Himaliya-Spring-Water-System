@@ -7,6 +7,14 @@
       "android": { "buildType": "apk" },
       "env": { "EXPO_PUBLIC_APP_ENV": "production" }
     },
+    "preview": {
+      "distribution": "internal",
+      "environment": "production",
+      "android": { "buildType": "apk" },
+      "env": { "EXPO_PUBLIC_APP_ENV": "preview" }
+    },
     "production": { "autoIncrement": true }
   }
+
+  
 }

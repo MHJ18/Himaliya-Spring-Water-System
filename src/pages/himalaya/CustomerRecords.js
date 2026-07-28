@@ -63,7 +63,6 @@ import { FILTER_PERIODS } from '../../data/constants';
 import { filterTransactionsByPeriod, computePurchaseStats } from '../../utils/analytics';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import { invoiceApi } from '../../services/api/invoiceApi';
-import { customerApi } from '../../services/api/customerApi';
 import { getCustomerAvatar } from '../../utils/customerPhotos';
 import LoadingState from '../../components/LoadingState/LoadingState';
 
@@ -169,16 +168,7 @@ export default function CustomerRecords({ history, location }) {
     if (!selected || exporting) return;
     setExporting(true);
     try {
-      let invoiceCustomer = selected;
-      if (selected.source === 'portal' || String(selected.id || '').startsWith('portal:')) {
-        invoiceCustomer = {
-          ...selected,
-          id: selected.linkedCustomerId || selected.portalProfileId || String(selected.id).replace(/^portal:/, ''),
-          source: 'both',
-          purchaseHistory: selected.purchaseHistory || [],
-        };
-        await customerApi.saveOne(invoiceCustomer);
-      }
+      const invoiceCustomer = selected;
       const { exportCustomerHistoryPdf } = await import('../../utils/exportPdf');
       const invoice = await exportCustomerHistoryPdf(
         invoiceCustomer,
@@ -325,7 +315,9 @@ export default function CustomerRecords({ history, location }) {
                     lg: 'min(64vh, 660px)',
                   },
                   overflowY: 'auto',
+                  scrollBehavior: 'smooth',
                   overscrollBehavior: 'contain',
+                  scrollbarGutter: 'stable',
                   transition: 'max-height 180ms ease',
                 }}
               >
@@ -343,7 +335,26 @@ export default function CustomerRecords({ history, location }) {
                     <ListItemButton
                       selected={selectedId === customer.id}
                       onClick={() => setSelectedId(customer.id)}
-                      sx={{ px: 2.5, py: 1.25 }}
+                      sx={{
+                        mx: 1.25,
+                        my: 0.55,
+                        px: 1.5,
+                        py: 1.15,
+                        border: '1px solid',
+                        borderColor: 'transparent',
+                        borderRadius: 2.5,
+                        transition: 'transform 160ms ease, background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease',
+                        '&:hover': {
+                          transform: 'translateX(3px)',
+                          borderColor: 'rgba(47, 125, 255, .2)',
+                          bgcolor: 'rgba(47, 125, 255, .07)',
+                        },
+                        '&.Mui-selected': {
+                          borderColor: 'rgba(47, 125, 255, .34)',
+                          bgcolor: 'rgba(47, 125, 255, .12)',
+                          boxShadow: '0 8px 24px rgba(47, 125, 255, .12)',
+                        },
+                      }}
                     >
                       <ListItemAvatar>
                         <Avatar src={customer.photo || getCustomerAvatar(index)}>
@@ -352,16 +363,22 @@ export default function CustomerRecords({ history, location }) {
                       </ListItemAvatar>
                       <ListItemText
                         primary={customer.name}
-                        secondary={customer.phone || customer.email}
+                        secondary={`${Number(customer.bottlesHeld) || 0} bottles held`}
                         primaryTypographyProps={{ fontWeight: 800, noWrap: true }}
-                        secondaryTypographyProps={{ noWrap: true }}
+                        secondaryTypographyProps={{ component: 'span', display: 'block', noWrap: true }}
                       />
                       <Chip
                         size="small"
-                        color={customer.source === 'portal' ? 'info' : 'default'}
+                        color={customer.source === 'portal' ? 'info' : customer.source === 'both' ? 'secondary' : 'default'}
                         variant="outlined"
-                        label={customer.source === 'both' ? 'Admin + app' : customer.source === 'portal' ? 'App' : 'Admin'}
-                        sx={{ ml: 1 }}
+                        label={customer.source === 'portal' ? 'App' : customer.source === 'both' ? 'Admin + App' : 'Admin'}
+                        sx={{
+                          ml: 1,
+                          flex: '0 0 auto',
+                          height: 24,
+                          fontSize: '.68rem',
+                          fontWeight: 800,
+                        }}
                       />
                     </ListItemButton>
                   </ListItem>

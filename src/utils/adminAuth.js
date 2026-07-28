@@ -1,11 +1,13 @@
 import {
   adminCreateUser,
+  adminDeleteUser,
   clearStoredSession,
   dbRequest,
   getStoredSession,
   isSupabaseConfigured,
   signInWithPassword,
   signOut,
+  setPasswordChangeRequired,
   storeSession,
   verifyPassword,
 } from '../services/cloud/supabaseClient';
@@ -22,8 +24,10 @@ function toAdmin(row) {
     authUserId: row.auth_user_id,
     name: row.name,
     email: row.email,
+    phone: row.phone || '',
     role: row.role || 'Admin',
     active: row.active !== false,
+    mustChangePassword: row.must_change_password === true,
     createdAt: row.created_at,
   };
 }
@@ -49,21 +53,28 @@ export async function findAdminByCredentials(email, password) {
     throw new Error(
       customerRows && customerRows.length
         ? 'Customer accounts cannot access the administrator dashboard.'
-        : 'Your account is not allowed to access this dashboard.'
+        : 'Your account is not allowed to access this workspace.'
     );
   }
+  storeSession(session, admin.role === 'Rider' ? 'rider' : 'admin');
   setCurrentAdmin(admin);
+  setPasswordChangeRequired(admin.mustChangePassword);
   ['authenticated', 'hs_admin_users', 'hs_current_admin'].forEach((key) => localStorage.removeItem(key));
   return admin;
 }
 
 export async function createAdmin(admin) {
   requireCloud();
+  const requestedRole = String(admin.role || 'Admin').trim().toLowerCase();
+  const role = ['admin', 'manager', 'owner', 'rider'].includes(requestedRole)
+    ? `${requestedRole.charAt(0).toUpperCase()}${requestedRole.slice(1)}`
+    : 'Admin';
   const result = await adminCreateUser({
     name: admin.name.trim(),
     email: admin.email.trim().toLowerCase(),
     password: admin.password,
-    role: admin.role || 'Admin',
+    role,
+    phone: (admin.phone || '').trim(),
   });
   return result.admin;
 }
@@ -83,10 +94,14 @@ export async function deleteAdminWithOwnerPassword(adminId, ownerPassword) {
   await verifyPassword(owner.email, ownerPassword);
   if (currentSession) storeSession(currentSession, 'admin');
 
-  await dbRequest(`/admin_profiles?id=eq.${adminId}`, {
-    method: 'DELETE',
-    prefer: 'return=minimal',
-  });
+  if (adminToDelete.role === 'Rider') {
+    await adminDeleteUser(adminId);
+  } else {
+    await dbRequest(`/admin_profiles?id=eq.${adminId}`, {
+      method: 'DELETE',
+      prefer: 'return=minimal',
+    });
+  }
   return getAdmins();
 }
 
@@ -96,7 +111,9 @@ export function setCurrentAdmin(admin) {
     authUserId: admin.authUserId,
     name: admin.name,
     email: admin.email,
+    phone: admin.phone || '',
     role: admin.role,
+    mustChangePassword: admin.mustChangePassword === true,
   };
 }
 
@@ -124,6 +141,11 @@ export async function getCurrentAdminProfile() {
     throw new Error('Customer accounts cannot access the administrator dashboard.');
   }
   currentAdmin = rows && rows[0] ? toAdmin(rows[0]) : null;
-  if (!currentAdmin) throw new Error('Your account is not allowed to access this dashboard.');
+  if (!currentAdmin || currentAdmin.role === 'Rider') {
+    await signOut();
+    currentAdmin = null;
+    throw new Error('Your account is not allowed to access this dashboard.');
+  }
+  setPasswordChangeRequired(currentAdmin.mustChangePassword);
   return currentAdmin;
 }

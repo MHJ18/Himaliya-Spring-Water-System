@@ -132,6 +132,24 @@
   height: 20px;
 }
 
+.navLabel {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.navDot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  background: #38bdf8;
+  border: 2px solid #0d1b2a;
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.18);
+}
+
 .quickLinks {
   display: grid;
   gap: 2px;
@@ -322,7 +340,7 @@
   }
 
   .quickLinks {
-    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    display: none;
   }
 }
 

@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Himaliya Rider UI Preview</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <svg class="svg-sprite" aria-hidden="true">
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.4"/></symbol>
+    <symbol id="i-nav" viewBox="0 0 24 24"><path d="m4 11 16-7-7 16-2-7-7-2Z"/></symbol>
+    <symbol id="i-call" viewBox="0 0 24 24"><path d="M8 3H4a1 1 0 0 0-1 1c0 9.4 7.6 17 17 17a1 1 0 0 0 1-1v-4l-5-1-2 2c-3.2-1.4-5.7-3.9-7-7l2-2-1-5Z"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 11.5a8.5 8.5 0 0 1-9 8.5 9 9 0 0 1-4-.9L3 21l1.8-4.5A8.5 8.5 0 1 1 21 11.5Z"/></symbol>
+    <symbol id="i-drop" viewBox="0 0 24 24"><path d="M12 2S6 9.2 6 14a6 6 0 0 0 12 0c0-4.8-6-12-6-12Z"/></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="m3 11 9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-9Z"/></symbol>
+    <symbol id="i-box" viewBox="0 0 24 24"><path d="m4 7 8-4 8 4v10l-8 4-8-4V7Z"/><path d="m4 7 8 4 8-4M12 11v10"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c.6-4.4 3.2-7 8-7s7.4 2.6 8 7"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></symbol>
+    <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></symbol>
+    <symbol id="i-leaf" viewBox="0 0 24 24"><path d="M20 4c-8 0-14 4-14 10a6 6 0 0 0 6 6c6 0 8-8 8-16Z"/><path d="M4 21c2-5 6-9 12-12"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 15.5A8.5 8.5 0 0 1 8.5 4 8.5 8.5 0 1 0 20 15.5Z"/></symbol>
+  </svg>
+
+  <main class="preview-page">
+    <header class="preview-heading">
+      <div>
+        <span>ANDROID UI REVIEW</span>
+        <h1>Himaliya Rider — route-first concept</h1>
+      </div>
+      <p>Designed for fast, one-glance use. Address and next action always come first.</p>
+    </header>
+
+    <section class="phone-gallery" aria-label="Rider interface screens">
+      <article class="phone-wrap" data-screen="route">
+        <div class="phone-label"><span>01</span><strong>Current route</strong><small>Light mode</small></div>
+        <div class="phone">
+          <div class="android-bar"><span>9:41</span><div><i></i><i></i><b>91%</b></div></div>
+          <div class="screen-content route-screen">
+            <section class="route-hero">
+              <div class="route-hero-top"><div><small>TODAY'S ROUTE</small><h2>3 stops left</h2></div><span class="live"><i></i> Sharing</span></div>
+              <div class="route-stats"><div><strong>1</strong><span>Current stop</span></div><i></i><div><strong>12</strong><span>Bottles left</span></div><i></i><div><strong>Live</strong><span>Updates</span></div></div>
+            </section>
+            <section class="mission-card">
+              <div class="mission-top"><span class="stop-number">1</span><div><small>NEXT DELIVERY</small><h3>Muhammad Ali</h3><b class="group-note">3 orders grouped here</b></div><em><i></i> Ready</em></div>
+              <small class="deliver-label">DELIVER TO</small>
+              <div class="address">
+                <button class="icon-tile" aria-label="Open maps"><svg><use href="#i-nav"/></svg></button>
+                <div><strong>Street 4, Sialkot Cantt<br/>near Noor Masjid</strong></div>
+              </div>
+              <div class="load-row"><span><small>ITEMS</small><b>8 total</b></span><div class="item-chips"><i class="item-19l"><b>19L</b><strong>×6</strong></i><i class="item-s"><b>S</b><strong>×2</strong></i></div></div>
+            </section>
+            <div class="action-dock"><span class="action-contacts"><button aria-label="Call customer"><svg><use href="#i-call"/></svg></button><button aria-label="Text customer"><svg><use href="#i-chat"/></svg></button></span><button class="next-action"><strong>Bottles picked up</strong><i><svg><use href="#i-box"/></svg></i></button></div>
+          </div>
+          <nav class="bottom-nav">
+            <button class="selected"><span><svg><use href="#i-nav"/></svg></span>Route</button>
+            <button><span><svg><use href="#i-box"/></svg><i>3</i></span>Orders</button>
+            <button><span><svg><use href="#i-clock"/></svg></span>History</button>
+            <button><span><svg><use href="#i-user"/></svg></span>Profile</button>
+          </nav>
+        </div>
+      </article>
+
+      <article class="phone-wrap" data-screen="orders">
+        <div class="phone-label"><span>02</span><strong>Delivery list</strong><small>Address first</small></div>
+        <div class="phone">
+          <div class="android-bar"><span>9:41</span><div><i></i><i></i><b>91%</b></div></div>
+          <div class="screen-content list-screen">
+            <div class="screen-title"><small>TODAY</small><h2>My deliveries</h2><p>Tap a stop to see the full address.</p></div>
+            <div class="day-summary"><span><b>3</b> stops left</span><i></i><span><b>12</b> bottles</span><em>Live</em></div>
+            <section class="delivery-list">
+              <button class="delivery-card active">
+                <span class="stop-number">1</span><div><small>NEXT STOP</small><strong>Muhammad Ali</strong><p>Street 4, Sialkot Cantt<br/>near Noor Masjid</p><em>4 × 19L + 4 × Small</em><b class="group-chip">3 ORDERS GROUPED</b></div><svg><use href="#i-chevron"/></svg>
+              </button>
+              <button class="delivery-card">
+                <span class="stop-number">2</span><div><small>AFTER THAT</small><strong>Al-Rehman Store</strong><p>Paris Road, opposite HBL</p><em>2 × 19L + 2 × Small</em></div><svg><use href="#i-chevron"/></svg>
+              </button>
+              <button class="delivery-card">
+                <span class="stop-number">3</span><div><small>LAST STOP</small><strong>Bilal Ahmed</strong><p>Cantt Avenue, House 18</p><em>4 × 19L Gallon</em></div><svg><use href="#i-chevron"/></svg>
+              </button>
+            </section>
+            <div class="offline-note"><i></i><div><strong>Works on slow internet</strong><span>Saved updates send when the signal returns.</span></div></div>
+          </div>
+          <nav class="bottom-nav">
+            <button><span><svg><use href="#i-nav"/></svg></span>Route</button>
+            <button class="selected"><span><svg><use href="#i-box"/></svg><i>3</i></span>Orders</button>
+            <button><span><svg><use href="#i-clock"/></svg></span>History</button>
+            <button><span><svg><use href="#i-user"/></svg></span>Profile</button>
+          </nav>
+        </div>
+      </article>
+
+      <article class="phone-wrap" data-screen="history">
+        <div class="phone-label"><span>03</span><strong>History details</strong><small>Dark mode</small></div>
+        <div class="phone dark">
+          <div class="android-bar"><span>9:41</span><div><i></i><i></i><b>91%</b></div></div>
+          <div class="screen-content history-screen">
+            <button class="history-back">← <span>Delivery history</span></button>
+            <div class="screen-title"><small>COMPLETED DELIVERY</small><h2>Ahmed Raza</h2><p>26 Jul · 4:24 PM</p></div>
+            <section class="history-list">
+              <div class="history-detail">
+                <small>DELIVERED TO</small><p>Defence Road, House 21, Sialkot</p>
+                <div class="history-numbers"><span><b>4</b><small>Full given</small></span><span><b>6</b><small>Empty taken</small></span></div>
+                <div class="history-product"><span>19L Gallon</span><b>4</b></div>
+                <div class="saved-time"><i></i> Delivered at 4:24 PM</div>
+              </div>
+            </section>
+          </div>
+          <nav class="bottom-nav">
+            <button><span><svg><use href="#i-nav"/></svg></span>Route</button>
+            <button><span><svg><use href="#i-box"/></svg></span>Orders</button>
+            <button class="selected"><span><svg><use href="#i-clock"/></svg></span>History</button>
+            <button><span><svg><use href="#i-user"/></svg></span>Profile</button>
+          </nav>
+        </div>
+      </article>
+
+      <article class="phone-wrap" data-screen="finish">
+        <div class="phone-label"><span>04</span><strong>Finish delivery</strong><small>Simple confirmation</small></div>
+        <div class="phone finish-preview">
+          <div class="android-bar"><span>9:41</span><div><i></i><i></i><b>91%</b></div></div>
+          <div class="fake-background"><section></section><section></section></div>
+          <div class="sheet-scrim"></div>
+          <section class="finish-sheet">
+            <i class="handle"></i>
+            <span class="finish-icon"><svg><use href="#i-check"/></svg></span>
+            <h2>Finish delivery</h2>
+            <p>Check the full bottles given and count every empty bottle taken back.</p>
+            <small>FULL BOTTLES GIVEN</small>
+            <div class="counter-row"><div><strong>19L Gallon</strong><span>Ordered: 4</span></div><div><button><svg><use href="#i-minus"/></svg></button><b>4</b><button><svg><use href="#i-plus"/></svg></button></div></div>
+            <small>EMPTY BOTTLES TAKEN BACK</small>
+            <div class="counter-row"><div><strong>All empty bottles</strong><span>Can be more than delivered</span></div><div><button><svg><use href="#i-minus"/></svg></button><b>6</b><button><svg><use href="#i-plus"/></svg></button></div></div>
+            <div class="confirm-total"><span>Full bottles confirmed</span><b>4</b></div>
+            <button class="confirm-button"><svg><use href="#i-check"/></svg>Confirm delivered</button>
+            <button class="not-yet">Not yet</button>
+          </section>
+        </div>
+      </article>
+
+      <article class="phone-wrap" data-screen="settings">
+        <div class="phone-label"><span>05</span><strong>App settings</strong><small>Common rider controls</small></div>
+        <div class="phone">
+          <div class="android-bar"><span>9:41</span><div><i></i><i></i><b>91%</b></div></div>
+          <div class="screen-content settings-screen">
+            <div class="settings-profile"><div class="avatar large">AK</div><span><strong>Aamir Khan</strong><small>Rider · aamir@himaliya.pk</small><em><i></i> Online</em></span><button class="switch on"><em></em></button></div>
+            <section class="settings-card">
+              <h3>New order alerts <em>Alerts on</em></h3>
+              <div class="settings-row"><i><svg><use href="#i-bell"/></svg></i><span><b>Order notifications</b><small>Alert me when work is assigned</small></span><button class="switch on"><em></em></button></div>
+              <div class="settings-row"><i><svg><use href="#i-call"/></svg></i><span><b>Vibrate</b><small>Vibrate with the selected sound</small></span><button class="switch on"><em></em></button></div>
+              <div class="sound-choice"><i></i><span><b>Water drop</b><small>Short and clear</small></span><svg><use href="#i-chevron"/></svg></div>
+            </section>
+            <section class="settings-card">
+              <h3>Data, location &amp; maps</h3>
+              <div class="settings-row"><i><svg><use href="#i-leaf"/></svg></i><span><b>Low data mode</b><small>GPS every 60s or 100m</small></span><button class="switch on"><em></em></button></div>
+              <div class="settings-row"><i><svg><use href="#i-nav"/></svg></i><span><b>Directions app</b><small>Use the phone default</small></span><strong>Default</strong></div>
+            </section>
+            <section class="settings-card compact">
+              <h3>Appearance</h3>
+              <div class="settings-row"><i><svg><use href="#i-moon"/></svg></i><span><b>Dark mode</b><small>Change how the app looks</small></span><svg><use href="#i-chevron"/></svg></div>
+              <div class="settings-row"><i><b>Aa</b></i><span><b>Compact text</b><small>Smaller address and headings</small></span><button class="switch on"><em></em></button></div>
+            </section>
+          </div>
+          <nav class="bottom-nav">
+            <button><span><svg><use href="#i-nav"/></svg></span>Route</button>
+            <button><span><svg><use href="#i-box"/></svg><i>3</i></span>Orders</button>
+            <button><span><svg><use href="#i-clock"/></svg></span>History</button>
+            <button class="selected"><span><svg><use href="#i-user"/></svg></span>Profile</button>
+          </nav>
+        </div>
+      </article>
+    </section>
+
+    <footer class="preview-footer">
+      <span>Rider app 1.4.1 UI review</span>
+      <p>Realtime order deltas · location every 30 seconds / 50 meters · recent history loaded on demand</p>
+    </footer>
+  </main>
+  <script>
+    const requestedView = new URLSearchParams(window.location.search).get('view');
+    if (requestedView) document.body.dataset.view = requestedView;
+  </script>
+</body>
+</html>

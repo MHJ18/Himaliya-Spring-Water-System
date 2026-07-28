@@ -2,14 +2,16 @@ import { dbRequest, isSupabaseConfigured } from '../cloud/supabaseClient';
 import { DEFAULT_SETTINGS } from '../../data/constants';
 import { generateInvoiceNumber } from '../../utils/invoiceNumber';
 import { getCurrentAdmin } from '../../utils/adminAuth';
+import { normalizeInvoiceHistory, resolveInvoiceTotals } from '../../utils/invoiceTotals';
 
 function buildInvoicePayload(customer, historyItems, company) {
   const admin = getCurrentAdmin() || {};
   const issuedAt = new Date();
   const dueAt = new Date(issuedAt);
   dueAt.setDate(dueAt.getDate() + Math.max(0, Number(company.invoiceDueDays) || 0));
-  const totalAmount = historyItems.reduce((sum, item) => sum + Number(item.totalAmount || 0), 0);
-  const totalQty = historyItems.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+  const normalizedHistory = normalizeInvoiceHistory(historyItems);
+  const totalAmount = normalizedHistory.reduce((sum, item) => sum + item.totalAmount, 0);
+  const totalQty = normalizedHistory.reduce((sum, item) => sum + item.quantity, 0);
 
   return {
     company: {
@@ -29,7 +31,7 @@ function buildInvoicePayload(customer, historyItems, company) {
       email: admin.email || '',
       role: admin.role || 'Owner',
     },
-    history: historyItems.map((item) => ({
+    history: normalizedHistory.map((item) => ({
       date: item.date,
       bottleType: item.bottleType,
       quantity: Number(item.quantity) || 0,
@@ -50,20 +52,21 @@ function buildInvoicePayload(customer, historyItems, company) {
 export function rowToInvoice(row) {
   if (!row) return null;
   const payload = row.payload || {};
+  const totals = resolveInvoiceTotals(row);
   return {
     id: row.id,
     customerId: row.customer_id,
     invoiceNumber: row.invoice_number,
     invoiceDate: row.invoice_date,
-    totalAmount: Number(row.total_amount || 0),
-    totalQty: Number(row.total_qty || 0),
+    totalAmount: totals.totalAmount,
+    totalQty: totals.totalQty,
     paymentStatus: row.payment_status || 'unpaid',
     validated: row.validated === true,
     payload,
     company: payload.company || {},
     customer: payload.customer || {},
     preparedBy: payload.preparedBy || {},
-    history: payload.history || [],
+    history: totals.history,
     summary: payload.summary || {},
     invoice_number: row.invoice_number,
     invoice_date: row.invoice_date,

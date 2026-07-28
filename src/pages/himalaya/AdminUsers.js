@@ -30,6 +30,8 @@ import {
 import {
   AdminPanelSettingsRounded,
   AlternateEmailRounded,
+  BlockRounded,
+  CheckCircleRounded,
   ContentCopyRounded,
   DeleteOutlineRounded,
   KeyRounded,
@@ -53,6 +55,7 @@ import {
 import {
   deleteAdminCustomerProfile,
   getAdminCustomerProfiles,
+  setAdminCustomerActive,
 } from '../../services/api/customerPortalApi';
 import { adminResetCustomerPassword } from '../../services/cloud/supabaseClient';
 
@@ -61,6 +64,7 @@ const initialForm = {
   email: '',
   password: '',
   role: 'Admin',
+  phone: '',
 };
 
 const cardSx = {
@@ -98,7 +102,7 @@ function buildAllCustomerUsers(profiles, manualCustomers) {
       name: customer.name,
       email: customer.email || 'Not provided',
       phone: customer.phone,
-      active: true,
+      active: customer.active !== false,
       createdAt: customer.createdAt,
       userType: 'admin',
       canRemove: false,
@@ -119,7 +123,7 @@ function EmptyRow({ columns, children }) {
 }
 
 export default function AdminUsers() {
-  const { customers: manualCustomers } = useCustomers();
+  const { customers: manualCustomers, refresh: refreshCustomers } = useCustomers();
   const [admins, setAdmins] = useState([]);
   const [profiles, setProfiles] = useState([]);
   const [form, setForm] = useState(initialForm);
@@ -136,6 +140,7 @@ export default function AdminUsers() {
   const [temporaryPassword, setTemporaryPassword] = useState('');
   const [resetOwnerPassword, setResetOwnerPassword] = useState('');
   const [resettingPassword, setResettingPassword] = useState(false);
+  const [updatingCustomerStatus, setUpdatingCustomerStatus] = useState('');
 
   const loadUsers = async () => {
     setLoading(true);
@@ -194,7 +199,7 @@ export default function AdminUsers() {
       const admin = await createAdmin(form);
       setAdmins((current) => [...current, admin]);
       setForm(initialForm);
-      toast.success('Admin account created.');
+      toast.success(form.role === 'Rider' ? 'Rider account created.' : 'Admin account created.');
     } catch (error) {
       setFormError(error.message || 'Could not create the admin.');
     } finally {
@@ -216,7 +221,7 @@ export default function AdminUsers() {
     try {
       const nextAdmins = await deleteAdminWithOwnerPassword(deleteTarget.id, ownerPassword);
       setAdmins(nextAdmins);
-      toast.success('Admin account removed.');
+      toast.success(deleteTarget.role === 'Rider' ? 'Rider account and login removed.' : 'Admin account removed.');
       closeAdminDelete();
     } catch (error) {
       setDeleteError(error.message || 'Could not remove the admin.');
@@ -240,6 +245,26 @@ export default function AdminUsers() {
       closeCustomerDelete();
     } catch (error) {
       toast.error(error.message || 'Could not remove the customer profile.');
+    }
+  };
+
+  const handleCustomerStatus = async (customer) => {
+    const nextActive = !customer.active;
+    if (!nextActive && !window.confirm(`Deactivate ${customer.name}? Their portal data access will stop and they cannot place orders.`)) {
+      return;
+    }
+    setUpdatingCustomerStatus(customer.id);
+    try {
+      const updated = await setAdminCustomerActive(customer.id, nextActive);
+      setProfiles((current) => current.map((profile) => (
+        profile.id === customer.id ? { ...profile, active: updated.active } : profile
+      )));
+      await refreshCustomers();
+      toast.success(`${customer.name} is now ${nextActive ? 'active' : 'inactive'}.`);
+    } catch (error) {
+      toast.error(error.message || 'Could not update this customer account.');
+    } finally {
+      setUpdatingCustomerStatus('');
     }
   };
 
@@ -289,7 +314,7 @@ export default function AdminUsers() {
   return (
     <PageShell
       title="Users & access"
-      subtitle="Manage dashboard administrators and customer app accounts from one workspace."
+      subtitle="Manage administrators, riders, and customer app accounts from one workspace."
     >
       <Grid container spacing={3} alignItems="stretch">
         <Grid item xs={12} lg={5}>
@@ -298,9 +323,9 @@ export default function AdminUsers() {
               <Stack direction="row" spacing={1.5} alignItems="center">
                 <Avatar sx={{ bgcolor: 'rgba(255,255,255,.15)' }}><ShieldOutlined /></Avatar>
                 <Box>
-                  <Typography variant="h6">Create admin access</Typography>
+                  <Typography variant="h6">Create team access</Typography>
                   <Typography variant="body2" sx={{ color: 'rgba(255,255,255,.74)' }}>
-                    Dashboard access only. Use the customer app for delivery accounts.
+                    Administrators use the dashboard; riders use the separate mobile rider workspace.
                   </Typography>
                 </Box>
               </Stack>
@@ -340,6 +365,13 @@ export default function AdminUsers() {
                     InputProps={{ startAdornment: <InputAdornment position="start"><PasswordRounded /></InputAdornment> }}
                   />
                   <TextField
+                    label="Phone number"
+                    value={form.phone}
+                    onChange={(event) => updateForm('phone', event.target.value)}
+                    autoComplete="tel"
+                    InputProps={{ startAdornment: <InputAdornment position="start"><PhoneRounded /></InputAdornment> }}
+                  />
+                  <TextField
                     select
                     label="Access role"
                     value={form.role}
@@ -349,6 +381,7 @@ export default function AdminUsers() {
                     <MenuItem value="Admin">Admin</MenuItem>
                     <MenuItem value="Manager">Manager</MenuItem>
                     <MenuItem value="Owner">Owner</MenuItem>
+                    <MenuItem value="Rider">Rider</MenuItem>
                   </TextField>
                   <Button
                     type="submit"
@@ -358,7 +391,7 @@ export default function AdminUsers() {
                     disabled={creatingAdmin || !currentAdmin || currentAdmin.role !== 'Owner'}
                     sx={{ minHeight: 48 }}
                   >
-                    {creatingAdmin ? 'Creating secure account…' : 'Create admin'}
+                    {creatingAdmin ? 'Creating secure account…' : form.role === 'Rider' ? 'Create rider' : 'Create admin'}
                   </Button>
                 </Stack>
               </Box>
@@ -369,8 +402,8 @@ export default function AdminUsers() {
         <Grid item xs={12} lg={7}>
           <Card sx={cardSx}>
             <Box sx={{ p: { xs: 2.25, sm: 3 }, pb: 1.5 }}>
-              <Typography variant="h6">Dashboard administrators</Typography>
-              <Typography variant="body2" color="text.secondary">{admins.length} accounts with operational access</Typography>
+              <Typography variant="h6">Admin & rider accounts</Typography>
+              <Typography variant="body2" color="text.secondary">{admins.length} team accounts with assigned access</Typography>
             </Box>
             <TableContainer
               role="region"
@@ -381,7 +414,7 @@ export default function AdminUsers() {
               <Table stickyHeader aria-label="Dashboard administrators" sx={{ minWidth: { xs: 500, sm: 620 } }}>
                 <TableHead>
                   <TableRow>
-                    <TableCell>Administrator</TableCell>
+                    <TableCell>Team member</TableCell>
                     <TableCell>Role</TableCell>
                     <TableCell sx={mobileOptionalCellSx}>Status</TableCell>
                     <TableCell align="right">Action</TableCell>
@@ -404,7 +437,7 @@ export default function AdminUsers() {
                       <TableCell>{admin.role}</TableCell>
                       <TableCell sx={mobileOptionalCellSx}><Chip size="small" color="success" label="Allowed" /></TableCell>
                       <TableCell align="right">
-                        <Tooltip title={currentAdmin && currentAdmin.id === admin.id ? 'You cannot remove your current account' : 'Remove admin'}>
+                        <Tooltip title={currentAdmin && currentAdmin.id === admin.id ? 'You cannot remove your current account' : `Remove ${admin.role === 'Rider' ? 'rider' : 'admin'}`}>
                           <span>
                             <IconButton
                               aria-label={`Remove ${admin.name}`}
@@ -480,8 +513,21 @@ export default function AdminUsers() {
                   </TableCell>
                   <TableCell><Chip size="small" color={customer.active ? 'success' : 'default'} label={customer.active ? 'Active' : 'Inactive'} /></TableCell>
                   <TableCell align="right">
-                    {customer.canRemove ? (
-                      <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+                    <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+                      <Tooltip title={customer.active ? 'Deactivate customer portal access' : 'Reactivate customer portal access'}>
+                        <span>
+                          <IconButton
+                            aria-label={`${customer.active ? 'Deactivate' : 'Reactivate'} ${customer.name}`}
+                            color={customer.active ? 'warning' : 'success'}
+                            disabled={updatingCustomerStatus === customer.id}
+                            onClick={() => handleCustomerStatus(customer)}
+                          >
+                            {customer.active ? <BlockRounded /> : <CheckCircleRounded />}
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+                      {customer.canRemove ? (
+                        <React.Fragment>
                         {currentAdmin && currentAdmin.role === 'Owner' && (
                           <Tooltip title="Set temporary password">
                             <IconButton
@@ -502,10 +548,9 @@ export default function AdminUsers() {
                             <DeleteOutlineRounded />
                           </IconButton>
                         </Tooltip>
-                      </Stack>
-                    ) : (
-                      <Typography variant="caption" color="text.secondary">Manage in Customers</Typography>
-                    )}
+                        </React.Fragment>
+                      ) : null}
+                    </Stack>
                   </TableCell>
                 </TableRow>
               ))}
@@ -516,11 +561,12 @@ export default function AdminUsers() {
       </Card>
 
       <Dialog open={Boolean(deleteTarget)} onClose={closeAdminDelete} fullWidth maxWidth="xs">
-        <DialogTitle>Remove administrator?</DialogTitle>
+        <DialogTitle>Remove {deleteTarget && deleteTarget.role === 'Rider' ? 'rider' : 'administrator'}?</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ pt: 1 }}>
             <Alert severity="warning">
-              This immediately removes dashboard access for <strong>{deleteTarget && deleteTarget.name}</strong>.
+              This immediately removes access for <strong>{deleteTarget && deleteTarget.name}</strong>.
+              {deleteTarget && deleteTarget.role === 'Rider' ? ' Their rider login and device registration will also be deleted.' : ''}
             </Alert>
             <TextField
               label="Owner password"
@@ -537,7 +583,9 @@ export default function AdminUsers() {
         </DialogContent>
         <DialogActions>
           <Button onClick={closeAdminDelete}>Cancel</Button>
-          <Button color="error" variant="contained" onClick={handleDeleteAdmin}>Remove admin</Button>
+          <Button color="error" variant="contained" onClick={handleDeleteAdmin}>
+            Remove {deleteTarget && deleteTarget.role === 'Rider' ? 'rider' : 'admin'}
+          </Button>
         </DialogActions>
       </Dialog>
 

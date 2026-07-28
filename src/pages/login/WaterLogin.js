@@ -18,6 +18,7 @@ import { loginUser } from '../../actions/user';
 import {
   consumeSessionExpiredNotice,
   hasStoredSessionType,
+  isPasswordChangeRequired,
 } from '../../services/cloud/supabaseClient';
 import './WaterLogin.css';
 import './AdminLogin.css';
@@ -35,7 +36,10 @@ function WaterLogin({ dispatch, isFetching = false, errorMessage = null, locatio
     : location.state && location.state.passwordChanged ? 'Password updated. Sign in with your new password.' : '');
 
   if (hasStoredSessionType('admin')) {
-    return <Redirect to={from} />;
+    return <Redirect to={isPasswordChangeRequired() ? '/account/new-password' : from} />;
+  }
+  if (hasStoredSessionType('rider')) {
+    return <Redirect to={isPasswordChangeRequired() ? '/account/new-password' : '/rider/app'} />;
   }
 
   const handleSubmit = (e) => {
@@ -55,7 +59,7 @@ function WaterLogin({ dispatch, isFetching = false, errorMessage = null, locatio
           <span className="water-login-logo-mark"><Droplets size={23} /></span>
           <div>
             <h1>Himaliya Spring</h1>
-            <p>Admin control room</p>
+            <p>Team workspace</p>
           </div>
         </motion.section>
         <motion.section
@@ -76,7 +80,7 @@ function WaterLogin({ dispatch, isFetching = false, errorMessage = null, locatio
             <i><b /></i>
             <div><span><WalletCards size={18} /></span><strong>Ledger</strong><small>Close the day</small></div>
           </div>
-          <div className="admin-login-footnote"><ShieldCheck size={17} /><span>Private workspace · Owner access only</span></div>
+          <div className="admin-login-footnote"><ShieldCheck size={17} /><span>Private workspace · Owner-managed team access</span></div>
         </motion.section>
 
         <motion.section
@@ -89,14 +93,14 @@ function WaterLogin({ dispatch, isFetching = false, errorMessage = null, locatio
             <span className="water-login-logo-mark"><Droplets size={23} /></span>
             <div>
               <h2>Himaliya Spring</h2>
-              <p>Admin control room</p>
+              <p>Team workspace</p>
             </div>
           </div>
 
           <div className="admin-login-heading">
             <span>Secure access</span>
             <h2>Welcome back.</h2>
-            <p>Sign in to open today&apos;s operations.</p>
+            <p>Administrators and riders sign in here. We&apos;ll open the correct workspace automatically.</p>
           </div>
 
           <form className="water-login-form" method="post" onSubmit={handleSubmit} autoComplete="on" noValidate>
@@ -147,11 +151,11 @@ function WaterLogin({ dispatch, isFetching = false, errorMessage = null, locatio
               disabled={isFetching}
               aria-busy={isFetching}
             >
-              <span>{isFetching ? 'Opening workspace...' : 'Open admin workspace'}</span>
+              <span>{isFetching ? 'Opening workspace...' : 'Open workspace'}</span>
               {!isFetching && <ArrowRight size={18} aria-hidden="true" />}
             </button>
             <div className="admin-login-form-meta">
-              <p className="water-login-note"><ShieldCheck size={15} /> Protected administrator session</p>
+              <p className="water-login-note"><ShieldCheck size={15} /> Protected team session</p>
               <Link className="water-login-forgot" to="/forgot-password?account=admin">Forgot password?</Link>
             </div>
           </form>

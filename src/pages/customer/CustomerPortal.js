@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import { withRouter } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  ArrowRight, BellRing, CheckCheck, ChevronDown, Download, Droplets, LoaderCircle, LogOut, MessageCircle, Navigation, UserRound, X,
+  ArrowRight, BellRing, CalendarDays, CheckCheck, ChevronDown, Download, Droplets, LoaderCircle, LogOut, Menu, MessageCircle, Minus, Navigation, Plus, ReceiptText, UserRound, X,
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import {
@@ -16,7 +16,7 @@ import {
   getCustomerProfile,
   markCustomerNotificationsRead,
 } from '../../services/api/customerPortalApi';
-import { getBottlePrices } from '../../services/api/bottlePriceApi';
+import { getOwnCustomerBottlePrices } from '../../services/api/customerBottlePriceApi';
 import { resolveOrderPricing } from '../../utils/orderPricing';
 import { signOut } from '../../services/cloud/supabaseClient';
 import { getCustomerUnreadMessageCount } from '../../services/api/messagingApi';
@@ -30,8 +30,7 @@ const DeliveryCelebration = React.lazy(() => import('../../components/DeliveryCe
 const todayIso = () => new Date().toISOString().slice(0, 10);
 const customerBottleTypes = BOTTLE_TYPES;
 const defaultOrder = {
-  quantity: 1,
-  bottleType: 'Gallon',
+  quantities: {},
   deliveryAddress: '',
   deliveryDate: todayIso(),
   notes: '',
@@ -57,6 +56,19 @@ function bottleLabel(type) {
   return BOTTLE_TYPE_LABELS[type] || type;
 }
 
+function orderBottleSummary(order) {
+  const items = Array.isArray(order.items) && order.items.length
+    ? order.items
+    : [{ bottleType: order.bottleType, quantity: order.quantity }];
+  return items.map((item) => `${item.quantity} × ${bottleLabel(item.bottleType)}`).join(' + ');
+}
+
+function preferredBottleType(profile, prices, fallback = 'Gallon') {
+  const preferred = (profile.preferences && profile.preferences.defaultBottleType) || fallback;
+  if (Number(prices[preferred] || 0) > 0) return preferred;
+  return customerBottleTypes.find((type) => Number(prices[type] || 0) > 0) || preferred;
+}
+
 function canUseBrowserNotifications() {
   return typeof window !== 'undefined' && 'Notification' in window;
 }
@@ -75,7 +87,7 @@ function notifyDesktop(title, body) {
 }
 
 function CustomerPortal({ history }) {
-  const { theme, setTheme } = useCustomerTheme();
+  const { theme } = useCustomerTheme();
   const [loading, setLoading] = React.useState(true);
   const [profile, setProfile] = React.useState(null);
   const [orders, setOrders] = React.useState([]);
@@ -107,7 +119,7 @@ function CustomerPortal({ history }) {
         history.replace('/customer/login', { completeProfile: true });
         return;
       }
-      const nextPrices = await getBottlePrices({});
+      const nextPrices = await getOwnCustomerBottlePrices();
       const [nextOrders, nextNotifications, nextInvoices, nextControls, nextUnreadMessages] = await Promise.all([
         getCustomerOrders(nextPrices),
         getCustomerNotifications(),
@@ -117,11 +129,14 @@ function CustomerPortal({ history }) {
       ]);
       const hasAnyPrice = Object.values(nextPrices || {}).some((value) => Number(value) > 0);
       setProfile(nextProfile);
-      setTheme(nextProfile.preferences && nextProfile.preferences.theme);
       setOrderForm((current) => ({
         ...current,
-        bottleType: (nextProfile.preferences && nextProfile.preferences.defaultBottleType) || current.bottleType,
-        quantity: (nextProfile.preferences && nextProfile.preferences.defaultQuantity) || current.quantity,
+        quantities: Object.values(current.quantities || {}).some((value) => Number(value) > 0)
+          ? current.quantities
+          : {
+            [preferredBottleType(nextProfile, nextPrices)]:
+              (nextProfile.preferences && nextProfile.preferences.defaultQuantity) || 1,
+          },
         deliveryAddress: nextProfile.address || current.deliveryAddress,
         deliveryDate: current.deliveryDate || todayIso(),
       }));
@@ -133,13 +148,18 @@ function CustomerPortal({ history }) {
       setPrices(nextPrices || {});
       setOrderControls(nextControls);
       setUnreadMessages(nextUnreadMessages);
-      setPriceWarning(hasAnyPrice ? '' : 'Bottle prices are not visible to this customer account yet. Ask admin to save prices in Settings and apply the Supabase price visibility SQL.');
+      setPriceWarning(hasAnyPrice ? '' : 'Bottle pricing is not set up for your account yet. Please contact the company.');
     } catch (err) {
-      toast.error(err.message || 'Could not load customer portal.');
+      if (/deactivated/i.test(err.message || '')) {
+        await signOut().catch(() => {});
+        history.replace('/customer/login', { accountDeactivated: true });
+      } else {
+        toast.error(err.message || 'Could not load customer portal.');
+      }
     } finally {
       setLoading(false);
     }
-  }, [history, setTheme]);
+  }, [history]);
 
   React.useEffect(() => { load(); }, [load]);
 
@@ -155,7 +175,8 @@ function CustomerPortal({ history }) {
     if (activityRequestRunning.current || document.hidden) return;
     activityRequestRunning.current = true;
     try {
-      const nextPrices = await getBottlePrices({});
+      await getCustomerProfile();
+      const nextPrices = profile ? await getOwnCustomerBottlePrices() : {};
       const [nextOrders, nextNotifications, nextInvoices, nextUnreadMessages] = await Promise.all([
         getCustomerOrders(nextPrices),
         getCustomerNotifications(),
@@ -186,47 +207,67 @@ function CustomerPortal({ history }) {
       setInvoices(nextInvoices);
       setPrices(nextPrices || {});
       setUnreadMessages(nextUnreadMessages);
-    } catch {
-      // Keep the current screen stable; session expiry is handled globally by the API layer.
+    } catch (error) {
+      if (/deactivated/i.test(error.message || '')) {
+        await signOut().catch(() => {});
+        history.replace('/customer/login', { accountDeactivated: true });
+      }
     } finally {
       activityRequestRunning.current = false;
     }
-  }, [profile]);
+  }, [history, profile]);
 
   React.useEffect(() => {
     if (!profile) return undefined;
     const refreshWhenVisible = () => {
       if (!document.hidden) refreshActivity();
     };
-    const intervalId = window.setInterval(refreshWhenVisible, 25000);
+    const intervalId = window.setInterval(refreshWhenVisible, 10000);
     document.addEventListener('visibilitychange', refreshWhenVisible);
+    window.addEventListener('focus', refreshWhenVisible);
     window.addEventListener('online', refreshWhenVisible);
     return () => {
       window.clearInterval(intervalId);
       document.removeEventListener('visibilitychange', refreshWhenVisible);
+      window.removeEventListener('focus', refreshWhenVisible);
       window.removeEventListener('online', refreshWhenVisible);
     };
   }, [profile, refreshActivity]);
 
   const updateOrder = (field, value) => setOrderForm((current) => ({ ...current, [field]: value }));
+  const updateBottleQuantity = (bottleType, quantity) => setOrderForm((current) => ({
+    ...current,
+    quantities: {
+      ...(current.quantities || {}),
+      [bottleType]: Math.max(0, Math.min(500, Number(quantity) || 0)),
+    },
+  }));
 
   const submitOrder = async (event) => {
     event.preventDefault();
     setSubmitting(true);
     try {
       if (!profile) throw new Error('Complete your customer profile before placing an order.');
-      const unitPrice = Number(prices[orderForm.bottleType] || 0);
-      if (!unitPrice) {
-        throw new Error('This bottle type has no active price yet. Ask admin to set bottle prices in Settings.');
+      const items = customerBottleTypes
+        .map((bottleType) => ({
+          bottleType,
+          quantity: Number((orderForm.quantities || {})[bottleType] || 0),
+          unitPrice: Number(prices[bottleType] || 0),
+        }))
+        .filter((item) => item.quantity > 0);
+      if (!items.length) throw new Error('Choose at least one bottle before placing the order.');
+      if (items.some((item) => !item.unitPrice)) {
+        throw new Error('One selected bottle has no active price. Ask admin to set the customer price.');
       }
-      const totalAmount = unitPrice * Number(orderForm.quantity || 1);
-      const order = await createCustomerOrder(profile, { ...orderForm, unitPrice, totalAmount });
+      const order = await createCustomerOrder(profile, { ...orderForm, items });
       setOrders((current) => [order, ...current]);
       seenOrderStatuses.current.set(order.id, order.status);
+      const preferredType = preferredBottleType(profile, prices);
       setOrderForm({
         ...defaultOrder,
-        bottleType: (profile.preferences && profile.preferences.defaultBottleType) || defaultOrder.bottleType,
-        quantity: (profile.preferences && profile.preferences.defaultQuantity) || defaultOrder.quantity,
+        quantities: {
+          [preferredType]: (profile.preferences && profile.preferences.defaultQuantity) || 1,
+        },
         deliveryAddress: profile.address,
         deliveryDate: todayIso(),
       });
@@ -275,7 +316,7 @@ function CustomerPortal({ history }) {
   };
 
   if (loading) {
-    return <LoadingState label="Loading your delivery portal..." variant="portal" className={`customer-theme--${theme}`} />;
+    return <LoadingState label="Loading your delivery portal..." variant="portal" className={`customer-theme--${theme}${theme === 'dark-gradient' ? ' customer-theme--dark' : ''}`} />;
   }
 
   if (!profile) {
@@ -307,11 +348,17 @@ function CustomerPortal({ history }) {
   const invoiceStatusLabel = (status) => (status === 'paid' ? 'Paid' : 'Unpaid');
   const accepted = orders.filter((order) => order.status === 'accepted').length;
   const unread = notifications.filter((item) => !item.read).length;
-  const selectedUnitPrice = Number(prices[orderForm.bottleType] || 0);
-  const selectedTotal = selectedUnitPrice * Number(orderForm.quantity || 1);
+  const selectedItems = customerBottleTypes
+    .map((bottleType) => ({
+      bottleType,
+      quantity: Number((orderForm.quantities || {})[bottleType] || 0),
+      unitPrice: Number(prices[bottleType] || 0),
+    }))
+    .filter((item) => item.quantity > 0);
+  const selectedTotal = selectedItems.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
 
   return (
-    <main className={`customer-portal-page customer-theme--${theme}`}>
+    <main className={`customer-portal-page customer-theme--${theme}${theme === 'dark-gradient' ? ' customer-theme--dark' : ''}`}>
       {deliveredOrder && (
         <React.Suspense fallback={null}>
           <DeliveryCelebration
@@ -357,8 +404,10 @@ function CustomerPortal({ history }) {
               className="customer-account-trigger"
               aria-haspopup="menu"
               aria-expanded={accountOpen}
+              aria-label={accountOpen ? 'Close account menu' : 'Open account menu'}
               onClick={() => setAccountOpen((open) => !open)}
             >
+              <span className="customer-account-mobile-icon" aria-hidden="true"><Menu size={20} /></span>
               <span className="customer-account-copy"><strong>{profile.name}</strong></span>
               <ChevronDown size={18} className={accountOpen ? 'is-open' : ''} />
             </button>
@@ -395,22 +444,33 @@ function CustomerPortal({ history }) {
         <section className="customer-portal-card customer-order-card">
           <div className="customer-card-heading">
             <span>Place order</span>
-            <h2>Request 19L gallon delivery</h2>
+            <h2>Request a water delivery</h2>
           </div>
           <form onSubmit={submitOrder} className="customer-form">
-            <label>
-              Quantity
-              <input type="number" min="1" value={orderForm.quantity} onChange={(e) => updateOrder('quantity', e.target.value)} required />
-            </label>
-            <label>
-              Bottle type
-              <select value={orderForm.bottleType} onChange={(e) => updateOrder('bottleType', e.target.value)}>
-                {customerBottleTypes.map((type) => (
-                  <option key={type} value={type}>{BOTTLE_TYPE_LABELS[type] || type}</option>
-                ))}
-              </select>
-              <small className="customer-price-hint">PKR {selectedUnitPrice.toLocaleString()} per unit</small>
-            </label>
+            <fieldset className="customer-bottle-picker customer-form-wide">
+              <legend>Choose bottles</legend>
+              <p>Select one or several bottle types in the same order.</p>
+              <div className="customer-bottle-options">
+                {customerBottleTypes.map((type) => {
+                  const unitPrice = Number(prices[type] || 0);
+                  const quantity = Number((orderForm.quantities || {})[type] || 0);
+                  return (
+                    <article key={type} className={`customer-bottle-option${quantity > 0 ? ' is-selected' : ''}${!unitPrice ? ' is-unavailable' : ''}`}>
+                      <span className="customer-bottle-option__icon"><Droplets size={19} aria-hidden="true" /></span>
+                      <div className="customer-bottle-option__copy">
+                        <strong>{bottleLabel(type)}</strong>
+                        <small>{unitPrice ? `PKR ${unitPrice.toLocaleString()} each` : 'Not available'}</small>
+                      </div>
+                      <div className="customer-bottle-stepper" aria-label={`${bottleLabel(type)} quantity`}>
+                        <button type="button" disabled={!unitPrice || quantity === 0} onClick={() => updateBottleQuantity(type, quantity - 1)} aria-label={`Remove one ${bottleLabel(type)}`}><Minus size={17} aria-hidden="true" /></button>
+                        <output aria-live="polite" aria-label={`${quantity} selected`}>{quantity}</output>
+                        <button type="button" disabled={!unitPrice || quantity >= 500} onClick={() => updateBottleQuantity(type, quantity + 1)} aria-label={`Add one ${bottleLabel(type)}`}><Plus size={17} aria-hidden="true" /></button>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            </fieldset>
             {priceWarning && <div className="customer-price-warning">{priceWarning}</div>}
             {!orderControls.orderingOpen && <div className="customer-price-warning">Orders are closed after {orderControls.orderCutoffTime}. Please order again tomorrow.</div>}
             <label className="customer-form-wide">
@@ -441,7 +501,7 @@ function CustomerPortal({ history }) {
               <button
                 type="submit"
                 className="customer-btn customer-btn--primary"
-                disabled={submitting || !orderControls.orderingOpen}
+                disabled={submitting || !orderControls.orderingOpen || !selectedItems.length || selectedItems.some((item) => !item.unitPrice) || !profile.address}
                 aria-busy={submitting}
               >
                 <span>{submitting ? 'Sending...' : orderControls.orderingOpen ? 'Place order' : 'Orders closed'}</span>
@@ -451,7 +511,7 @@ function CustomerPortal({ history }) {
           </form>
         </section>
 
-        <section className="customer-portal-card">
+        <section className="customer-portal-card customer-notifications-card">
           <div className="customer-card-heading">
             <span>Notifications</span>
             <h2>
@@ -460,7 +520,7 @@ function CustomerPortal({ history }) {
             </h2>
           </div>
           <div className="customer-btn-row customer-btn-row--start">
-            <button type="button" className="customer-link-button" onClick={markRead}>
+            <button type="button" className="customer-link-button" onClick={markRead} disabled={unread === 0}>
               <CheckCheck size={16} aria-hidden="true" />
               <span>Mark all as read</span>
             </button>
@@ -477,51 +537,55 @@ function CustomerPortal({ history }) {
           </div>
         </section>
 
-        <section className="customer-portal-card">
+        <section className="customer-portal-card customer-order-history-card">
           <div className="customer-card-heading">
             <span>Order history</span>
             <h2>Past orders</h2>
           </div>
-          <div className="customer-order-list" tabIndex="0" role="region" aria-label="Scrollable order history">
+          <div className="customer-order-list" role="region" aria-label="Order history">
             {orders.map((order) => {
               const pricing = resolveOrderPricing(order, prices);
-              const compact = ['accepted', 'delivered', 'canceled', 'rejected'].includes(order.status);
               return (
-              <article key={order.id} className={compact ? 'is-compact' : ''}>
-                <div>
-                  <strong>{order.quantity} × {bottleLabel(order.bottleType)}</strong>
-                  <small>{formatDate(order.deliveryDate)}</small>
-                </div>
-                <div className="customer-order-history-meta">
-                  <strong>PKR {pricing.totalAmount.toLocaleString()}</strong>
-                  <span className={`customer-status customer-status--${order.status}`}>{statusLabel(order.status)}</span>
-                  {order.trackingToken && ['accepted', 'delivered'].includes(order.status) && (
-                    <button
-                      type="button"
-                      className="customer-order-track"
-                      onClick={() => history.push(`/track/${order.trackingToken}`)}
-                    >
-                      <Navigation size={14} aria-hidden="true" />
-                      <span>{order.status === 'delivered' ? 'View route' : 'Track rider'}</span>
-                    </button>
-                  )}
-                  {order.status === 'pending' && orderControls.allowCancellation && (
-                    <button
-                      type="button"
-                      className="customer-order-cancel"
-                      disabled={cancelingOrder === order.id}
-                      aria-busy={cancelingOrder === order.id}
-                      onClick={() => cancelOrder(order.id)}
-                    >
-                      {cancelingOrder === order.id
-                        ? <LoaderCircle size={14} className="is-spinning" aria-hidden="true" />
-                        : <X size={14} aria-hidden="true" />}
-                      <span>{cancelingOrder === order.id ? 'Canceling...' : 'Cancel'}</span>
-                    </button>
-                  )}
-                </div>
-              </article>
-            );})}
+                <article key={order.id} className={`customer-order-entry customer-order-entry--${order.status}`}>
+                  <div className="customer-order-entry__summary">
+                    <span className="customer-order-entry__icon"><Droplets aria-hidden="true" /></span>
+                    <div>
+                      <strong>{orderBottleSummary(order)}</strong>
+                      <small>Delivery {formatDate(order.deliveryDate)}</small>
+                    </div>
+                  </div>
+                  <div className="customer-order-entry__meta">
+                    <span className={`customer-status customer-status--${order.status}`}>{statusLabel(order.status)}</span>
+                    <strong className="customer-order-entry__price">PKR {pricing.totalAmount.toLocaleString()}</strong>
+                    {order.trackingToken && ['accepted', 'delivered'].includes(order.status) && (
+                      <button
+                        type="button"
+                        className="customer-order-route"
+                        onClick={() => history.push(`/track/${order.trackingToken}`)}
+                        aria-label={order.status === 'delivered' ? 'View delivery route details' : 'Track delivery route'}
+                      >
+                        <Navigation size={16} aria-hidden="true" />
+                        <span>{order.status === 'delivered' ? 'View route' : 'Track'}</span>
+                      </button>
+                    )}
+                    {order.status === 'pending' && orderControls.allowCancellation && (
+                      <button
+                        type="button"
+                        className="customer-order-cancel"
+                        disabled={cancelingOrder === order.id}
+                        aria-busy={cancelingOrder === order.id}
+                        onClick={() => cancelOrder(order.id)}
+                      >
+                        {cancelingOrder === order.id
+                          ? <LoaderCircle size={14} className="is-spinning" aria-hidden="true" />
+                          : <X size={14} aria-hidden="true" />}
+                        <span>{cancelingOrder === order.id ? 'Canceling...' : 'Cancel'}</span>
+                      </button>
+                    )}
+                  </div>
+                </article>
+              );
+            })}
             {!orders.length && <p className="customer-empty">No orders yet. Your first order will show here.</p>}
           </div>
         </section>
@@ -533,10 +597,20 @@ function CustomerPortal({ history }) {
           </div>
           <div className="customer-invoice-list" tabIndex="0" role="region" aria-label="Scrollable customer invoices">
             {invoices.map((invoice) => (
-              <article key={invoice.id}>
-                <div>
-                  <strong>{invoice.invoiceNumber}</strong>
-                  <small>{formatDate(invoice.invoiceDate)} · {invoice.totalQty} items</small>
+              <article className="customer-invoice-item" key={invoice.id}>
+                <div className="customer-invoice-main">
+                  <div className="customer-invoice-identity">
+                    <span className="customer-invoice-icon" aria-hidden="true"><ReceiptText size={19} /></span>
+                    <div className="customer-invoice-copy">
+                      <strong title={invoice.invoiceNumber}>{invoice.invoiceNumber}</strong>
+                      <small>
+                        <CalendarDays size={13} aria-hidden="true" />
+                        <span>{formatDate(invoice.invoiceDate)}</span>
+                        <i aria-hidden="true" />
+                        <span>{invoice.totalQty} item{invoice.totalQty === 1 ? '' : 's'}</span>
+                      </small>
+                    </div>
+                  </div>
                   <div className="customer-invoice-tags">
                     <span className={`customer-invoice-tag customer-invoice-tag--${invoice.paymentStatus === 'paid' ? 'paid' : 'unpaid'}`}>
                       {invoiceStatusLabel(invoice.paymentStatus)}
@@ -545,7 +619,10 @@ function CustomerPortal({ history }) {
                   </div>
                 </div>
                 <div className="customer-invoice-actions">
-                  <strong>PKR {invoice.totalAmount.toLocaleString()}</strong>
+                  <div className="customer-invoice-total">
+                    <span>Invoice total</span>
+                    <strong>PKR {invoice.totalAmount.toLocaleString()}</strong>
+                  </div>
                   <button type="button" className="customer-btn customer-btn--ghost customer-invoice-download" onClick={() => downloadInvoice(invoice)}>
                     <Download size={16} aria-hidden="true" />
                     <span>Download PDF</span>

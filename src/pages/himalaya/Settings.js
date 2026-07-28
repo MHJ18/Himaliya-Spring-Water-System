@@ -7,7 +7,12 @@ import {
   CardContent,
   CardHeader,
   Chip,
+  CircularProgress,
   Divider,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   FormControl,
   Grid,
   InputAdornment,
@@ -42,17 +47,32 @@ import CancelScheduleSendRoundedIcon from '@mui/icons-material/CancelScheduleSen
 import ViewCompactRoundedIcon from '@mui/icons-material/ViewCompactRounded';
 import MotionPhotosOffRoundedIcon from '@mui/icons-material/MotionPhotosOffRounded';
 import MapRoundedIcon from '@mui/icons-material/MapRounded';
+import DatabaseRoundedIcon from '@mui/icons-material/StorageRounded';
+import DeleteSweepRoundedIcon from '@mui/icons-material/DeleteSweepRounded';
+import InsightsRoundedIcon from '@mui/icons-material/InsightsRounded';
+import OpenInNewRoundedIcon from '@mui/icons-material/OpenInNewRounded';
+import RefreshRoundedIcon from '@mui/icons-material/RefreshRounded';
+import GroupsRoundedIcon from '@mui/icons-material/GroupsRounded';
+import ReceiptLongRoundedIcon from '@mui/icons-material/ReceiptLongRounded';
+import PaymentsRoundedIcon from '@mui/icons-material/PaymentsRounded';
 import { toast } from 'react-toastify';
 import PageShell from '../../components/PageShell/PageShell';
 import { useSettings } from '../../context/SettingsContext';
 import { useCustomers } from '../../context/CustomerContext';
 import { exportCustomersToCsv, exportSalesToCsv } from '../../utils/exportCsv';
-import { isSupabaseConfigured } from '../../services/cloud/supabaseClient';
+import { isSupabaseConfigured, verifyPassword } from '../../services/cloud/supabaseClient';
 import { BOTTLE_TYPES, BOTTLE_TYPE_LABELS } from '../../data/constants';
 import { getBottlePrices, saveBottlePrices } from '../../services/api/bottlePriceApi';
 import { getCurrentAdminProfile } from '../../utils/adminAuth';
 import PasswordChangeForm from '../../components/PasswordChangeForm/PasswordChangeForm';
 import { getInventory, saveInventory } from '../../services/api/inventoryApi';
+import { getActiveRiders } from '../../services/api/customerPortalApi';
+import {
+  getDatabaseStats,
+  getSupabaseUsageUrl,
+  resetBusinessData,
+} from '../../services/api/databaseAdminApi';
+import { formatCurrency } from '../../utils/formatters';
 
 const emptyBottleValues = BOTTLE_TYPES.reduce((acc, type) => ({ ...acc, [type]: '' }), {});
 
@@ -161,9 +181,49 @@ function SettingsToggle({
   );
 }
 
+function formatBytes(value) {
+  const bytes = Math.max(0, Number(value) || 0);
+  if (bytes < 1024) return `${bytes} B`;
+  const units = ['KB', 'MB', 'GB', 'TB'];
+  let amount = bytes;
+  let unit = -1;
+  do {
+    amount /= 1024;
+    unit += 1;
+  } while (amount >= 1024 && unit < units.length - 1);
+  return `${amount.toFixed(amount >= 10 ? 1 : 2)} ${units[unit]}`;
+}
+
+function DatabaseMetric({ icon, label, value, detail, tone }) {
+  return (
+    <Card variant="outlined" sx={{ height: '100%', borderRadius: 3 }}>
+      <CardContent sx={{ display: 'flex', gap: 1.5, alignItems: 'flex-start' }}>
+        <Box sx={{
+          display: 'grid',
+          width: 42,
+          height: 42,
+          flex: '0 0 42px',
+          placeItems: 'center',
+          color: tone || 'primary.main',
+          bgcolor: 'action.hover',
+          borderRadius: 2,
+        }}
+        >
+          {icon}
+        </Box>
+        <Box sx={{ minWidth: 0 }}>
+          <Typography variant="caption" color="text.secondary" fontWeight={800}>{label}</Typography>
+          <Typography variant="h5" sx={{ mt: 0.2, overflowWrap: 'anywhere' }}>{value}</Typography>
+          <Typography variant="caption" color="text.secondary">{detail}</Typography>
+        </Box>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function Settings() {
   const { settings, updateSettings } = useSettings();
-  const { customers } = useCustomers();
+  const { customers, refresh: refreshCustomers } = useCustomers();
   const [tab, setTab] = useState(0);
   const [form, setForm] = useState({ ...settings });
   const [bottlePrices, setBottlePrices] = useState(emptyBottleValues);
@@ -171,6 +231,15 @@ export default function Settings() {
   const [savingPrices, setSavingPrices] = useState(false);
   const [savingInventory, setSavingInventory] = useState(false);
   const [currentAdminEmail, setCurrentAdminEmail] = useState('');
+  const [currentAdmin, setCurrentAdmin] = useState(null);
+  const [riders, setRiders] = useState([]);
+  const [databaseStats, setDatabaseStats] = useState(null);
+  const [loadingDatabaseStats, setLoadingDatabaseStats] = useState(false);
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [resetPhrase, setResetPhrase] = useState('');
+  const [resetOwnerPassword, setResetOwnerPassword] = useState('');
+  const [resetError, setResetError] = useState('');
+  const [resettingDatabase, setResettingDatabase] = useState(false);
   const cloudReady = isSupabaseConfigured();
 
   const loadBottlePrices = useCallback(async () => {
@@ -188,13 +257,32 @@ export default function Settings() {
       .then((stock) => setInventory({ ...emptyBottleValues, ...stock }))
       .catch(() => {});
     getCurrentAdminProfile()
-      .then((admin) => setCurrentAdminEmail(admin.email))
+      .then((admin) => {
+        setCurrentAdmin(admin);
+        setCurrentAdminEmail(admin.email);
+      })
       .catch(() => {});
+    getActiveRiders().then(setRiders).catch(() => setRiders([]));
   }, [loadBottlePrices]);
 
   useEffect(() => {
     if (tab === 2) loadBottlePrices();
   }, [tab, loadBottlePrices]);
+
+  const loadDatabaseStats = useCallback(async () => {
+    setLoadingDatabaseStats(true);
+    try {
+      setDatabaseStats(await getDatabaseStats());
+    } catch (error) {
+      toast.error(error.message || 'Could not load database information.');
+    } finally {
+      setLoadingDatabaseStats(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (tab === 4) loadDatabaseStats();
+  }, [tab, loadDatabaseStats]);
 
   useEffect(() => {
     setForm((current) => ({ ...current, ...settings }));
@@ -224,6 +312,8 @@ export default function Settings() {
     event.preventDefault();
     updateSettings({
       autoAcceptOrders: Boolean(form.autoAcceptOrders),
+      riderAssignmentMode: form.riderAssignmentMode === 'auto' ? 'auto' : 'manual',
+      defaultRiderId: form.riderAssignmentMode === 'auto' ? (form.defaultRiderId || '') : '',
       adminOrderNotifications: Boolean(form.adminOrderNotifications),
       requireDeliveryConfirmation: Boolean(form.requireDeliveryConfirmation),
       allowCustomerCancellation: Boolean(form.allowCustomerCancellation),
@@ -261,6 +351,46 @@ export default function Settings() {
     }
   };
 
+  const closeResetDialog = () => {
+    if (resettingDatabase) return;
+    setResetDialogOpen(false);
+    setResetPhrase('');
+    setResetOwnerPassword('');
+    setResetError('');
+  };
+
+  const handleResetDatabase = async () => {
+    if (!currentAdmin || currentAdmin.role !== 'Owner') {
+      setResetError('Only the signed-in Owner can reset the database.');
+      return;
+    }
+    if (resetPhrase !== 'RESET DATABASE') {
+      setResetError('Type RESET DATABASE exactly to continue.');
+      return;
+    }
+    if (!resetOwnerPassword) {
+      setResetError('Enter your owner password to authorize this reset.');
+      return;
+    }
+
+    setResettingDatabase(true);
+    setResetError('');
+    try {
+      await verifyPassword(currentAdmin.email, resetOwnerPassword);
+      const result = await resetBusinessData();
+      await refreshCustomers();
+      setDatabaseStats(null);
+      setResetDialogOpen(false);
+      setResetPhrase('');
+      setResetOwnerPassword('');
+      toast.success(`Database cleared. ${Number(result.deletedRows) || 0} records removed; user accounts were preserved.`);
+    } catch (error) {
+      setResetError(error.message || 'The database could not be reset.');
+    } finally {
+      setResettingDatabase(false);
+    }
+  };
+
   return (
     <PageShell title="Settings" subtitle="Control the admin workspace, ordering rules, prices, and account security">
       <Card sx={{ mb: 3, overflow: 'visible' }}>
@@ -276,6 +406,8 @@ export default function Settings() {
           <Tab icon={<AccountTreeOutlinedIcon />} iconPosition="start" label="Operations" />
           <Tab icon={<WaterDropOutlinedIcon />} iconPosition="start" label="Catalog" />
           <Tab icon={<SecurityOutlinedIcon />} iconPosition="start" label="Data & security" />
+          <Tab icon={<DatabaseRoundedIcon />} iconPosition="start" label="Database info" />
+          <Tab icon={<DeleteSweepRoundedIcon />} iconPosition="start" label="Reset" />
         </Tabs>
       </Card>
 
@@ -415,6 +547,47 @@ export default function Settings() {
                   onChange={(event) => setForm((current) => ({ ...current, autoAcceptOrders: event.target.checked }))}
                   icon={<AutorenewRoundedIcon />}
                 />
+                <Box sx={{ my: 1.25, p: 1.5, bgcolor: 'action.hover', border: '1px solid', borderColor: 'divider', borderRadius: 2.5 }}>
+                  <Typography variant="body2" fontWeight={800}>Rider assignment</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Choose whether accepted orders wait for dispatch or transfer to a rider automatically.
+                  </Typography>
+                  <Grid container spacing={2} sx={{ mt: 0.25 }}>
+                    <Grid item xs={12} sm={6}>
+                      <FormControl fullWidth>
+                        <InputLabel id="rider-assignment-mode-label">Assignment mode</InputLabel>
+                        <Select
+                          labelId="rider-assignment-mode-label"
+                          label="Assignment mode"
+                          value={form.riderAssignmentMode || 'manual'}
+                          onChange={updateForm('riderAssignmentMode')}
+                        >
+                          <MenuItem value="manual">Manual assignment</MenuItem>
+                          <MenuItem value="auto">Automatic transfer</MenuItem>
+                        </Select>
+                      </FormControl>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <FormControl fullWidth disabled={(form.riderAssignmentMode || 'manual') !== 'auto'}>
+                        <InputLabel id="default-rider-label">Preferred rider</InputLabel>
+                        <Select
+                          labelId="default-rider-label"
+                          label="Preferred rider"
+                          value={form.defaultRiderId || ''}
+                          onChange={updateForm('defaultRiderId')}
+                        >
+                          <MenuItem value="">First available rider</MenuItem>
+                          {riders.map((rider) => <MenuItem key={rider.id} value={rider.id}>{rider.name}</MenuItem>)}
+                        </Select>
+                      </FormControl>
+                    </Grid>
+                  </Grid>
+                  {!riders.length && (
+                    <Alert severity="info" sx={{ mt: 1.5 }}>
+                      Create a Rider account in Users before enabling automatic transfer.
+                    </Alert>
+                  )}
+                </Box>
                 <SettingsToggle
                   label="Notify admins about new orders"
                   description="Create an unread alert for each customer order."
@@ -607,6 +780,203 @@ export default function Settings() {
           </Grid>
         </Grid>
       )}
+
+      {tab === 4 && (
+        <Stack spacing={3}>
+          <SettingsCard
+            title="Database information"
+            subtitle="Live business totals and storage information from Supabase"
+            icon={<InsightsRoundedIcon />}
+            action={(
+              <Button
+                size="small"
+                startIcon={loadingDatabaseStats ? <CircularProgress size={16} /> : <RefreshRoundedIcon />}
+                onClick={loadDatabaseStats}
+                disabled={loadingDatabaseStats}
+                sx={{ mt: 0.5, mr: 1 }}
+              >
+                Refresh
+              </Button>
+            )}
+          >
+            {!databaseStats && loadingDatabaseStats && (
+              <Box sx={{ display: 'grid', minHeight: 220, placeItems: 'center' }}>
+                <CircularProgress />
+              </Box>
+            )}
+            {databaseStats && (
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6} lg={3}>
+                  <DatabaseMetric
+                    icon={<PaymentsRoundedIcon />}
+                    label="Gross revenue"
+                    value={formatCurrency(databaseStats.grossRevenue)}
+                    detail={`${Number(databaseStats.salesEntries) || 0} recorded sales`}
+                    tone="success.main"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6} lg={3}>
+                  <DatabaseMetric
+                    icon={<GroupsRoundedIcon />}
+                    label="Customers"
+                    value={(Number(databaseStats.customers) || 0).toLocaleString()}
+                    detail={`${Number(databaseStats.teamAccounts) || 0} preserved team users`}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6} lg={3}>
+                  <DatabaseMetric
+                    icon={<ReceiptLongRoundedIcon />}
+                    label="Orders & invoices"
+                    value={`${Number(databaseStats.orders) || 0} / ${Number(databaseStats.invoices) || 0}`}
+                    detail={`${formatCurrency(databaseStats.outstandingRevenue)} outstanding`}
+                    tone="warning.main"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6} lg={3}>
+                  <DatabaseMetric
+                    icon={<DatabaseRoundedIcon />}
+                    label="Business data size"
+                    value={formatBytes(databaseStats.tenantDataBytes)}
+                    detail={`${Number(databaseStats.operationalRecords) || 0} operational records`}
+                    tone="info.main"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6} lg={3}>
+                  <DatabaseMetric
+                    icon={<WaterDropOutlinedIcon />}
+                    label="Bottles sold"
+                    value={(Number(databaseStats.bottlesSold) || 0).toLocaleString()}
+                    detail={`${Number(databaseStats.inventoryUnits) || 0} units currently in stock`}
+                    tone="info.main"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6} lg={3}>
+                  <DatabaseMetric
+                    icon={<AccountTreeOutlinedIcon />}
+                    label="Rider accounts"
+                    value={(Number(databaseStats.riders) || 0).toLocaleString()}
+                    detail="Included in preserved user accounts"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6} lg={3}>
+                  <DatabaseMetric
+                    icon={<NotificationsActiveRoundedIcon />}
+                    label="Messages & alerts"
+                    value={`${Number(databaseStats.messages) || 0} / ${Number(databaseStats.notifications) || 0}`}
+                    detail="Messages / notifications"
+                    tone="secondary.main"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6} lg={3}>
+                  <DatabaseMetric
+                    icon={<CloudDoneOutlinedIcon />}
+                    label="Project database size"
+                    value={formatBytes(databaseStats.databaseBytes)}
+                    detail="Whole Supabase PostgreSQL project"
+                    tone="success.main"
+                  />
+                </Grid>
+              </Grid>
+            )}
+          </SettingsCard>
+
+          <SettingsCard
+            title="Egress and hosted usage"
+            subtitle="Supabase measures outbound traffic at the project and organization level"
+            icon={<CloudDoneOutlinedIcon />}
+          >
+            <Alert severity="info" sx={{ mb: 2 }}>
+              Egress cannot be calculated from table rows alone. Open Supabase Usage to see Database, Auth,
+              Realtime, Storage, and Edge Function egress for the current billing period.
+            </Alert>
+            <Button
+              component="a"
+              href={getSupabaseUsageUrl()}
+              target="_blank"
+              rel="noreferrer"
+              variant="outlined"
+              endIcon={<OpenInNewRoundedIcon />}
+            >
+              Open Supabase usage
+            </Button>
+          </SettingsCard>
+        </Stack>
+      )}
+
+      {tab === 5 && (
+        <SettingsCard
+          title="Reset business database"
+          subtitle="Remove all operational data while preserving user accounts"
+          icon={<DeleteSweepRoundedIcon />}
+        >
+          <Alert severity="error" sx={{ mb: 2 }}>
+            This permanently deletes customers, sales, orders, invoices, messages, notifications, inventory,
+            prices, rider device data, and app settings. Authentication users and admin/rider profiles remain.
+          </Alert>
+          <Stack spacing={1.5}>
+            <Box>
+              <Typography variant="body2" fontWeight={800}>What remains</Typography>
+              <Typography variant="body2" color="text.secondary">
+                Owner, admin, manager, and rider login accounts are preserved so your team can sign in after the reset.
+              </Typography>
+            </Box>
+            {currentAdmin && currentAdmin.role !== 'Owner' && (
+              <Alert severity="warning">Only an Owner can perform this reset.</Alert>
+            )}
+            <Button
+              color="error"
+              variant="contained"
+              startIcon={<DeleteSweepRoundedIcon />}
+              onClick={() => setResetDialogOpen(true)}
+              disabled={!cloudReady || !currentAdmin || currentAdmin.role !== 'Owner'}
+              sx={{ alignSelf: 'flex-start' }}
+            >
+              Clear all business data
+            </Button>
+          </Stack>
+        </SettingsCard>
+      )}
+
+      <Dialog open={resetDialogOpen} onClose={closeResetDialog} fullWidth maxWidth="sm">
+        <DialogTitle>Reset the business database?</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ pt: 1 }}>
+            <Alert severity="error">
+              This cannot be undone from the app. Export any records you need before continuing.
+            </Alert>
+            <TextField
+              label="Type RESET DATABASE"
+              value={resetPhrase}
+              onChange={(event) => { setResetPhrase(event.target.value); setResetError(''); }}
+              autoComplete="off"
+              disabled={resettingDatabase}
+              autoFocus
+            />
+            <TextField
+              label="Owner password"
+              type="password"
+              value={resetOwnerPassword}
+              onChange={(event) => { setResetOwnerPassword(event.target.value); setResetError(''); }}
+              autoComplete="current-password"
+              disabled={resettingDatabase}
+              error={Boolean(resetError)}
+              helperText={resetError || 'Your password is checked again before any data is removed.'}
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeResetDialog} disabled={resettingDatabase}>Cancel</Button>
+          <Button
+            color="error"
+            variant="contained"
+            onClick={handleResetDatabase}
+            disabled={resetPhrase !== 'RESET DATABASE' || !resetOwnerPassword || resettingDatabase}
+            startIcon={resettingDatabase ? <CircularProgress size={17} color="inherit" /> : <DeleteSweepRoundedIcon />}
+          >
+            {resettingDatabase ? 'Clearing data…' : 'Reset database'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </PageShell>
   );
 }

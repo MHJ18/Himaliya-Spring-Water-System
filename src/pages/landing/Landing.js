@@ -26,7 +26,8 @@ import {
 import BottleFillFilm from './BottleFillFilm';
 import './Landing.css';
 
-const FluidSimulation = React.lazy(() => import('../../components/fluid/FluidSimulation'));
+const fluidSimulationModule = import('../../components/fluid/FluidSimulation');
+const FluidSimulation = React.lazy(() => fluidSimulationModule);
 const enterEase = [0.22, 1, 0.36, 1];
 const viewportOnce = { once: true, amount: 0.25 };
 
@@ -156,9 +157,6 @@ function Landing() {
         </Link>
 
         <nav className="landing-nav-actions" aria-label="Primary navigation">
-          <a className="landing-nav-anchor" href="#refill-film">19L refill</a>
-          <a className="landing-nav-anchor" href="#delivery">How it works</a>
-          <a className="landing-nav-anchor" href="#features">Features</a>
           <Link className="landing-nav-link" to="/login">Admin</Link>
           <Link className="landing-nav-link landing-nav-link--primary" to="/customer/login">
             Order water <ArrowRight size={16} aria-hidden="true" />
@@ -181,14 +179,6 @@ function Landing() {
           className={`landing-mobile-menu${mobileNavOpen ? ' is-open' : ''}`}
           aria-label="Mobile navigation"
         >
-          <a href="#refill-film" onClick={closeMobileNav}>
-            <Droplets size={18} aria-hidden="true" />
-            <span><strong>19L refill film</strong><small>Watch the bottle fill</small></span>
-          </a>
-          <a href="#delivery" onClick={closeMobileNav}>
-            <Truck size={18} aria-hidden="true" />
-            <span><strong>How it works</strong><small>Three delivery steps</small></span>
-          </a>
           <Link to="/customer/login" onClick={closeMobileNav}>
             <LogIn size={18} aria-hidden="true" />
             <span><strong>Order water</strong><small>Customer sign in</small></span>
@@ -205,6 +195,7 @@ function Landing() {
           <React.Suspense fallback={null}>
             <FluidSimulation
               active
+              eager
               interactionRef={heroRef}
               mode="hero"
               reduceMotion={reduceMotion}
@@ -221,8 +212,12 @@ function Landing() {
         >
           <span className="landing-eyebrow">Himaliya Spring Water · Sialkot Cantt</span>
           <h1 id="landing-hero-title">
-            Water that moves
-            <span>with your day.</span>
+            Water that <span className="landing-water-word" aria-label="moves">
+              <span className="landing-water-word__outline" aria-hidden="true">moves</span>
+              <span className="landing-water-word__fill" aria-hidden="true">moves</span>
+              <span className="landing-water-word__ripple" aria-hidden="true">moves</span>
+            </span>
+            <span className="landing-hero__title-line">with your day.</span>
           </h1>
           <p>19L refill delivery for homes and offices—with every order, bottle and balance kept clear.</p>
           <div className="landing-hero__actions">

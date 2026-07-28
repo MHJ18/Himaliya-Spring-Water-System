@@ -26,14 +26,14 @@
   background-position: center;
   background-size: cover;
   opacity: 1;
-  transition: opacity 380ms ease;
+  transition: opacity 180ms ease-out;
 }
 
 .fluid-simulation__canvas {
   z-index: 1;
   display: block;
   opacity: 0;
-  transition: opacity 380ms ease;
+  transition: opacity 180ms ease-out;
 }
 
 .fluid-simulation.is-canvas-ready .fluid-simulation__canvas {

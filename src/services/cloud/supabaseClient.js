@@ -1,5 +1,6 @@
 const SESSION_KEY = 'hs_supabase_session';
 const SESSION_TYPE_KEY = 'hs_supabase_session_type';
+const PASSWORD_CHANGE_REQUIRED_KEY = 'hs_staff_password_change_required';
 const SESSION_EXPIRED_EVENT = 'hs:session-expired';
 const SESSION_READY_EVENT = 'hs:session-ready';
 const SESSION_EXPIRED_NOTICE_KEY = 'hs_session_expired_notice';
@@ -67,6 +68,16 @@ export function storeSession(session, sessionType = 'admin') {
 export function clearStoredSession() {
   localStorage.removeItem(SESSION_KEY);
   localStorage.removeItem(SESSION_TYPE_KEY);
+  localStorage.removeItem(PASSWORD_CHANGE_REQUIRED_KEY);
+}
+
+export function setPasswordChangeRequired(required) {
+  if (required) localStorage.setItem(PASSWORD_CHANGE_REQUIRED_KEY, '1');
+  else localStorage.removeItem(PASSWORD_CHANGE_REQUIRED_KEY);
+}
+
+export function isPasswordChangeRequired() {
+  return localStorage.getItem(PASSWORD_CHANGE_REQUIRED_KEY) === '1';
 }
 
 export function getAccessToken() {
@@ -186,10 +197,13 @@ export async function signInWithPassword(email, password, sessionType = 'admin')
 }
 
 export async function signUpWithPassword(email, password) {
-  return authRequest('/signup', {
+  const response = await authRequest('/signup', {
     method: 'POST',
     body: JSON.stringify({ email, password }),
   });
+  // The direct GoTrue endpoint returns session tokens at the top level,
+  // while client libraries expose the same tokens as data.session.
+  return response && response.data ? response.data : response;
 }
 
 export async function verifyPassword(email, password) {
@@ -224,6 +238,17 @@ export async function changeSignedInPassword(email, currentPassword, newPassword
   return true;
 }
 
+export async function completeTemporaryPasswordChange(newPassword) {
+  const session = await getFreshSession();
+  await updatePasswordWithToken(session.access_token, newPassword);
+  await dbRequest('/rpc/complete_staff_password_change', {
+    method: 'POST',
+    body: '{}',
+  });
+  setPasswordChangeRequired(false);
+  return true;
+}
+
 export async function adminResetCustomerPassword(customerId, newPassword, ownerPassword) {
   const session = await getFreshSession();
   const response = await fetch('/.netlify/functions/admin-reset-user-password', {
@@ -249,6 +274,22 @@ export async function adminCreateUser(admin) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(admin),
+  });
+  return parseResponse(response);
+}
+
+export async function adminDeleteUser(profileId) {
+  const session = await getFreshSession();
+  const endpoint = process.env.REACT_APP_ADMIN_CREATE_URL
+    || `${getConfig().url.replace(/\/$/, '')}/functions/v1/admin-create-user`;
+  const response = await fetch(endpoint, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${session.access_token}`,
+      apikey: getConfig().anonKey,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ profileId }),
   });
   return parseResponse(response);
 }
