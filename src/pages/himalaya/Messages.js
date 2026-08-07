@@ -11,6 +11,7 @@ import {
   MessagesSquare,
 } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { motion, useReducedMotion } from 'motion/react';
 import PageShell from '../../components/PageShell/PageShell';
 import LoadingState from '../../components/LoadingState/LoadingState';
 import { getCustomerAvatar } from '../../utils/customerPhotos';
@@ -64,6 +65,7 @@ function Avatar({ person, index = 0 }) {
 }
 
 export default function Messages() {
+  const reduceMotion = useReducedMotion();
   const [conversations, setConversations] = React.useState([]);
   const [customers, setCustomers] = React.useState([]);
   const [activeId, setActiveId] = React.useState('');
@@ -337,9 +339,12 @@ export default function Messages() {
                   </div>
                 )}
                 {messages.map((message) => (
-                  <div
+                  <motion.div
                     key={message.id}
                     className={`msg-bubble-row${message.senderRole === 'admin' ? ' is-mine' : ''}`}
+                    initial={reduceMotion ? false : { opacity: 0, y: 8, scale: 0.985 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
                   >
                     <div className="msg-bubble">
                       <small className="msg-bubble__sender">
@@ -348,7 +353,7 @@ export default function Messages() {
                       <p>{message.body}</p>
                       <time>{messageTime(message.createdAt)}</time>
                     </div>
-                  </div>
+                  </motion.div>
                 ))}
               </div>
 

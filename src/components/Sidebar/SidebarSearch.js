@@ -7,17 +7,22 @@ import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
 import s from './Sidebar.module.scss';
 
 export const searchRoutes = [
-  { label: 'Dashboard', keywords: 'overview home metrics', path: '/app/main/dashboard' },
-  { label: 'Customer Records', keywords: 'customer records phone address balance', path: '/app/customers' },
-  { label: 'Invoice Center', keywords: 'invoice bill number verify paid unpaid', path: '/app/invoice' },
-  { label: 'Add Customer', keywords: 'new customer create', path: '/app/add-customer' },
-  { label: 'Daily Sales', keywords: 'sale order entry bottle gallon', path: '/app/daily-sales' },
-  { label: 'Customer Orders', keywords: 'history deliveries orders requests accept delivery', path: '/app/customer-orders' },
-  { label: 'Delivery Tracker', keywords: 'rider driver dispatch gps live map delivery route ready picked up', path: '/app/rider-tracking' },
-  { label: 'Entry History', keywords: 'all entries ledger sales transactions archive history', path: '/app/history' },
-  { label: 'Analytics', keywords: 'monthly report revenue', path: '/app/analytics' },
-  { label: 'All Users', keywords: 'admins customers signed up users access', path: '/app/users' },
-  { label: 'Settings', keywords: 'business theme appearance workflow', path: '/app/settings' },
+  { label: 'Dashboard', description: 'Sales and operations overview', category: 'Page', keywords: 'overview home metrics performance', path: '/app/main/dashboard', featured: true },
+  { label: 'Customer Records', description: 'Profiles, balances, history, and invoices', category: 'Page', keywords: 'customer records phone address balance', path: '/app/customers', featured: true },
+  { label: 'Invoice Center', description: 'Find, validate, and update invoices', category: 'Page', keywords: 'invoice bill number verify paid unpaid', path: '/app/invoice' },
+  { label: 'Add Customer', description: 'Create a new customer record', category: 'Action', keywords: 'new customer create register', path: '/app/add-customer', featured: true },
+  { label: 'Record Daily Sale', description: 'Add a bottle delivery and payment', category: 'Action', keywords: 'sale order entry bottle gallon payment', path: '/app/daily-sales', featured: true },
+  { label: 'Customer Orders', description: 'Accept and manage portal orders', category: 'Page', keywords: 'history deliveries orders requests accept delivery', path: '/app/customer-orders' },
+  { label: 'Delivery Tracker', description: 'Live riders, routes, and dispatch', category: 'Page', keywords: 'rider driver dispatch gps live map delivery route ready picked up', path: '/app/rider-tracking' },
+  { label: 'Entry History', description: 'Browse the complete sales ledger', category: 'Page', keywords: 'all entries ledger sales transactions archive history', path: '/app/history' },
+  { label: 'Analytics', description: 'Revenue and customer reporting', category: 'Page', keywords: 'monthly report revenue chart trends', path: '/app/analytics' },
+  { label: 'Messages', description: 'Customer support conversations', category: 'Page', keywords: 'chat inbox support customer messages', path: '/messages', featured: true },
+  { label: 'Notifications', description: 'Orders, payments, stock, and alerts', category: 'Page', keywords: 'alerts updates unread order notification', path: '/notifications' },
+  { label: 'All Users', description: 'Admins, riders, and customer access', category: 'Page', keywords: 'admins customers signed up users access rider', path: '/app/users' },
+  { label: 'App Settings', description: 'Company features, workflow, catalog, and data', category: 'Page', keywords: 'business company workflow features prices inventory settings', path: '/app/settings' },
+  { label: 'UI Settings', description: 'Dashboard, theme, palette, language, and navigation', category: 'Page', keywords: 'theme palette appearance interface dashboard language sidebar accessibility', path: '/app/ui-settings' },
+  { label: 'Bottle Designer', description: 'Edit 19L and 1.5L labels with a live preview', category: 'Tool', keywords: 'bottle label print branding 19l 1.5l color size', path: '/app/bottle-designer' },
+  { label: 'My Profile', description: 'Admin account details', category: 'Page', keywords: 'account admin profile personal', path: '/profile' },
 ];
 
 function SidebarSearch({ history, onNavigate }) {

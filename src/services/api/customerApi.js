@@ -1,9 +1,9 @@
 import {
-  deleteCloudCustomer,
   deleteCloudSale,
   getCloudCustomers,
   saveCloudCustomers,
 } from '../cloud/himalayaDb';
+import { adminDeleteCustomerAccount, dbRequest } from '../cloud/supabaseClient';
 
 const LEGACY_KEYS = ['ws_customers', 'ws_customers_csv', 'ws_sales_csv', 'ws_cloud_sync_status'];
 
@@ -40,11 +40,34 @@ export const customerApi = {
     return customer;
   },
   async delete(customerId) {
-    await deleteCloudCustomer(customerId);
+    await adminDeleteCustomerAccount(customerId);
     return customerId;
   },
   async deleteTransaction(transactionId) {
     await deleteCloudSale(transactionId);
     return transactionId;
+  },
+  async recordMonthlyPayment(customerId, amount, allocations) {
+    try {
+      const result = await dbRequest('/rpc/record_customer_monthly_payment', {
+        method: 'POST',
+        body: JSON.stringify({
+          p_customer_id: customerId,
+          p_amount: amount,
+          p_allocations: allocations,
+        }),
+      });
+      return Array.isArray(result) ? result[0] : result;
+    } catch (error) {
+      const missingRpc = error.code === 'PGRST202'
+        || error.code === '42883'
+        || /record_customer_monthly_payment|schema cache/i.test(error.message || '');
+      if (missingRpc) {
+        throw new Error(
+          'Transactional payment allocation is not installed in Supabase. Apply the latest ledger migration, then try again.'
+        );
+      }
+      throw error;
+    }
   },
 };

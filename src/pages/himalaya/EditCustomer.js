@@ -4,12 +4,17 @@ import {
   Avatar,
   Box,
   Button,
+  Card,
+  CardContent,
+  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
+  Divider,
   Grid,
   Stack,
+  Switch,
   TextField,
   Typography,
 } from '@mui/material';
@@ -18,9 +23,13 @@ import CameraAltOutlinedIcon from '@mui/icons-material/CameraAltOutlined';
 import SaveRoundedIcon from '@mui/icons-material/SaveRounded';
 import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
 import PersonOutlineRoundedIcon from '@mui/icons-material/PersonOutlineRounded';
+import CalendarMonthRoundedIcon from '@mui/icons-material/CalendarMonthRounded';
+import PaymentsOutlinedIcon from '@mui/icons-material/PaymentsOutlined';
+import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined';
+import VerifiedRoundedIcon from '@mui/icons-material/VerifiedRounded';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { toast } from 'react-toastify';
 import PageShell from '../../components/PageShell/PageShell';
-import Widget from '../../components/Widget/Widget';
 import { useCustomers } from '../../context/CustomerContext';
 import { normalizePhone, validateCustomerForm } from '../../utils/validation';
 import { getInitials } from '../../utils/formatters';
@@ -30,7 +39,17 @@ import { BOTTLE_TYPES, BOTTLE_TYPE_LABELS } from '../../data/constants';
 import { getCustomerBottlePrices, saveCustomerBottlePrices } from '../../services/api/customerBottlePriceApi';
 import './EditCustomer.css';
 
-const emptyForm = { name: '', phone: '+92', address: '', email: '', photo: '' };
+const MONTHLY = 'monthly';
+const ON_DELIVERY = 'on_delivery';
+
+const emptyForm = {
+  name: '',
+  phone: '+92',
+  address: '',
+  email: '',
+  photo: '',
+  paymentSchedule: MONTHLY,
+};
 
 export default function EditCustomer({ match, history }) {
   const { customerId } = match.params;
@@ -46,6 +65,7 @@ export default function EditCustomer({ match, history }) {
   const [deleting, setDeleting] = useState(false);
   const [customerPrices, setCustomerPrices] = useState({});
   const [pricesLoading, setPricesLoading] = useState(true);
+  const reduceMotion = useReducedMotion();
 
   useEffect(() => {
     if (!customer) return;
@@ -55,6 +75,7 @@ export default function EditCustomer({ match, history }) {
       address: customer.address || '',
       email: customer.email || '',
       photo: customer.photo || '',
+      paymentSchedule: customer.paymentSchedule === ON_DELIVERY ? ON_DELIVERY : MONTHLY,
     });
   }, [customer]);
 
@@ -101,7 +122,7 @@ export default function EditCustomer({ match, history }) {
     try {
       await saveCustomerBottlePrices(customerId, customerPrices);
       await updateCustomer(customerId, form);
-      toast.success('Customer details and assigned bottle prices updated.');
+      toast.success('Customer profile, payment timing, and bottle prices updated.');
       history.push('/app/customers');
     } catch (error) {
       toast.error(error.message || 'Could not update customer.');
@@ -141,204 +162,283 @@ export default function EditCustomer({ match, history }) {
     );
   }
 
+  const paysOnDelivery = form.paymentSchedule === ON_DELIVERY;
+
   return (
-    <PageShell title="Edit customer" subtitle={`Update ${customer.name}'s contact and delivery details`}>
-      <Button
-        color="inherit"
-        startIcon={<ArrowBackRoundedIcon />}
-        onClick={() => history.push('/app/customers')}
-        sx={{ mb: 2 }}
-      >
-        Back to customer records
-      </Button>
-
-      <Widget className="edit-customer-card">
-        <Box sx={{
-          display: 'flex',
-          alignItems: { xs: 'flex-start', sm: 'center' },
-          flexDirection: { xs: 'column', sm: 'row' },
-          gap: 2,
-          mb: 3,
-          p: 2,
-          color: '#f6fcff',
-          background: 'linear-gradient(125deg, #075b84, #0a81ad 58%, #35b7d7)',
-          borderRadius: 2.5,
-        }}
+    <PageShell
+      title="Edit customer"
+      subtitle="Contact details, agreed prices, and payment preferences in one place."
+      actions={(
+        <Button
+          color="inherit"
+          startIcon={<ArrowBackRoundedIcon />}
+          onClick={() => history.push('/app/customers')}
         >
-          <Avatar
-            src={form.photo || undefined}
-            sx={{ width: 72, height: 72, bgcolor: 'rgba(255,255,255,.18)', fontWeight: 800 }}
-          >
-            {getInitials(form.name)}
-          </Avatar>
-          <Box sx={{ minWidth: 0, flex: 1 }}>
-            <Typography variant="overline" sx={{ color: '#bff3ff' }}>Customer workspace</Typography>
-            <Typography variant="h3" sx={{ color: '#fff', overflowWrap: 'anywhere' }}>{customer.name}</Typography>
-            <Typography variant="body2" sx={{ color: '#d9f6ff' }}>
-              {customer.phone} &middot; {(customer.purchaseHistory || []).length} recorded orders
-            </Typography>
-          </Box>
-          <Box sx={{
-            display: 'inline-flex', alignItems: 'center', gap: 0.7, px: 1.25, py: 0.7,
-            bgcolor: 'rgba(255,255,255,.12)', borderRadius: 99, fontSize: '0.75rem', fontWeight: 750,
-          }}
-          >
-            <i style={{ width: 7, height: 7, background: '#6ff2bd', borderRadius: '50%' }} />
-            Active account
-          </Box>
-        </Box>
-
-        <Stack direction="row" alignItems="center" spacing={1.25} sx={{ mb: 2 }}>
-          <Box sx={{
-            display: 'grid', width: 42, height: 42, placeItems: 'center',
-            color: 'primary.main', bgcolor: 'rgba(29,155,240,.1)', borderRadius: 2,
-          }}
-          >
-            <PersonOutlineRoundedIcon />
-          </Box>
-          <Box>
-            <Typography variant="h5">Delivery profile</Typography>
-            <Typography variant="body2" color="text.secondary">Purchase history remains unchanged.</Typography>
-          </Box>
-        </Stack>
-
-        <Box component="form" onSubmit={handleSubmit} noValidate>
-          <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ xs: 'flex-start', sm: 'center' }} spacing={2} sx={{ mb: 3 }}>
-            <Avatar
-              src={form.photo || undefined}
-              sx={{ width: 78, height: 78, bgcolor: 'primary.main', fontWeight: 800 }}
-            >
+          Customer records
+        </Button>
+      )}
+    >
+      <motion.div
+        className="edit-customer-shell"
+        initial={reduceMotion ? false : { opacity: 0, y: 18 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.36, ease: [0.22, 1, 0.36, 1] }}
+      >
+        <Card className="edit-customer-card" elevation={0}>
+          <Box className="edit-customer-hero">
+            <span className="edit-customer-hero__orb edit-customer-hero__orb--one" aria-hidden="true" />
+            <span className="edit-customer-hero__orb edit-customer-hero__orb--two" aria-hidden="true" />
+            <Avatar className="edit-customer-hero__avatar" src={form.photo || undefined}>
               {getInitials(form.name)}
             </Avatar>
-            <Box>
-              <Button component="label" variant="outlined" startIcon={<CameraAltOutlinedIcon />}>
-                Change photo
-                <input hidden type="file" accept="image/png,image/jpeg,image/webp" onChange={handlePhoto} />
-              </Button>
-              <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.75 }}>
-                JPG, PNG, or WebP. Large images are compressed automatically.
+            <Box className="edit-customer-hero__copy">
+              <Stack direction="row" alignItems="center" spacing={0.7}>
+                <VerifiedRoundedIcon sx={{ fontSize: 16 }} />
+                <Typography variant="overline">Customer account</Typography>
+              </Stack>
+              <Typography variant="h3">{form.name || customer.name}</Typography>
+              <Typography variant="body2">
+                {form.phone || 'No phone'} <span aria-hidden="true">&middot;</span>{' '}
+                {(customer.purchaseHistory || []).length} recorded sales
               </Typography>
             </Box>
-          </Stack>
-
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Full name"
-                value={form.name}
-                onChange={(event) => setField('name', event.target.value)}
-                error={Boolean(errors.name)}
-                helperText={errors.name}
-                autoComplete="name"
-                required
-                fullWidth
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Phone number"
-                type="tel"
-                value={form.phone}
-                onChange={(event) => setField('phone', normalizePhone(event.target.value))}
-                error={Boolean(errors.phone)}
-                helperText={errors.phone}
-                autoComplete="tel"
-                required
-                fullWidth
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Email address"
-                type="email"
-                value={form.email}
-                onChange={(event) => setField('email', event.target.value)}
-                error={Boolean(errors.email)}
-                helperText={errors.email || 'Optional for customers created by an administrator.'}
-                autoComplete="email"
-                fullWidth
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                label="Delivery address"
-                value={form.address}
-                onChange={(event) => setField('address', event.target.value)}
-                error={Boolean(errors.address)}
-                helperText={errors.address}
-                autoComplete="street-address"
-                required
-                fullWidth
-              />
-            </Grid>
-          </Grid>
-
-          <Box sx={{ mt: 3, p: 2.25, border: '1px solid', borderColor: 'divider', borderRadius: 2, bgcolor: 'action.hover' }}>
-            <Typography variant="h6">Assigned bottle prices</Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Set the agreed price for this customer. These prices are used in their ordering portal.
-            </Typography>
-            {pricesLoading ? <LoadingState compact label="Loading assigned prices..." variant="form" /> : (
-              <Grid container spacing={2}>
-                {BOTTLE_TYPES.map((type) => (
-                  <Grid item xs={12} sm={6} key={type}>
-                    <TextField
-                      fullWidth
-                      label={`${BOTTLE_TYPE_LABELS[type] || type} price`}
-                      type="number"
-                      value={customerPrices[type] === undefined ? '' : customerPrices[type]}
-                      onChange={(event) => setCustomerPrices((current) => ({ ...current, [type]: event.target.value }))}
-                      InputProps={{
-                        startAdornment: <Box component="span" sx={{ mr: 0.75, color: 'text.secondary' }}>PKR</Box>,
-                        inputProps: { min: 0, step: '0.01' },
-                      }}
-                    />
-                  </Grid>
-                ))}
-              </Grid>
-            )}
+            <Box className="edit-customer-hero__status">
+              <span aria-hidden="true" />
+              Active profile
+            </Box>
           </Box>
 
-          <Stack direction={{ xs: 'column-reverse', sm: 'row' }} justifyContent="space-between" spacing={1.5} sx={{ mt: 3 }}>
-            <Button
-              color="error"
-              variant="outlined"
-              startIcon={<DeleteOutlineRoundedIcon />}
-              onClick={() => setDeleteOpen(true)}
-            >
-              Delete customer
-            </Button>
-            <Stack direction={{ xs: 'column-reverse', sm: 'row' }} spacing={1.5}>
-              <Button color="inherit" onClick={() => history.push('/app/customers')}>Cancel</Button>
-              <Button type="submit" variant="contained" startIcon={<SaveRoundedIcon />} disabled={saving || pricesLoading}>
-                {saving ? 'Saving...' : 'Save changes'}
-              </Button>
-            </Stack>
-          </Stack>
-        </Box>
-      </Widget>
+          <Box component="form" onSubmit={handleSubmit} noValidate>
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={7}>
+                <CardContent className="edit-customer-section">
+                  <Stack direction="row" alignItems="center" spacing={1.25} sx={{ mb: 2.5 }}>
+                    <Box className="edit-customer-section__icon"><PersonOutlineRoundedIcon /></Box>
+                    <Box>
+                      <Typography variant="h5">Profile &amp; delivery</Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        The details the delivery team sees.
+                      </Typography>
+                    </Box>
+                  </Stack>
 
-      <Dialog open={deleteOpen} onClose={closeDeleteDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>Delete customer</DialogTitle>
+                  <Stack
+                    direction={{ xs: 'column', sm: 'row' }}
+                    alignItems={{ xs: 'flex-start', sm: 'center' }}
+                    spacing={2}
+                    className="edit-customer-photo"
+                  >
+                    <Avatar src={form.photo || undefined} className="edit-customer-photo__avatar">
+                      {getInitials(form.name)}
+                    </Avatar>
+                    <Box>
+                      <Button component="label" variant="outlined" startIcon={<CameraAltOutlinedIcon />}>
+                        Replace photo
+                        <input hidden type="file" accept="image/png,image/jpeg,image/webp" onChange={handlePhoto} />
+                      </Button>
+                      <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.75 }}>
+                        JPG, PNG, or WebP. Large images are compressed automatically.
+                      </Typography>
+                    </Box>
+                  </Stack>
+
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        label="Full name"
+                        value={form.name}
+                        onChange={(event) => setField('name', event.target.value)}
+                        error={Boolean(errors.name)}
+                        helperText={errors.name}
+                        autoComplete="name"
+                        required
+                        fullWidth
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        label="Phone number"
+                        type="tel"
+                        value={form.phone}
+                        onChange={(event) => setField('phone', normalizePhone(event.target.value))}
+                        error={Boolean(errors.phone)}
+                        helperText={errors.phone}
+                        autoComplete="tel"
+                        required
+                        fullWidth
+                      />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <TextField
+                        label="Email address"
+                        type="email"
+                        value={form.email}
+                        onChange={(event) => setField('email', event.target.value)}
+                        error={Boolean(errors.email)}
+                        helperText={errors.email || 'Optional for administrator-created customers.'}
+                        autoComplete="email"
+                        fullWidth
+                      />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <TextField
+                        label="Delivery address"
+                        value={form.address}
+                        onChange={(event) => setField('address', event.target.value)}
+                        error={Boolean(errors.address)}
+                        helperText={errors.address}
+                        autoComplete="street-address"
+                        required
+                        multiline
+                        minRows={2}
+                        fullWidth
+                      />
+                    </Grid>
+                  </Grid>
+                </CardContent>
+              </Grid>
+
+              <Grid item xs={12} md={5}>
+                <Stack spacing={2.25}>
+                  <Box className={`edit-customer-billing${paysOnDelivery ? ' is-on-delivery' : ''}`}>
+                    <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={2}>
+                      <Box className="edit-customer-billing__icon">
+                        {paysOnDelivery ? <PaymentsOutlinedIcon /> : <CalendarMonthRoundedIcon />}
+                      </Box>
+                      <Switch
+                        checked={paysOnDelivery}
+                        onChange={(event) => setField('paymentSchedule', event.target.checked ? ON_DELIVERY : MONTHLY)}
+                        color="success"
+                        inputProps={{ 'aria-label': 'Customer pays on delivery' }}
+                      />
+                    </Stack>
+                    <Typography variant="overline" color="text.secondary">Payment policy</Typography>
+                    <Typography variant="h5">
+                      {paysOnDelivery ? 'Pays on delivery' : 'Monthly account'}
+                    </Typography>
+                    <AnimatePresence mode="wait" initial={false}>
+                      <motion.div
+                        key={form.paymentSchedule}
+                        initial={reduceMotion ? false : { opacity: 0, y: 5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={reduceMotion ? undefined : { opacity: 0, y: -5 }}
+                        transition={{ duration: 0.18 }}
+                      >
+                        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
+                          {paysOnDelivery
+                            ? 'Daily Sales will expect a payment amount, while still allowing partial payment.'
+                            : 'Sales can be recorded without payment and settled with the month-end invoice.'}
+                        </Typography>
+                      </motion.div>
+                    </AnimatePresence>
+                    <Stack direction="row" alignItems="center" spacing={0.8} className="edit-customer-billing__hint">
+                      <LocalShippingOutlinedIcon fontSize="small" />
+                      <Typography variant="caption">
+                        Switch on for customers who normally pay at the doorstep.
+                      </Typography>
+                    </Stack>
+                  </Box>
+
+                  <Box className="edit-customer-prices">
+                    <Typography variant="h6">Agreed bottle prices</Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                      Used in the customer portal and order calculations.
+                    </Typography>
+                    {pricesLoading ? <LoadingState compact label="Loading prices..." variant="form" /> : (
+                      <Stack spacing={1.5}>
+                        {BOTTLE_TYPES.map((type) => (
+                          <TextField
+                            key={type}
+                            fullWidth
+                            size="small"
+                            label={BOTTLE_TYPE_LABELS[type] || type}
+                            type="number"
+                            value={customerPrices[type] === undefined ? '' : customerPrices[type]}
+                            onChange={(event) => setCustomerPrices((current) => ({ ...current, [type]: event.target.value }))}
+                            InputProps={{
+                              startAdornment: <Box component="span" sx={{ mr: 0.75, color: 'text.secondary', fontWeight: 700 }}>PKR</Box>,
+                              inputProps: { min: 0, step: '0.01' },
+                            }}
+                          />
+                        ))}
+                      </Stack>
+                    )}
+                  </Box>
+                </Stack>
+              </Grid>
+            </Grid>
+
+            <Divider sx={{ mt: 3 }} />
+            <Stack
+              direction={{ xs: 'column-reverse', sm: 'row' }}
+              justifyContent="space-between"
+              spacing={1.5}
+              className="edit-customer-footer"
+            >
+              <Button
+                color="error"
+                variant="text"
+                startIcon={<DeleteOutlineRoundedIcon />}
+                onClick={() => setDeleteOpen(true)}
+              >
+                Delete customer
+              </Button>
+              <Stack direction={{ xs: 'column-reverse', sm: 'row' }} spacing={1.25}>
+                <Button color="inherit" onClick={() => history.push('/app/customers')}>Cancel</Button>
+                <Button
+                  type="submit"
+                  variant="contained"
+                  startIcon={saving ? <CircularProgress size={17} color="inherit" /> : <SaveRoundedIcon />}
+                  disabled={saving || pricesLoading}
+                  sx={{ minWidth: 160 }}
+                >
+                  {saving ? 'Saving profile...' : 'Save changes'}
+                </Button>
+              </Stack>
+            </Stack>
+          </Box>
+        </Card>
+      </motion.div>
+
+      <Dialog
+        open={deleteOpen}
+        onClose={closeDeleteDialog}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{ className: 'edit-customer-delete-dialog' }}
+      >
+        <DialogTitle>
+          <Stack direction="row" alignItems="center" spacing={1.25}>
+            <Box className="edit-customer-delete-dialog__icon"><DeleteOutlineRoundedIcon /></Box>
+            <Box>
+              <Typography variant="h5">Delete customer?</Typography>
+              <Typography variant="body2" color="text.secondary">This action is permanent.</Typography>
+            </Box>
+          </Stack>
+        </DialogTitle>
         <DialogContent>
-          <Alert severity="error" sx={{ mb: 2 }}>
-            This cannot be undone. The customer, sales history, linked orders, and saved invoices will be permanently removed.
+          <Alert severity="error" variant="outlined" sx={{ mb: 2 }}>
+            The profile, sales history, linked orders, and saved invoices will all be removed.
           </Alert>
+          <Typography variant="body2" sx={{ mb: 1 }}>
+            Type <strong>{customer.name}</strong> to confirm.
+          </Typography>
           <TextField
-            label={`Type "${customer.name}" to confirm`}
+            placeholder={customer.name}
             value={deleteConfirmation}
             onChange={(event) => setDeleteConfirmation(event.target.value)}
             autoComplete="off"
             disabled={deleting}
             fullWidth
+            autoFocus
           />
         </DialogContent>
-        <DialogActions>
-          <Button color="inherit" onClick={closeDeleteDialog} disabled={deleting}>Cancel</Button>
+        <DialogActions sx={{ px: 3, pb: 3 }}>
+          <Button color="inherit" onClick={closeDeleteDialog} disabled={deleting}>Keep customer</Button>
           <Button
             color="error"
             variant="contained"
-            startIcon={<DeleteOutlineRoundedIcon />}
+            startIcon={deleting ? <CircularProgress size={17} color="inherit" /> : <DeleteOutlineRoundedIcon />}
             onClick={handleDelete}
             disabled={deleting || deleteConfirmation.trim() !== customer.name}
           >

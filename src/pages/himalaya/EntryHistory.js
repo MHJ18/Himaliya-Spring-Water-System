@@ -97,6 +97,7 @@ export default function EntryHistory() {
           startIcon={<DownloadRoundedIcon />}
           onClick={() => exportEntryHistoryToCsv(filtered)}
           disabled={!filtered.length}
+          sx={{ width: { xs: '100%', sm: 'auto' }, minHeight: 44 }}
         >
           Export current view
         </Button>
@@ -116,14 +117,21 @@ export default function EntryHistory() {
                 <Grid item xs={6} lg={3} key={metric.key}>
                   <Card sx={{ height: '100%' }}>
                     <CardContent sx={{ p: { xs: 1.7, sm: 2.25 } }}>
-                      <Stack direction="row" alignItems="flex-start" justifyContent="space-between" spacing={1}>
-                        <Box>
+                      <Stack direction="row" alignItems="flex-start" justifyContent="space-between" spacing={1} sx={{ minWidth: 0 }}>
+                        <Box sx={{ minWidth: 0 }}>
                           <Typography variant="caption" color="text.secondary" fontWeight={750}>
                             {metric.label}
                           </Typography>
                           <Typography
                             variant="h4"
-                            sx={{ mt: 0.6, fontWeight: 850, fontVariantNumeric: 'tabular-nums' }}
+                            sx={{
+                              mt: 0.6,
+                              fontSize: { xs: '1.05rem', sm: '1.35rem', md: '1.55rem' },
+                              lineHeight: 1.2,
+                              fontWeight: 850,
+                              fontVariantNumeric: 'tabular-nums',
+                              overflowWrap: 'anywhere',
+                            }}
                           >
                             {value}
                           </Typography>
@@ -269,6 +277,17 @@ export default function EntryHistory() {
                   setPage(0);
                 }}
                 rowsPerPageOptions={[10, 25, 50]}
+                sx={{
+                  overflow: 'hidden',
+                  '& .MuiTablePagination-toolbar': {
+                    minHeight: 52,
+                    flexWrap: { xs: 'wrap', sm: 'nowrap' },
+                    justifyContent: { xs: 'center', sm: 'flex-end' },
+                    px: { xs: 0, sm: 2 },
+                  },
+                  '& .MuiTablePagination-spacer': { display: { xs: 'none', sm: 'block' } },
+                  '& .MuiTablePagination-actions': { ml: { xs: 0.5, sm: 2.5 } },
+                }}
               />
             </CardContent>
           </Card>

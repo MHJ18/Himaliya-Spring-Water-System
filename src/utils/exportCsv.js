@@ -20,20 +20,51 @@ function downloadCsv(csv, filename) {
   URL.revokeObjectURL(link.href);
 }
 
+function paymentAmounts(transaction) {
+  const total = Number(transaction && transaction.totalAmount) || 0;
+  const paid = Math.min(
+    total,
+    Math.max(0, Number(transaction && transaction.amountPaid) || 0),
+  );
+  return { total, paid, due: Math.max(0, total - paid) };
+}
+
 export function buildCustomersCsv(customers) {
-  const headers = ['ID', 'Name', 'Phone', 'Email', 'Address', 'Created At', 'Sales Count', 'Total Spent'];
+  const headers = [
+    'ID',
+    'Name',
+    'Phone',
+    'Email',
+    'Address',
+    'Payment Schedule',
+    'Created At',
+    'Sales Count',
+    'Gross Sales',
+    'Amount Paid',
+    'Balance Due',
+  ];
   const rows = customers.map((customer) => {
     const history = customer.purchaseHistory || [];
-    const totalSpent = history.reduce((sum, sale) => sum + (Number(sale.totalAmount) || 0), 0);
+    const totals = history.reduce((summary, sale) => {
+      const amounts = paymentAmounts(sale);
+      return {
+        total: summary.total + amounts.total,
+        paid: summary.paid + amounts.paid,
+        due: summary.due + amounts.due,
+      };
+    }, { total: 0, paid: 0, due: 0 });
     return [
       customer.id,
       customer.name,
       customer.phone,
       customer.email || '',
       customer.address,
+      customer.paymentSchedule === 'on_delivery' ? 'On delivery' : 'Monthly',
       formatDate(customer.createdAt),
       history.length,
-      totalSpent,
+      totals.total,
+      totals.paid,
+      totals.due,
     ];
   });
 
@@ -42,7 +73,18 @@ export function buildCustomersCsv(customers) {
 
 export function buildSalesCsv(customers) {
   const transactions = getAllTransactions(customers);
-  const headers = ['Date', 'Customer', 'Phone', 'Bottle Type', 'Quantity', 'Price', 'Total', 'Notes'];
+  const headers = [
+    'Date',
+    'Customer',
+    'Phone',
+    'Bottle Type',
+    'Quantity',
+    'Price',
+    'Total',
+    'Amount Paid',
+    'Balance Due',
+    'Notes',
+  ];
   const rows = transactions.map((t) => {
     const c = customers.find((x) => x.id === t.customerId) || {};
     return [
@@ -53,6 +95,8 @@ export function buildSalesCsv(customers) {
       t.quantity,
       t.pricePerBottle,
       t.totalAmount,
+      t.amountPaid,
+      t.amountDue,
       t.notes || '',
     ];
   });
@@ -61,17 +105,33 @@ export function buildSalesCsv(customers) {
 }
 
 export function buildEntryHistoryCsv(transactions) {
-  const headers = ['Entry ID', 'Date', 'Customer', 'Bottle Type', 'Quantity', 'Price', 'Total', 'Notes'];
-  const rows = transactions.map((transaction) => [
-    transaction.id,
-    formatDate(transaction.date),
-    transaction.customerName || '',
-    transaction.bottleType,
-    transaction.quantity,
-    transaction.pricePerBottle,
-    transaction.totalAmount,
-    transaction.notes || '',
-  ]);
+  const headers = [
+    'Entry ID',
+    'Date',
+    'Customer',
+    'Bottle Type',
+    'Quantity',
+    'Price',
+    'Total',
+    'Amount Paid',
+    'Balance Due',
+    'Notes',
+  ];
+  const rows = transactions.map((transaction) => {
+    const amounts = paymentAmounts(transaction);
+    return [
+      transaction.id,
+      formatDate(transaction.date),
+      transaction.customerName || '',
+      transaction.bottleType,
+      transaction.quantity,
+      transaction.pricePerBottle,
+      amounts.total,
+      amounts.paid,
+      amounts.due,
+      transaction.notes || '',
+    ];
+  });
   return rowsToCsv(headers, rows);
 }
 

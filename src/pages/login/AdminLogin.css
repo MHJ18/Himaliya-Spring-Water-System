@@ -442,3 +442,18 @@
     animation: none;
   }
 }
+
+/* Deliberately restrained admin sign-in typography. */
+.admin-login-copy h1 { font-size: clamp(2rem, 4vw, 3.35rem); line-height: 1; }
+.admin-login-copy > p { font-size: .8rem; line-height: 1.6; }
+.admin-login-heading h2 { font-size: 1.28rem; }
+.admin-login-heading p { font-size: .7rem; }
+.admin-login-card .water-login-logo h2 { font-size: .88rem; }
+.admin-login-card .water-login-logo p { font-size: .65rem; }
+.admin-login-card .water-login-input { font-size: .8rem; }
+.admin-login-card .water-login-submit { font-size: .75rem; }
+
+@media (max-width: 480px) {
+  .admin-login-heading h2 { font-size: 1.15rem; }
+  .admin-login-card .water-login-input { font-size: 16px; }
+}

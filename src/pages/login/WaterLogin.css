@@ -431,6 +431,28 @@
     font-size: 16px;
   }
 }
+
+/* Compact authentication type scale. Keep mobile inputs at 16px to avoid browser zoom. */
+.water-login-page { font-size: 13px; }
+.water-login-copy h1 { font-size: clamp(1.75rem, 3.2vw, 2.45rem); line-height: 1.08; }
+.water-login-copy p { font-size: .82rem; line-height: 1.55; }
+.water-login-stats span { font-size: .7rem; }
+.water-login-stats strong { font-size: 1.08rem; }
+.water-login-logo h2 { font-size: 1rem; }
+.water-login-logo p { font-size: .72rem; }
+.water-login-label { font-size: .74rem; }
+.water-login-input { font-size: .84rem; }
+.water-login-submit { font-size: .78rem; }
+.water-login-alert { font-size: .74rem; }
+.water-login-note,
+.water-login-back { font-size: .72rem; }
+.password-access-card h1 { font-size: 1.2rem; }
+
+@media (max-width: 480px) {
+  .water-login-mobile-heading h2 { font-size: 1rem; }
+  .water-login-mobile-heading p { font-size: .72rem; }
+  .water-login-input { font-size: 16px; }
+}
 @media (min-width: 1024px) {
   .water-login-page { font-size: 15px; }
 }

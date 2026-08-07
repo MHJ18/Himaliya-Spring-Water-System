@@ -335,3 +335,35 @@
     border-radius: 1.15rem;
   }
 }
+
+/* Lighter message window with compact, pill-shaped conversations. */
+.customer-messages-card {
+  border-radius: 1.25rem;
+  box-shadow: 0 24px 64px rgba(0, 11, 24, .28);
+}
+.customer-messages-header {
+  padding: .8rem .95rem;
+  background: linear-gradient(90deg, rgba(72, 205, 231, .08), transparent);
+}
+.customer-messages-mark { width: 2.45rem; height: 2.45rem; border-radius: .75rem; }
+.customer-messages-header strong { font-size: .82rem; }
+.customer-messages-header span { font-size: .68rem; }
+.customer-messages-thread { gap: .45rem; padding: .85rem; }
+.customer-messages-bubble {
+  max-width: min(76%, 26rem);
+  padding: .5rem .75rem .38rem;
+  border-radius: 1.25rem;
+  box-shadow: none;
+}
+.customer-messages-bubble-row.is-mine .customer-messages-bubble { border-radius: 1.25rem; box-shadow: 0 6px 16px rgba(30, 157, 190, .12); }
+.customer-messages-bubble p { font-size: .76rem; line-height: 1.4; }
+.customer-messages-sender { margin-bottom: .12rem; font-size: .52rem; }
+.customer-messages-bubble time { margin-top: .2rem; font-size: .58rem; }
+.customer-messages-compose { gap: .55rem; padding: .7rem .8rem .8rem; background: rgba(4, 18, 31, .22); }
+.customer-theme--light .customer-messages-compose { background: rgba(232, 244, 248, .72); }
+.customer-messages-compose textarea { min-height: 2.55rem; padding: .63rem .85rem; font-size: .76rem; border-radius: 999px; }
+.customer-messages-compose button { width: 2.55rem; height: 2.55rem; border-radius: 50%; }
+
+@media (max-width: 640px) {
+  .customer-messages-bubble { max-width: 86%; }
+}

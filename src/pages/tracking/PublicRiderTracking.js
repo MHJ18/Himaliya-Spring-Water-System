@@ -12,11 +12,13 @@ import {
   Route,
   ShieldCheck,
 } from 'lucide-react';
+import { motion, useReducedMotion } from 'motion/react';
 import RiderMap from '../../components/RiderMap/RiderMap';
 import { getPublicRiderTracking } from '../../services/api/customerPortalApi';
 import { subscribeToPublicDeliveryTracking } from '../../services/cloud/supabaseRealtime';
 import { hasStoredSessionType } from '../../services/cloud/supabaseClient';
 import { BOTTLE_TYPE_LABELS } from '../../data/constants';
+import useCustomerTheme from '../customer/useCustomerTheme';
 import './PublicRiderTracking.css';
 
 const statusCopy = {
@@ -66,9 +68,13 @@ function updateLabel(value, status) {
   })}`;
 }
 
-function TrackingLoading() {
+function TrackingLoading({ theme }) {
   return (
-    <main className="public-tracking-page public-tracking-page--loading" aria-label="Loading delivery tracking" role="status">
+    <main
+      className={`public-tracking-page public-tracking-page--${theme}${theme !== 'light' ? ' public-tracking-page--dark' : ''} public-tracking-page--loading`}
+      aria-label="Loading delivery tracking"
+      role="status"
+    >
       <div className="public-tracking-loading">
         <span />
         <i />
@@ -80,13 +86,19 @@ function TrackingLoading() {
   );
 }
 
+TrackingLoading.propTypes = {
+  theme: PropTypes.oneOf(['light', 'dark', 'dark-gradient']).isRequired,
+};
+
 export default function PublicRiderTracking({ match }) {
+  const { theme } = useCustomerTheme();
   const [tracking, setTracking] = React.useState(null);
   const [loading, setLoading] = React.useState(true);
   const [refreshing, setRefreshing] = React.useState(false);
   const [error, setError] = React.useState('');
   const requestRunning = React.useRef(false);
   const hiddenAt = React.useRef(0);
+  const reduceMotion = useReducedMotion();
   const customerSignedIn = hasStoredSessionType('customer');
   const homeTarget = customerSignedIn ? '/customer/app' : '/';
   const homeLabel = customerSignedIn ? 'Back to dashboard' : 'Back to home';
@@ -143,11 +155,13 @@ export default function PublicRiderTracking({ match }) {
     })
   ), [match.params.trackingToken]);
 
-  if (loading) return <TrackingLoading />;
+  const pageClassName = `public-tracking-page public-tracking-page--${theme}${theme !== 'light' ? ' public-tracking-page--dark' : ''}`;
+
+  if (loading) return <TrackingLoading theme={theme} />;
 
   if (error || !tracking) {
     return (
-      <main className="public-tracking-page">
+      <main className={pageClassName}>
         <div className="public-tracking-error">
           <span className="public-tracking-error__icon"><Route /></span>
           <p>Delivery tracking</p>
@@ -173,9 +187,14 @@ export default function PublicRiderTracking({ match }) {
   const hasLocation = tracking.riderLat !== null && tracking.riderLng !== null;
 
   return (
-    <main className="public-tracking-page">
+    <main className={pageClassName}>
       <div className="public-tracking-shell">
-        <header className="public-tracking-header">
+        <motion.header
+          className="public-tracking-header"
+          initial={reduceMotion ? false : { opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
           <Link to="/" className="public-tracking-brand">
             <span><Droplets size={23} /></span>
             <div><strong>Himaliya Spring</strong><small>Live delivery</small></div>
@@ -190,9 +209,14 @@ export default function PublicRiderTracking({ match }) {
               <span>{refreshing ? 'Updating' : 'Refresh'}</span>
             </button>
           </div>
-        </header>
+        </motion.header>
 
-        <section className="public-tracking-hero">
+        <motion.section
+          className="public-tracking-hero"
+          initial={reduceMotion ? false : { opacity: 0, y: 16, scale: 0.992 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
+        >
           <div className="public-tracking-hero__copy">
             <span className={`public-tracking-status public-tracking-status--${tracking.trackingStatus}`}>
               <i />
@@ -201,27 +225,6 @@ export default function PublicRiderTracking({ match }) {
             <p>Order for {tracking.customerName}</p>
             <h1>{copy[0]}</h1>
             <div>{copy[1]}</div>
-            <div
-              className="public-tracking-progress"
-              role="progressbar"
-              aria-label="Delivery progress"
-              aria-valuemin="0"
-              aria-valuemax="100"
-              aria-valuenow={progress}
-            >
-              <span style={{ width: `${progress}%` }} />
-              <i /><i /><i />
-              <strong className="sr-only">Delivery is {progress}% complete</strong>
-            </div>
-            <ol className="public-tracking-status-steps" aria-label="Delivery status steps">
-              {deliverySteps.map((step, index) => (
-                <li key={step} className={`${index < activeStep ? 'is-complete' : ''}${index === activeStep ? ' is-current' : ''}`}>
-                  <span>{index < activeStep ? '✓' : index + 1}</span>
-                  <strong>{step}</strong>
-                </li>
-              ))}
-            </ol>
-            <small><Clock3 size={15} /> {updateLabel(tracking.locationUpdatedAt, tracking.trackingStatus)}</small>
           </div>
           <div className="public-tracking-hero__order">
             <Droplets />
@@ -229,12 +232,58 @@ export default function PublicRiderTracking({ match }) {
             <strong>{bottleSummary}</strong>
             <small>{dateLabel(tracking.deliveryDate)}</small>
           </div>
-        </section>
+        </motion.section>
 
-        <div className="public-tracking-grid">
-          <section className="public-tracking-map-card">
+        <motion.section
+          className="public-tracking-progress-card"
+          initial={reduceMotion ? false : { opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.32, delay: reduceMotion ? 0 : 0.05 }}
+        >
+          <div className="public-tracking-progress-card__heading">
+            <span>
+              <strong>Delivery progress</strong>
+              <small><Clock3 size={15} /> {updateLabel(tracking.locationUpdatedAt, tracking.trackingStatus)}</small>
+            </span>
+            <em>{progress}%</em>
+          </div>
+          <div
+            className="public-tracking-progress"
+            role="progressbar"
+            aria-label="Delivery progress"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow={progress}
+          >
+            <span style={{ width: `${progress}%` }} />
+            <i /><i /><i />
+            <strong className="sr-only">Delivery is {progress}% complete</strong>
+          </div>
+          <ol className="public-tracking-status-steps" aria-label="Delivery status steps">
+            {deliverySteps.map((step, index) => (
+              <li key={step} className={`${index < activeStep ? 'is-complete' : ''}${index === activeStep ? ' is-current' : ''}`}>
+                <span>{index < activeStep ? '✓' : index + 1}</span>
+                <strong>{step}</strong>
+              </li>
+            ))}
+          </ol>
+        </motion.section>
+
+        <motion.div
+          className="public-tracking-grid"
+          initial={reduceMotion ? false : { opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: reduceMotion ? 0 : 0.08 }}
+        >
+          <motion.section className="public-tracking-map-card" layout>
             <div className="public-tracking-section-heading">
-              <div><Navigation size={19} /><span><strong>Live route map</strong><small>{hasLocation ? 'Rider and destination' : 'Destination ready'}</small></span></div>
+              <div>
+                <Navigation size={19} />
+                <span>
+                  <strong>Interactive delivery map</strong>
+                  <small>{hasLocation ? 'Live rider and destination' : 'Destination preview'}</small>
+                </span>
+              </div>
               {hasLocation && <em><i /> Live GPS</em>}
             </div>
             <RiderMap
@@ -242,10 +291,13 @@ export default function PublicRiderTracking({ match }) {
               riderLng={tracking.riderLng}
               riderName={tracking.riderName}
               destinationAddress={tracking.deliveryAddress}
+              destinationId={tracking.orderId}
+              simplifiedControls
+              preferDark={theme !== 'light'}
             />
-          </section>
+          </motion.section>
 
-          <aside className="public-tracking-details">
+          <motion.aside className="public-tracking-details" layout>
             <section>
               <span className="public-tracking-detail-icon"><Route size={19} /></span>
               <div>
@@ -271,8 +323,8 @@ export default function PublicRiderTracking({ match }) {
               <ShieldCheck size={21} />
               <span><strong>Private tracking link</strong><small>Only people with this link can view the route.</small></span>
             </div>
-          </aside>
-        </div>
+          </motion.aside>
+        </motion.div>
 
         <footer className="public-tracking-footer">
           <span>Himaliya Spring Water · Sialkot Cantt</span>

@@ -4,6 +4,8 @@ const PASSWORD_CHANGE_REQUIRED_KEY = 'hs_staff_password_change_required';
 const SESSION_EXPIRED_EVENT = 'hs:session-expired';
 const SESSION_READY_EVENT = 'hs:session-ready';
 const SESSION_EXPIRED_NOTICE_KEY = 'hs_session_expired_notice';
+const PENDING_CUSTOMER_PROFILE_KEY = 'hs_pending_customer_profile';
+const PENDING_CUSTOMER_PROFILE_MAX_AGE = 24 * 60 * 60 * 1000;
 let sessionExpiryNotified = false;
 
 function notifySessionExpired() {
@@ -69,6 +71,37 @@ export function clearStoredSession() {
   localStorage.removeItem(SESSION_KEY);
   localStorage.removeItem(SESSION_TYPE_KEY);
   localStorage.removeItem(PASSWORD_CHANGE_REQUIRED_KEY);
+}
+
+export function storePendingCustomerProfile(profile) {
+  const pendingProfile = {
+    name: String((profile && profile.name) || '').trim(),
+    email: String((profile && profile.email) || '').trim().toLowerCase(),
+    phone: String((profile && profile.phone) || '').trim(),
+    address: String((profile && profile.address) || '').trim(),
+    createdAt: Date.now(),
+  };
+  localStorage.setItem(PENDING_CUSTOMER_PROFILE_KEY, JSON.stringify(pendingProfile));
+  return pendingProfile;
+}
+
+export function getPendingCustomerProfile() {
+  try {
+    const pendingProfile = JSON.parse(localStorage.getItem(PENDING_CUSTOMER_PROFILE_KEY));
+    const createdAt = Number(pendingProfile && pendingProfile.createdAt);
+    if (!pendingProfile || !createdAt || Date.now() - createdAt > PENDING_CUSTOMER_PROFILE_MAX_AGE) {
+      localStorage.removeItem(PENDING_CUSTOMER_PROFILE_KEY);
+      return null;
+    }
+    return pendingProfile;
+  } catch {
+    localStorage.removeItem(PENDING_CUSTOMER_PROFILE_KEY);
+    return null;
+  }
+}
+
+export function clearPendingCustomerProfile() {
+  localStorage.removeItem(PENDING_CUSTOMER_PROFILE_KEY);
 }
 
 export function setPasswordChangeRequired(required) {
@@ -196,14 +229,195 @@ export async function signInWithPassword(email, password, sessionType = 'admin')
   return session;
 }
 
-export async function signUpWithPassword(email, password) {
-  const response = await authRequest('/signup', {
+export async function ensureEmailConfirmationEnabled() {
+  let settings;
+  try {
+    settings = await authRequest('/settings', { method: 'GET' });
+  } catch {
+    throw new Error(
+      'Customer registration is paused because secure email confirmation could not be verified. Check the Supabase Auth service and try again.'
+    );
+  }
+  if (!settings || settings.mailer_autoconfirm !== false) {
+    throw new Error(
+      'Secure email confirmation is required before customer history can be linked. Enable Confirm Email in Supabase Authentication settings.'
+    );
+  }
+  return true;
+}
+
+export async function ensurePhoneVerificationEnabled() {
+  let settings;
+  try {
+    settings = await authRequest('/settings', { method: 'GET' });
+  } catch {
+    throw new Error(
+      'Phone verification is temporarily unavailable because Supabase Auth settings could not be checked.'
+    );
+  }
+  const phoneEnabled = Boolean(settings && settings.external && settings.external.phone);
+  const providerConfigured = Boolean(settings && String(settings.sms_provider || '').trim());
+  if (!phoneEnabled || settings.phone_autoconfirm !== false || !providerConfigured) {
+    throw new Error(
+      'SMS verification is not configured. Enable the Supabase Phone provider, require phone confirmation, and configure an SMS provider before linking by phone.'
+    );
+  }
+  return true;
+}
+
+function normalizeAuthPhone(phone) {
+  let digits = String(phone || '').replace(/\D/g, '');
+  if (digits.indexOf('0092') === 0) digits = digits.slice(2);
+  if (digits.indexOf('92') === 0) return digits;
+  if (digits.indexOf('0') === 0) return `92${digits.slice(1)}`;
+  return digits.length === 10 ? `92${digits}` : digits;
+}
+
+export async function requestPhoneChange(phone) {
+  const session = await getFreshSession();
+  const response = await authRequest('/user', {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${session.access_token}` },
+    body: JSON.stringify({ phone }),
+  });
+  const user = response && response.user ? response.user : response;
+  if (!user || !user.id || user.id !== (session.user && session.user.id)) {
+    throw new Error('Phone verification could not be started for this customer session.');
+  }
+  storeSession({ ...session, user }, getStoredSessionType() || 'customer');
+  return user;
+}
+
+async function revokeAccessToken(accessToken) {
+  if (!accessToken) return;
+  try {
+    await authRequest('/logout', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+  } catch {
+    // Revocation is best effort; local credentials are never accepted afterward.
+  }
+}
+
+export async function verifyPhoneChangeOtp(phone, token) {
+  const originalSession = await getFreshSession();
+  const originalUserId = originalSession.user && originalSession.user.id;
+  const response = await authRequest('/verify', {
+    method: 'POST',
+    body: JSON.stringify({ phone, token, type: 'phone_change' }),
+  });
+  const data = response && response.data ? response.data : response;
+  const verificationSession = data && (data.session || (
+    data.access_token && data.refresh_token ? data : null
+  ));
+  const accessToken = (verificationSession && verificationSession.access_token)
+    || originalSession.access_token;
+  const userResponse = await authRequest('/user', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  const verifiedUser = userResponse && userResponse.user ? userResponse.user : userResponse;
+
+  if (!verifiedUser || !verifiedUser.id || verifiedUser.id !== originalUserId) {
+    if (verificationSession) await revokeAccessToken(verificationSession.access_token);
+    await discardAuthSession(originalSession);
+    throw new Error(
+      'Phone verification returned a different Auth identity. Both sessions were revoked; contact Himaliya Spring Water before retrying.'
+    );
+  }
+  if (
+    normalizeAuthPhone(verifiedUser.phone) !== normalizeAuthPhone(phone)
+    || !verifiedUser.phone_confirmed_at
+  ) {
+    throw new Error('The SMS code did not verify this phone number. Request a new code and try again.');
+  }
+
+  const nextSession = verificationSession
+    ? { ...verificationSession, user: verifiedUser }
+    : { ...originalSession, user: verifiedUser };
+  storeSession(nextSession, 'customer');
+  return nextSession;
+}
+
+export async function signUpWithPassword(email, password, redirectTo) {
+  const redirectQuery = redirectTo ? `?redirect_to=${encodeURIComponent(redirectTo)}` : '';
+  const response = await authRequest(`/signup${redirectQuery}`, {
     method: 'POST',
     body: JSON.stringify({ email, password }),
   });
-  // The direct GoTrue endpoint returns session tokens at the top level,
-  // while client libraries expose the same tokens as data.session.
-  return response && response.data ? response.data : response;
+  const data = response && response.data ? response.data : response;
+  if (!data) return { user: null, session: null };
+  if (data.user || data.session) {
+    return {
+      user: data.user || (data.session && data.session.user) || null,
+      session: data.session || (data.access_token && data.refresh_token ? data : null),
+    };
+  }
+  // GoTrue returns the user itself when email confirmation is required.
+  if (data.id) return { user: data, session: null };
+  return { user: null, session: null };
+}
+
+function callbackParams(hash, search) {
+  const hashParams = new URLSearchParams(String(hash || '').replace(/^#/, ''));
+  const searchParams = new URLSearchParams(String(search || '').replace(/^\?/, ''));
+  return { hashParams, searchParams };
+}
+
+export function isCustomerEmailConfirmationCallback(hash, search) {
+  const { hashParams, searchParams } = callbackParams(hash, search);
+  const type = hashParams.get('type') || searchParams.get('type');
+  return type === 'signup'
+    || searchParams.get('confirmation') === '1'
+    || Boolean(hashParams.get('error') || searchParams.get('error'));
+}
+
+function clearCustomerEmailConfirmationUrl() {
+  if (typeof window === 'undefined' || !window.history || !window.location) return;
+  const query = new URLSearchParams(window.location.search || '');
+  ['confirmation', 'error', 'error_code', 'error_description', 'type'].forEach((key) => query.delete(key));
+  const queryString = query.toString();
+  const cleanUrl = `${window.location.pathname}${queryString ? `?${queryString}` : ''}`;
+  window.history.replaceState(window.history.state, document.title, cleanUrl);
+}
+
+export async function consumeCustomerEmailConfirmation(hash, search) {
+  const { hashParams, searchParams } = callbackParams(hash, search);
+  if (!isCustomerEmailConfirmationCallback(hash, search)) return null;
+
+  const errorDescription = hashParams.get('error_description')
+    || searchParams.get('error_description')
+    || hashParams.get('error')
+    || searchParams.get('error');
+  const accessToken = hashParams.get('access_token');
+  const refreshToken = hashParams.get('refresh_token');
+  clearCustomerEmailConfirmationUrl();
+
+  if (errorDescription) {
+    throw new Error(errorDescription.replace(/\+/g, ' '));
+  }
+  if (!accessToken || !refreshToken) return null;
+
+  const userResponse = await authRequest('/user', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  const user = userResponse && userResponse.user ? userResponse.user : userResponse;
+  if (!user || !user.id) throw new Error('Email confirmation could not be verified. Please sign in again.');
+
+  const expiresIn = Number(hashParams.get('expires_in')) || 3600;
+  const expiresAt = Number(hashParams.get('expires_at')) || Math.floor(Date.now() / 1000) + expiresIn;
+  const session = {
+    access_token: accessToken,
+    refresh_token: refreshToken,
+    expires_in: expiresIn,
+    expires_at: expiresAt,
+    token_type: hashParams.get('token_type') || 'bearer',
+    user,
+  };
+  storeSession(session, 'customer');
+  return session;
 }
 
 export async function verifyPassword(email, password) {
@@ -294,20 +508,31 @@ export async function adminDeleteUser(profileId) {
   return parseResponse(response);
 }
 
-export async function signOut() {
-  const token = getAccessToken();
+export async function adminDeleteCustomerAccount(customerId) {
+  const session = await getFreshSession();
+  const endpoint = process.env.REACT_APP_ADMIN_CREATE_URL
+    || `${getConfig().url.replace(/\/$/, '')}/functions/v1/admin-create-user`;
+  const response = await fetch(endpoint, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${session.access_token}`,
+      apikey: getConfig().anonKey,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ customerId }),
+  });
+  return parseResponse(response);
+}
+
+export async function discardAuthSession(session) {
+  const token = session && session.access_token;
   // Clear local auth first so the UI cannot remain on a protected screen while
   // the remote session revocation is slow or unavailable.
   clearStoredSession();
   sessionStorage.removeItem(SESSION_EXPIRED_NOTICE_KEY);
-  if (token) {
-    try {
-      await authRequest('/logout', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-    } catch {
-      // Local sign-out should still succeed if the session is already expired.
-    }
-  }
+  await revokeAccessToken(token);
+}
+
+export async function signOut() {
+  return discardAuthSession(getStoredSession());
 }

@@ -26,4 +26,33 @@ describe('validateSaleForm', () => {
       pricePerBottle: 350,
     })).toEqual({});
   });
+
+  it('rejects negative and overpaid sale amounts', () => {
+    expect(validateSaleForm({
+      bottleType: '19L',
+      quantity: 2,
+      pricePerBottle: 350,
+      amountPaid: -1,
+    })).toEqual({
+      amountPaid: 'Amount paid cannot be negative',
+    });
+
+    expect(validateSaleForm({
+      bottleType: '19L',
+      quantity: 2,
+      pricePerBottle: 350,
+      amountPaid: 701,
+    })).toEqual({
+      amountPaid: 'Amount paid cannot exceed the sale total',
+    });
+  });
+
+  it.each([0, 350, 700])('accepts a valid payment amount of %s', (amountPaid) => {
+    expect(validateSaleForm({
+      bottleType: '19L',
+      quantity: 2,
+      pricePerBottle: 350,
+      amountPaid,
+    })).toEqual({});
+  });
 });

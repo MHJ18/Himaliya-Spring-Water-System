@@ -22,6 +22,7 @@ import InsightsRoundedIcon from '@mui/icons-material/InsightsRounded';
 import LocalShippingRoundedIcon from '@mui/icons-material/LocalShippingRounded';
 import ManageAccountsRoundedIcon from '@mui/icons-material/ManageAccountsRounded';
 import TuneRoundedIcon from '@mui/icons-material/TuneRounded';
+import PaletteOutlinedIcon from '@mui/icons-material/PaletteOutlined';
 import WaterDropRoundedIcon from '@mui/icons-material/WaterDropRounded';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import TodayRoundedIcon from '@mui/icons-material/TodayRounded';
@@ -29,6 +30,7 @@ import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import HistoryRoundedIcon from '@mui/icons-material/HistoryRounded';
 import MyLocationRoundedIcon from '@mui/icons-material/MyLocationRounded';
+import BrandingWatermarkRoundedIcon from '@mui/icons-material/BrandingWatermarkRounded';
 import SidebarSearch from './SidebarSearch';
 import { changeActiveSidebarItem, closeSidebar } from '../../actions/navigation';
 import {
@@ -37,55 +39,81 @@ import {
   markAdminNotificationsByTypesRead,
 } from '../../services/api/customerPortalApi';
 import s from './Sidebar.module.scss';
+import { useSettings } from '../../context/SettingsContext';
+import { translateUi } from '../../utils/localization';
 
 const sections = [
   {
     title: 'Workspace',
+    titleUr: 'ورک اسپیس',
     items: [
-      { label: 'Dashboard', path: '/app/main/dashboard', key: 'dashboard', icon: DashboardRoundedIcon },
+      { label: 'Dashboard', labelUr: 'ڈیش بورڈ', path: '/app/main/dashboard', key: 'dashboard', icon: DashboardRoundedIcon },
     ],
   },
   {
     title: 'Customers',
+    titleUr: 'صارفین',
     items: [
-      { label: 'Add customer', path: '/app/add-customer', key: 'add-customer', icon: PersonAddAlt1RoundedIcon },
-      { label: 'Customer records', path: '/app/customers', key: 'customers', icon: Groups2RoundedIcon },
-      { label: 'Invoice center', path: '/app/invoice', key: 'invoice', icon: ReceiptLongRoundedIcon },
+      { label: 'Add customer', labelUr: 'صارف شامل کریں', path: '/app/add-customer', key: 'add-customer', icon: PersonAddAlt1RoundedIcon },
+      { label: 'Customer records', labelUr: 'صارف ریکارڈز', path: '/app/customers', key: 'customers', icon: Groups2RoundedIcon },
+      { label: 'Invoice center', labelUr: 'انوائس سینٹر', path: '/app/invoice', key: 'invoice', icon: ReceiptLongRoundedIcon, badgeKey: 'invoices', badgeTypes: ['invoice_overdue'], feature: 'featureInvoices' },
     ],
   },
   {
     title: 'Operations',
+    titleUr: 'آپریشنز',
     items: [
-      { label: 'Daily sales', path: '/app/daily-sales', key: 'daily-sales', icon: PointOfSaleRoundedIcon },
-      { label: 'Analytics', path: '/app/analytics', key: 'analytics', icon: InsightsRoundedIcon },
-      { label: 'Customer orders', path: '/app/customer-orders', key: 'customer-orders', icon: LocalShippingRoundedIcon, badgeKey: 'orders', badgeTypes: ['order'] },
-      { label: 'Delivery tracker', path: '/app/rider-tracking', key: 'rider-tracking', icon: MyLocationRoundedIcon, badgeKey: 'tracking', badgeTypes: ['tracking', 'delivery'] },
-      { label: 'Entry history', path: '/app/history', key: 'history', icon: HistoryRoundedIcon },
+      { label: 'Daily sales', labelUr: 'روزانہ فروخت', path: '/app/daily-sales', key: 'daily-sales', icon: PointOfSaleRoundedIcon },
+      { label: 'Analytics', labelUr: 'تجزیات', path: '/app/analytics', key: 'analytics', icon: InsightsRoundedIcon, feature: 'featureAnalytics' },
+      { label: 'Customer orders', labelUr: 'صارف آرڈرز', path: '/app/customer-orders', key: 'customer-orders', icon: LocalShippingRoundedIcon, badgeKey: 'orders', badgeTypes: ['order'], feature: 'featureCustomerOrders' },
+      { label: 'Delivery tracker', labelUr: 'ڈیلیوری ٹریکر', path: '/app/rider-tracking', key: 'rider-tracking', icon: MyLocationRoundedIcon, badgeKey: 'tracking', badgeTypes: ['tracking', 'delivery'], feature: 'featureRiderTracking' },
+      { label: 'Entry history', labelUr: 'اندراج کی تاریخ', path: '/app/history', key: 'history', icon: HistoryRoundedIcon },
     ],
   },
   {
     title: 'Administration',
+    titleUr: 'انتظامیہ',
     items: [
-      { label: 'All users', path: '/app/users', key: 'users', icon: ManageAccountsRoundedIcon, badgeKey: 'accounts', badgeTypes: ['account'] },
-      { label: 'Settings', path: '/app/settings', key: 'settings', icon: TuneRoundedIcon },
+      { label: 'All users', labelUr: 'تمام صارفین', path: '/app/users', key: 'users', icon: ManageAccountsRoundedIcon, badgeKey: 'accounts', badgeTypes: ['account'] },
+      { label: 'App settings', labelUr: 'ایپ سیٹنگز', path: '/app/settings', key: 'settings', icon: TuneRoundedIcon },
+    ],
+  },
+  {
+    title: 'Interface',
+    titleUr: 'انٹرفیس',
+    items: [
+      { label: 'UI settings', labelUr: 'یو آئی سیٹنگز', path: '/app/ui-settings', key: 'ui-settings', icon: PaletteOutlinedIcon },
+    ],
+  },
+  {
+    title: 'Bottle tools',
+    titleUr: 'بوتل کے اوزار',
+    items: [
+      { label: 'Bottle designer', labelUr: 'بوتل ڈیزائنر', path: '/app/bottle-designer', key: 'bottle-designer', icon: BrandingWatermarkRoundedIcon },
     ],
   },
 ];
 
 const quickLinks = [
-  { label: "Today's sales", path: '/app/daily-sales', icon: TodayRoundedIcon },
-  { label: 'Delivery queue', path: '/app/customer-orders', icon: LocalShippingRoundedIcon },
-  { label: 'Delivery tracker', path: '/app/rider-tracking', icon: MyLocationRoundedIcon },
-  { label: 'Reports', path: '/app/analytics', icon: AssessmentOutlinedIcon },
+  { label: "Today's sales", labelUr: 'آج کی فروخت', path: '/app/daily-sales', icon: TodayRoundedIcon },
+  { label: 'Delivery queue', labelUr: 'ڈیلیوری قطار', path: '/app/customer-orders', icon: LocalShippingRoundedIcon, feature: 'featureCustomerOrders' },
+  { label: 'Delivery tracker', labelUr: 'ڈیلیوری ٹریکر', path: '/app/rider-tracking', icon: MyLocationRoundedIcon, feature: 'featureRiderTracking' },
+  { label: 'Reports', labelUr: 'رپورٹس', path: '/app/analytics', icon: AssessmentOutlinedIcon, feature: 'featureAnalytics' },
 ];
 
 function Sidebar({
   sidebarOpened, dispatch, location, sidebarPosition, sidebarVisibility,
 }) {
-  const [badges, setBadges] = React.useState({ orders: false, tracking: false, accounts: false });
+  const { settings } = useSettings();
+  const urdu = settings.language === 'ur';
+  const effectiveSidebarPosition = urdu ? 'right' : (settings.sidebarPosition || sidebarPosition);
+  const effectiveSidebarVisibility = settings.sidebarVisibility || sidebarVisibility;
+  const [badges, setBadges] = React.useState({
+    orders: false, tracking: false, accounts: false, invoices: false,
+  });
   const badgeRequestRunning = React.useRef(false);
   const closeDrawer = () => dispatch(closeSidebar());
-  const hidden = sidebarVisibility === 'hide';
+  const hidden = effectiveSidebarVisibility === 'hide';
   const isActive = (item) => {
     if (item.path === '/app/main/dashboard') return location.pathname === item.path;
     return location.pathname.indexOf(item.path) === 0;
@@ -130,7 +158,7 @@ function Sidebar({
       className={[
         s.root,
         sidebarOpened ? s.drawerOpen : '',
-        sidebarPosition === 'right' ? s.rootRight : '',
+        effectiveSidebarPosition === 'right' ? s.rootRight : '',
         hidden ? s.hidden : '',
       ].join(' ')}
       aria-label="Primary navigation"
@@ -138,7 +166,10 @@ function Sidebar({
       <Box className={s.brandRow}>
         <Link to="/app/main/dashboard" className={s.brand} onClick={closeDrawer}>
           <span className={s.brandMark} aria-hidden="true"><WaterDropRoundedIcon /></span>
-          <span>Himaliya <strong>Spring</strong></span>
+          <span className={s.brandCopy}>
+            <strong>{settings.sidebarBrandTitle || 'Himaliya Spring'}</strong>
+            <small>{settings.sidebarBrandSubtitle || 'Water operations'}</small>
+          </span>
         </Link>
         <IconButton className={s.closeButton} onClick={closeDrawer} aria-label="Close navigation menu">
           <CloseRoundedIcon />
@@ -157,15 +188,16 @@ function Sidebar({
             disablePadding
             subheader={(
               <ListSubheader component="div" disableSticky className={s.sectionTitle}>
-                {section.title}
+                {translateUi(settings.language, section.title)}
               </ListSubheader>
             )}
           >
-            {section.items.map((item) => {
+            {section.items.filter((item) => !item.feature || settings[item.feature] !== false).map((item) => {
               const Icon = item.icon;
               const active = isActive(item);
+              const label = translateUi(settings.language, item.label);
               return (
-                <Tooltip key={item.key} title={item.label} placement="right" disableHoverListener>
+                <Tooltip key={item.key} title={label} placement="right" disableHoverListener>
                   <ListItemButton
                     component={Link}
                     to={item.path}
@@ -178,7 +210,7 @@ function Sidebar({
                     <ListItemText
                       primary={(
                         <span className={s.navLabel}>
-                          <span>{item.label}</span>
+                          <span>{label}</span>
                           {item.badgeKey && badges[item.badgeKey] && (
                             <i className={s.navDot} aria-label={`New ${item.label.toLowerCase()} update`} />
                           )}
@@ -195,13 +227,13 @@ function Sidebar({
       </Box>
 
       <Box className={s.quickLinks}>
-        <Typography component="h2" variant="overline">Quick access</Typography>
-        {quickLinks.map((item) => {
+        <Typography component="h2" variant="overline">{urdu ? 'فوری رسائی' : 'Quick access'}</Typography>
+        {quickLinks.filter((item) => !item.feature || settings[item.feature] !== false).map((item) => {
           const Icon = item.icon;
           return (
             <Link key={item.path} to={item.path} onClick={closeDrawer}>
               <Icon fontSize="small" />
-              <span>{item.label}</span>
+              <span>{translateUi(settings.language, item.label)}</span>
             </Link>
           );
         })}

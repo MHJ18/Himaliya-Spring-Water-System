@@ -1,9 +1,9 @@
 export const easeOut = [0.22, 1, 0.36, 1];
 
 export const pageTransition = {
-  initial: { opacity: 0, y: 10 },
-  animate: { opacity: 1, y: 0, transition: { duration: 0.24, ease: easeOut } },
-  exit: { opacity: 0, y: -6, transition: { duration: 0.14, ease: easeOut } },
+  initial: { opacity: 0 },
+  animate: { opacity: 1, transition: { duration: 0.18, ease: easeOut } },
+  exit: { opacity: 0, transition: { duration: 0.1, ease: easeOut } },
 };
 
 export const fadeUp = {

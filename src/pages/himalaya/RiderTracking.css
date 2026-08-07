@@ -971,3 +971,72 @@ body.dashboard-dark .route-command__complete {
   border-color: #2196f3;
   box-shadow: 0 0 0 3px rgba(33, 150, 243, .18), 0 14px 30px rgba(10, 83, 131, .14);
 }
+
+.route-confirmation-card.MuiPaper-root {
+  width: min(22rem, calc(100vw - 2rem));
+  margin: 1rem;
+  overflow: hidden;
+  border: 1px solid rgba(11, 121, 151, .16);
+  border-radius: 1.25rem;
+  box-shadow: 0 24px 70px rgba(7, 48, 68, .24);
+}
+
+.route-confirmation-card__content.MuiDialogContent-root {
+  display: grid;
+  grid-template-columns: 2.75rem minmax(0, 1fr);
+  gap: .85rem;
+  padding: 1rem;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(28, 190, 211, .12), transparent 10rem),
+    #fff;
+}
+
+.route-confirmation-card__icon {
+  display: grid;
+  width: 2.75rem;
+  height: 2.75rem;
+  place-items: center;
+  color: #087f9f;
+  background: linear-gradient(145deg, #e2fbff, #c5f3f8);
+  border-radius: .85rem;
+}
+
+.route-confirmation-card__copy { min-width: 0; }
+.route-confirmation-card__copy small {
+  color: #0786a5;
+  font-size: .62rem;
+  font-weight: 900;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+.route-confirmation-card__copy h2 {
+  margin: .18rem 0 .28rem;
+  color: #123a4c;
+  font-size: 1rem;
+  font-weight: 900;
+}
+.route-confirmation-card__copy p {
+  margin: 0;
+  color: #627d89;
+  font-size: .72rem;
+  line-height: 1.5;
+}
+.route-confirmation-card__copy strong { color: #234c5d; }
+.route-confirmation-card__actions {
+  display: flex;
+  grid-column: 1 / -1;
+  justify-content: flex-end;
+  gap: .5rem;
+  padding-top: .15rem;
+}
+.route-confirmation-card__actions .MuiButton-root {
+  min-height: 2.45rem;
+  padding-inline: .95rem;
+  border-radius: 999px;
+  font-size: .7rem;
+  font-weight: 850;
+}
+.route-confirmation-card__actions .MuiButton-contained {
+  background: linear-gradient(135deg, var(--hs-primary), var(--hs-secondary));
+  box-shadow: 0 9px 20px rgba(8, 133, 162, .2);
+}

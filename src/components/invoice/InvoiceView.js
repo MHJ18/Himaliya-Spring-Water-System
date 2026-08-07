@@ -1,6 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { formatCurrency, formatDate } from '../../utils/formatters';
+import { resolveInvoiceDocument } from '../../utils/invoiceTotals';
 import './InvoiceView.css';
 
 function safeText(value, fallback = '—') {
@@ -8,18 +9,29 @@ function safeText(value, fallback = '—') {
   return text || fallback;
 }
 
-export default function InvoiceView({ invoice, showStatus }) {
+export default function InvoiceView({ invoice = null, showStatus = false }) {
   if (!invoice) return null;
 
-  const company = invoice.company || {};
-  const customer = invoice.customer || {};
-  const preparedBy = invoice.preparedBy || {};
-  const history = Array.isArray(invoice.history) ? invoice.history : [];
-  const summary = invoice.summary || {};
+  const document = resolveInvoiceDocument(invoice);
+  const payload = document.payload;
+  const company = payload.company || invoice.company || {};
+  const customer = payload.customer || invoice.customer || {};
+  const preparedBy = payload.preparedBy || invoice.preparedBy || {};
+  const history = document.history;
+  const summary = document.summary;
   const invoiceNumber = invoice.invoice_number || invoice.invoiceNumber || '—';
   const invoiceDate = invoice.invoice_date || invoice.invoiceDate;
   const paymentStatus = invoice.payment_status || invoice.paymentStatus;
+  const paymentStatusLabel = paymentStatus === 'void'
+    ? 'Void'
+    : paymentStatus === 'paid' ? 'Paid' : 'Unpaid';
   const validated = invoice.validated === true;
+  const isMonthlyAccountInvoice = history.length > 0
+    && history.every((item) => item.paymentSchedule !== 'on_delivery');
+  const showPaidColumn = history.some((item) => item.paymentSchedule === 'on_delivery');
+  const paymentSummaryLabel = isMonthlyAccountInvoice
+    ? 'Account payments'
+    : 'Payments applied';
 
   return (
     <article className="invoice-view">
@@ -29,6 +41,7 @@ export default function InvoiceView({ invoice, showStatus }) {
           <h1>{safeText(company.name, 'Himaliya Spring Water')}</h1>
           <p className="invoice-view__meta">{safeText(company.address, 'Sialkot Cantt')}</p>
           <p className="invoice-view__meta">{safeText(company.phone)}</p>
+          {company.email && <p className="invoice-view__meta">{safeText(company.email)}</p>}
         </div>
         <div className="invoice-view__badge">
           <span>Invoice</span>
@@ -37,7 +50,7 @@ export default function InvoiceView({ invoice, showStatus }) {
           {showStatus && paymentStatus && (
             <div className="invoice-view__status-row">
               <span className={`invoice-view__status invoice-view__status--${paymentStatus}`}>
-                {paymentStatus === 'paid' ? 'Paid' : 'Unpaid'}
+                {paymentStatusLabel}
               </span>
               {validated && <span className="invoice-view__status invoice-view__status--validated">Validated</span>}
             </div>
@@ -61,9 +74,10 @@ export default function InvoiceView({ invoice, showStatus }) {
       </section>
 
       <section className="invoice-view__summary">
-        <div><span>Entries</span><strong>{summary.entryCount || history.length}</strong></div>
-        <div><span>Quantity</span><strong>{summary.totalQty || 0}</strong></div>
-        <div><span>Total</span><strong>{formatCurrency(summary.totalAmount || 0)}</strong></div>
+        <div><span>Sales</span><strong>{summary.entryCount}</strong></div>
+        <div><span>Gross</span><strong>{formatCurrency(summary.grossAmount)}</strong></div>
+        <div><span>{paymentSummaryLabel}</span><strong>{formatCurrency(summary.amountPaid)}</strong></div>
+        <div><span>Amount due</span><strong>{formatCurrency(summary.totalAmount)}</strong></div>
       </section>
 
       <div className="invoice-view__table-wrap">
@@ -74,7 +88,10 @@ export default function InvoiceView({ invoice, showStatus }) {
               <th>Bottle type</th>
               <th>Qty</th>
               <th>Unit price</th>
-              <th>Total</th>
+              <th>Gross</th>
+               {showPaidColumn && <th>Paid on delivery</th>}
+              <th>Due</th>
+              <th>Terms</th>
             </tr>
           </thead>
           <tbody>
@@ -84,11 +101,16 @@ export default function InvoiceView({ invoice, showStatus }) {
                 <td>{safeText(item.bottleType)}</td>
                 <td>{item.quantity || 0}</td>
                 <td>{formatCurrency(item.pricePerBottle)}</td>
-                <td>{formatCurrency(item.totalAmount)}</td>
+                <td>{formatCurrency(item.grossAmount)}</td>
+                {showPaidColumn && (
+                  <td>{item.paymentSchedule === 'on_delivery' ? formatCurrency(item.amountPaid) : '—'}</td>
+                )}
+                <td>{formatCurrency(item.balanceDue)}</td>
+                <td>{item.paymentSchedule === 'on_delivery' ? 'Paid at delivery' : 'Monthly account'}</td>
               </tr>
             )) : (
               <tr>
-                <td colSpan={5}>No transactions recorded.</td>
+                <td colSpan={showPaidColumn ? 8 : 7}>No transactions recorded.</td>
               </tr>
             )}
           </tbody>
@@ -97,12 +119,12 @@ export default function InvoiceView({ invoice, showStatus }) {
 
       <footer className="invoice-view__footer">
         <div>
-          <p>Payment on delivery or monthly account.</p>
+          <p>{safeText(company.footer, 'Payment on delivery or monthly account.')}</p>
           <p>Sanitized bottles, sealed delivery, and routine quality checks.</p>
         </div>
         <div className="invoice-view__total">
           <span>Amount due</span>
-          <strong>{formatCurrency(summary.totalAmount || 0)}</strong>
+          <strong>{formatCurrency(summary.totalAmount)}</strong>
         </div>
       </footer>
     </article>
@@ -112,9 +134,4 @@ export default function InvoiceView({ invoice, showStatus }) {
 InvoiceView.propTypes = {
   invoice: PropTypes.object,
   showStatus: PropTypes.bool,
-};
-
-InvoiceView.defaultProps = {
-  invoice: null,
-  showStatus: false,
 };

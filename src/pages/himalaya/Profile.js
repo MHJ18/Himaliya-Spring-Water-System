@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import PageShell from '../../components/PageShell/PageShell';
 import { ADMIN_AVATAR } from '../../utils/customerPhotos';
 import { getCurrentAdminProfile } from '../../utils/adminAuth';

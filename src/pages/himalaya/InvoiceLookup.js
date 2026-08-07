@@ -24,8 +24,32 @@ import InvoiceView from '../../components/invoice/InvoiceView';
 import { invoiceApi } from '../../services/api/invoiceApi';
 import './InvoiceLookup.css';
 
-function InvoiceLookup({ history }) {
-  const [query, setQuery] = useState('');
+function invoiceStatusMeta(status) {
+  if (status === 'void') {
+    return {
+      color: 'default',
+      label: 'Void',
+      copy: 'Voided invoice; its source entries are released for correction.',
+    };
+  }
+  if (status === 'paid') {
+    return {
+      color: 'success',
+      label: 'Paid',
+      copy: 'Recorded as paid and visible in the customer portal.',
+    };
+  }
+  return {
+    color: 'warning',
+    label: 'Unpaid',
+    copy: 'Outstanding and visible in the customer portal.',
+  };
+}
+
+function InvoiceLookup({ history, location }) {
+  const [query, setQuery] = useState(
+    () => (new URLSearchParams(location.search).get('invoice') || '').toUpperCase(),
+  );
   const [invoice, setInvoice] = useState(null);
   const [loading, setLoading] = useState(false);
   const [updating, setUpdating] = useState('');
@@ -34,6 +58,8 @@ function InvoiceLookup({ history }) {
   const invoiceNumber = invoice && (invoice.invoice_number || invoice.invoiceNumber);
   const paymentStatus = invoice && (invoice.payment_status || invoice.paymentStatus || 'unpaid');
   const isValidated = invoice && invoice.validated === true;
+  const isVoid = paymentStatus === 'void';
+  const statusMeta = invoiceStatusMeta(paymentStatus);
 
   const handleSearch = async (event) => {
     event.preventDefault();
@@ -138,30 +164,30 @@ function InvoiceLookup({ history }) {
             <div className="invoice-lookup-result-copy">
               <span>Invoice found</span>
               <strong>{invoiceNumber}</strong>
-              <small>{paymentStatus === 'paid' ? 'Visible in the customer portal' : 'Hidden from the customer portal until paid'}</small>
+              <small>{statusMeta.copy}</small>
             </div>
 
             <div className="invoice-lookup-status-row">
-              <Chip color={paymentStatus === 'paid' ? 'success' : 'warning'} size="small" label={paymentStatus === 'paid' ? 'Paid' : 'Unpaid'} />
+              <Chip color={statusMeta.color} size="small" label={statusMeta.label} />
               {isValidated && (
                 <Chip color="info" size="small" icon={<CheckCircle2 size={14} aria-hidden="true" />} label="Validated" />
               )}
             </div>
 
             <div className="invoice-lookup-actions">
-              {paymentStatus !== 'paid' ? (
+              {!isVoid && paymentStatus !== 'paid' ? (
                 <Button variant="contained" color="success" className="invoice-action-btn invoice-action-btn--paid" disabled={Boolean(updating)} onClick={() => updatePayment('paid')}>
                   <CreditCard size={16} aria-hidden="true" />
                   {updating === 'paid' ? 'Saving...' : 'Mark paid'}
                 </Button>
-              ) : (
+              ) : !isVoid ? (
                 <Button variant="outlined" color="warning" className="invoice-action-btn invoice-action-btn--unpaid" disabled={Boolean(updating)} onClick={() => updatePayment('unpaid')}>
                   <RotateCcw size={16} aria-hidden="true" />
                   {updating === 'unpaid' ? 'Saving...' : 'Mark unpaid'}
                 </Button>
-              )}
+              ) : null}
 
-              {!isValidated && (
+              {!isVoid && !isValidated && (
                 <Button variant="outlined" color="info" className="invoice-action-btn invoice-action-btn--validate" disabled={Boolean(updating)} onClick={handleValidate}>
                   <ShieldCheck size={16} aria-hidden="true" />
                   {updating === 'validate' ? 'Saving...' : 'Validate'}

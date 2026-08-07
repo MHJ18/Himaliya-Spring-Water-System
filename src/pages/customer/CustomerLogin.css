@@ -57,6 +57,21 @@
   max-width: 1220px;
 }
 
+.customer-login-page.auth-layout-compact .water-login-shell {
+  width: min(100%, 38rem);
+  grid-template-columns: minmax(0, 1fr);
+  justify-content: center;
+}
+
+.customer-login-page.auth-layout-compact .water-login-copy {
+  display: none;
+}
+
+.customer-login-page.auth-layout-compact .customer-login-card {
+  width: 100%;
+  max-width: 38rem;
+}
+
 .customer-login-page .water-login-copy {
   position: relative;
   max-width: 650px;
@@ -246,41 +261,65 @@
   -webkit-text-fill-color: var(--customer-muted) !important;
 }
 
-.customer-login-page .customer-login-tabs {
-  gap: 5px;
-  margin: 1.1rem 0 1.45rem;
-  padding: 5px;
-  background: rgba(241, 252, 255, 0.045);
-  border: 1px solid rgba(136, 217, 233, 0.16);
-  border-radius: 16px;
+.customer-auth-switch {
+  display: flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 6px 6px 14px;
+  margin: .9rem 0 1.35rem;
+  color: #a9c3cc;
+  background: rgba(241, 252, 255, .035);
+  border: 1px solid rgba(136, 217, 233, .14);
+  border-radius: 14px;
 }
 
-.customer-login-page .customer-login-tabs button {
-  min-height: 46px;
-  color: #afcad3;
-  border-radius: 11px;
+.customer-auth-switch > span {
+  font-size: .76rem;
+}
+
+.customer-auth-switch button {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 13px;
+  color: #bff7fd;
+  font-size: .73rem;
+  font-weight: 850;
+  background: rgba(114, 232, 245, .09);
+  border: 1px solid rgba(114, 232, 245, .16);
+  border-radius: 10px;
   cursor: pointer;
-  transition: color 180ms ease, background 180ms ease, box-shadow 180ms ease;
+  transition: color 180ms ease, background-color 180ms ease, border-color 180ms ease;
 }
 
-.customer-login-page .customer-login-tabs button:hover {
-  color: var(--customer-text);
-  background: rgba(114, 232, 245, 0.055);
-  transform: none;
-}
-
-.customer-login-page .customer-login-tabs button.is-active {
+.customer-auth-switch button:hover {
   color: #04141f;
-  background: linear-gradient(135deg, #c8f9ff, var(--customer-cyan) 54%, #75aaff);
-  box-shadow:
-    0 10px 28px rgba(38, 184, 218, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  background: var(--customer-cyan);
+  border-color: var(--customer-cyan);
 }
 
-.customer-login-page .customer-login-tabs button:focus-visible {
-  outline: 3px solid rgba(121, 242, 197, 0.7);
+.customer-auth-switch button:focus-visible {
+  outline: 3px solid rgba(121, 242, 197, .7);
   outline-offset: 2px;
-  box-shadow: none;
+}
+
+html[dir='rtl'] .customer-login-page .water-login-copy,
+html[dir='rtl'] .customer-login-page .water-login-form-heading,
+html[dir='rtl'] .customer-login-page .water-login-forgot-row,
+html[dir='rtl'] .customer-login-page .customer-auth-switch {
+  text-align: right;
+}
+
+html[dir='rtl'] .customer-login-page .water-login-input {
+  text-align: right;
+  direction: rtl;
+}
+
+html[dir='rtl'] .customer-login-page .customer-auth-switch svg {
+  transform: rotate(180deg);
 }
 
 .customer-login-page .customer-login-form-shell {
@@ -505,7 +544,7 @@
     border-radius: 24px;
   }
 
-  .customer-login-page .customer-login-tabs {
+  .customer-auth-switch {
     margin-top: 0;
   }
 
@@ -529,4 +568,27 @@
     animation-delay: 0ms !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* Compact sign-in and sign-up hierarchy. */
+.customer-login-page { font-size: 13px; }
+.customer-login-page .water-login-copy h1 {
+  max-width: 580px;
+  font-size: clamp(2.05rem, 4.2vw, 3.45rem);
+  line-height: .96;
+}
+.customer-login-page .water-login-copy > p { font-size: .82rem; line-height: 1.55; }
+.customer-login-page .water-login-stats strong { font-size: 1.22rem; }
+.customer-login-page .water-login-stats span { min-height: 88px; font-size: .68rem; }
+.customer-login-page .water-login-logo h2 { font-size: 1.12rem; }
+.customer-login-page .water-login-logo p { font-size: .7rem; }
+.customer-login-page .water-login-label { font-size: .7rem; }
+.customer-login-page .water-login-input { font-size: .82rem; }
+.customer-login-page .water-login-submit { min-height: 50px; font-size: .76rem; }
+.customer-login-page .water-login-submit svg { width: 40px; height: 40px; padding: 11px; }
+
+@media (max-width: 520px) {
+  .customer-login-page .water-login-mobile-brand h1 { font-size: .92rem; }
+  .customer-login-page .water-login-input,
+  .customer-login-page .water-login-submit { font-size: 16px; }
 }

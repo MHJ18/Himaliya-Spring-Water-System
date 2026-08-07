@@ -143,8 +143,6 @@ module.exports = {
       // Support React Native Web
       // https://www.smashingmagazine.com/2016/08/a-glimpse-into-the-future-with-react-native-for-web/
       'react-native': 'react-native-web',
-      'framer-motion$': path.resolve(paths.appNodeModules, 'framer-motion/dist/cjs/index.js'),
-      'framer-motion-animations$': path.resolve(paths.appNodeModules, 'framer-motion-animations/dist/index.js'),
     },
     plugins: [
       // Adds support for installing with Plug'n'Play, leading to faster installs and adding

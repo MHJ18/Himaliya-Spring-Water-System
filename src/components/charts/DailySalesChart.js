@@ -1,10 +1,12 @@
 import React from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { useReducedMotion } from 'framer-motion';
+import { useReducedMotion } from 'motion/react';
 import useIsMobile from '../../hooks/useIsMobile';
+import { useTheme } from '@mui/material/styles';
 
 export default function DailySalesChart({ data }) {
   const mobile = useIsMobile();
+  const theme = useTheme();
   const reduceMotion = useReducedMotion();
   return (
     <ResponsiveContainer width="100%" height={mobile ? 220 : 280}>
@@ -13,7 +15,7 @@ export default function DailySalesChart({ data }) {
         <XAxis dataKey="name" tick={{ fontSize: 11 }} />
         <YAxis tick={{ fontSize: 12 }} />
         <Tooltip formatter={(v) => [`PKR ${v}`, 'Sales']} />
-        <Line type="monotone" dataKey="sales" stroke="#2477ff" strokeWidth={2} dot={mobile ? false : { r: 3 }} isAnimationActive={!reduceMotion} />
+        <Line type="monotone" dataKey="sales" stroke={theme.palette.primary.main} strokeWidth={2} dot={mobile ? false : { r: 3 }} isAnimationActive={!reduceMotion} />
       </LineChart>
     </ResponsiveContainer>
   );

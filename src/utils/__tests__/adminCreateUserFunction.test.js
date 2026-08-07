@@ -24,7 +24,7 @@ describe('admin-create-user function', () => {
   it('rejects a customer email before creating an administrator auth user', async () => {
     global.fetch
       .mockResolvedValueOnce(response({ id: 'owner-auth-id' }))
-      .mockResolvedValueOnce(response([{ owner_id: 'owner-profile-id' }]))
+      .mockResolvedValueOnce(response([{ owner_id: 'owner-profile-id', role: 'Owner' }]))
       .mockResolvedValueOnce(response([{ id: 'customer-id' }]));
 
     const { handler } = require('../../../netlify/functions/admin-create-user');
@@ -51,7 +51,7 @@ describe('admin-create-user function', () => {
   it('lets an owner delete a rider profile and its auth identity', async () => {
     global.fetch
       .mockResolvedValueOnce(response({ id: 'owner-auth-id' }))
-      .mockResolvedValueOnce(response([{ owner_id: '00000000-0000-4000-8000-000000000001' }]))
+      .mockResolvedValueOnce(response([{ owner_id: '00000000-0000-4000-8000-000000000001', role: 'Owner' }]))
       .mockResolvedValueOnce(response([{
         id: '00000000-0000-4000-8000-000000000002',
         auth_user_id: '00000000-0000-4000-8000-000000000003',
@@ -75,5 +75,41 @@ describe('admin-create-user function', () => {
       '/auth/v1/admin/users/00000000-0000-4000-8000-000000000003',
     );
     expect(global.fetch.mock.calls[3][1]).toEqual(expect.objectContaining({ method: 'DELETE' }));
+  });
+
+  it('deletes both a customer auth identity and its business profile', async () => {
+    global.fetch
+      .mockResolvedValueOnce(response({ id: 'admin-auth-id' }))
+      .mockResolvedValueOnce(response([{
+        owner_id: '00000000-0000-4000-8000-000000000001',
+        role: 'Admin',
+      }]))
+      .mockResolvedValueOnce(response([{
+        id: 'customer-123',
+        auth_user_id: '00000000-0000-4000-8000-000000000009',
+        name: 'Deleted Customer',
+        email: 'customer@example.com',
+      }]))
+      .mockResolvedValueOnce(response({}))
+      .mockResolvedValueOnce(response([{ id: 'customer-123' }]));
+
+    const { handler } = require('../../../netlify/functions/admin-create-user');
+    const result = await handler({
+      httpMethod: 'DELETE',
+      headers: {
+        authorization: 'Bearer admin-session-token',
+        'x-nf-client-connection-ip': '127.0.0.2',
+      },
+      body: JSON.stringify({ customerId: 'customer-123' }),
+    });
+
+    expect(result.statusCode).toBe(200);
+    expect(JSON.parse(result.body)).toEqual(expect.objectContaining({
+      customerId: 'customer-123',
+      authIdentityDeleted: true,
+    }));
+    expect(global.fetch.mock.calls[3][0]).toContain('/auth/v1/admin/users/');
+    expect(global.fetch.mock.calls[4][0]).toContain('/rest/v1/customers?id=eq.customer-123');
+    expect(global.fetch.mock.calls[4][1]).toEqual(expect.objectContaining({ method: 'DELETE' }));
   });
 });

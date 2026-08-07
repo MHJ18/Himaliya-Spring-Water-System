@@ -29,6 +29,8 @@ import {
   ListItemButton,
   ListItemText,
   Stack,
+  Tab,
+  Tabs,
   Table,
   TableBody,
   TableCell,
@@ -44,13 +46,13 @@ import {
 import {
   CheckCircleOutlineRounded,
   DownloadRounded,
-  EditRounded,
   ExpandMoreRounded,
   PaymentsOutlined,
   ReceiptLongRounded,
   RefreshRounded,
   SearchRounded,
 } from '@mui/icons-material';
+import { motion } from 'motion/react';
 import { toast } from 'react-toastify';
 import PageShell from '../../components/PageShell/PageShell';
 import CustomerSummary from '../../components/common/CustomerSummary';
@@ -82,6 +84,12 @@ function Stat({ label, value }) {
   );
 }
 
+function invoiceStatusChip(status) {
+  if (status === 'paid') return { color: 'success', label: 'Paid' };
+  if (status === 'void') return { color: 'default', label: 'Void' };
+  return { color: 'warning', label: 'Unpaid' };
+}
+
 export default function CustomerRecords({ history, location }) {
   const {
     customers,
@@ -91,7 +99,9 @@ export default function CustomerRecords({ history, location }) {
   } = useCustomers();
   const { settings } = useSettings();
   const [query, setQuery] = useState(() => new URLSearchParams(location.search).get('search') || '');
-  const [selectedId, setSelectedId] = useState(null);
+  const [selectedId, setSelectedId] = useState(
+    () => new URLSearchParams(location.search).get('customer') || null,
+  );
   const [period, setPeriod] = useState(FILTER_PERIODS.MONTHLY);
   const [exporting, setExporting] = useState(false);
   const [customerInvoices, setCustomerInvoices] = useState([]);
@@ -100,6 +110,7 @@ export default function CustomerRecords({ history, location }) {
   const [invoiceUpdating, setInvoiceUpdating] = useState('');
   const [transactionToDelete, setTransactionToDelete] = useState(null);
   const [deletingTransactionId, setDeletingTransactionId] = useState('');
+  const [detailTab, setDetailTab] = useState('sales');
   const debouncedQuery = useDebounce(query);
 
   const matchesQuery = useCallback((customer) => {
@@ -163,16 +174,46 @@ export default function CustomerRecords({ history, location }) {
     () => (selected ? computePurchaseStats(displayHistory) : null),
     [selected, displayHistory],
   );
+  const activeInvoiceSourceKeys = useMemo(() => {
+    const keys = new Set();
+    customerInvoices
+      .filter((invoice) => invoice.paymentStatus !== 'void')
+      .forEach((invoice) => {
+        (invoice.history || []).forEach((item) => {
+          const sourceKey = String((item && item.id) || '').trim();
+          if (sourceKey) keys.add(sourceKey);
+        });
+      });
+    return keys;
+  }, [customerInvoices]);
+  const invoiceableHistory = useMemo(
+    () => displayHistory.filter((item) => (
+      !activeInvoiceSourceKeys.has(String((item && item.id) || '').trim())
+    )),
+    [activeInvoiceSourceKeys, displayHistory],
+  );
+  const invoiceableStats = useMemo(
+    () => (selected ? computePurchaseStats(invoiceableHistory) : null),
+    [selected, invoiceableHistory],
+  );
 
   const handleExport = async () => {
     if (!selected || exporting) return;
+    if (!invoiceableStats || invoiceableStats.totalDue <= 0) {
+      toast.info(
+        periodStats && periodStats.totalDue > 0
+          ? 'Every unpaid entry in this period is already covered by an active invoice.'
+          : 'There is no unpaid balance in this reporting period.',
+      );
+      return;
+    }
     setExporting(true);
     try {
       const invoiceCustomer = selected;
       const { exportCustomerHistoryPdf } = await import('../../utils/exportPdf');
       const invoice = await exportCustomerHistoryPdf(
         invoiceCustomer,
-        displayHistory,
+        invoiceableHistory,
         (customer, historyItems) => invoiceApi.createFromCustomer(customer, historyItems, settings),
       );
       toast.success(`Invoice ${invoice.invoiceNumber} created and downloaded.`);
@@ -208,6 +249,7 @@ export default function CustomerRecords({ history, location }) {
         setAllInvoices((current) => current.map((item) => (
           item.id === updatedInvoice.id ? updatedInvoice : item
         )));
+        if (action === 'paid') await refresh();
       }
       const [rows, nextAllInvoices] = await Promise.all([
         invoiceApi.getByCustomer(selected),
@@ -255,7 +297,11 @@ export default function CustomerRecords({ history, location }) {
       subtitle="Review customer profiles, purchase history, and invoice status."
       actions={(
         <Tooltip title="Refresh customer records">
-          <IconButton aria-label="Refresh customer records" onClick={refresh}>
+          <IconButton
+            aria-label="Refresh customer records"
+            onClick={refresh}
+            sx={{ width: 44, height: 44 }}
+          >
             <RefreshRounded />
           </IconButton>
         </Tooltip>
@@ -297,7 +343,7 @@ export default function CustomerRecords({ history, location }) {
                   size="small"
                   variant="outlined"
                   onClick={() => setSelectedId(null)}
-                  sx={{ display: { xs: 'inline-flex', sm: 'none' }, flex: '0 0 auto' }}
+                  sx={{ display: { xs: 'inline-flex', sm: 'none' }, flex: '0 0 auto', minHeight: 44 }}
                 >
                   Change
                 </Button>
@@ -334,7 +380,11 @@ export default function CustomerRecords({ history, location }) {
                   >
                     <ListItemButton
                       selected={selectedId === customer.id}
-                      onClick={() => setSelectedId(customer.id)}
+                      aria-label={`Open ${customer.name}'s customer record`}
+                      onClick={() => {
+                        setSelectedId(customer.id);
+                        setDetailTab('sales');
+                      }}
                       sx={{
                         mx: 1.25,
                         my: 0.55,
@@ -343,6 +393,7 @@ export default function CustomerRecords({ history, location }) {
                         border: '1px solid',
                         borderColor: 'transparent',
                         borderRadius: 2.5,
+                        cursor: 'pointer',
                         transition: 'transform 160ms ease, background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease',
                         '&:hover': {
                           transform: 'translateX(3px)',
@@ -403,12 +454,43 @@ export default function CustomerRecords({ history, location }) {
             <Stack spacing={3}>
               <CustomerSummary customer={selected} />
 
-              <Card sx={cardSx}>
-                <CardContent>
+              <Box sx={{ px: { xs: 0, sm: 0.5 } }}>
+                <Stack
+                  direction={{ xs: 'column', sm: 'row' }}
+                  alignItems={{ xs: 'stretch', sm: 'center' }}
+                  justifyContent="space-between"
+                  gap={1}
+                >
+                  <Tabs
+                    value={detailTab}
+                    onChange={(event, value) => setDetailTab(value)}
+                    variant="scrollable"
+                    scrollButtons="auto"
+                    aria-label="Customer record sections"
+                  >
+                    <Tab value="sales" label={`Sales ledger (${displayHistory.length})`} />
+                    <Tab value="invoices" label={`Invoices (${customerInvoices.length})`} />
+                  </Tabs>
+                </Stack>
+              </Box>
+
+              {detailTab === 'sales' && (
+              <Box
+                component={motion.div}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.22 }}
+                sx={{ px: { xs: 0, sm: 0.5 } }}
+              >
+                <Box>
                   <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ xs: 'stretch', md: 'center' }} gap={2}>
                     <Box>
                       <Typography variant="h6">Reporting period</Typography>
-                      <Typography variant="body2" color="text.secondary">Filter the ledger before generating an invoice.</Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {invoiceableHistory.length < displayHistory.length
+                          ? `${invoiceableHistory.length} of ${displayHistory.length} entries are ready for a new invoice.`
+                          : 'Filter the ledger before generating an invoice.'}
+                      </Typography>
                     </Box>
                     <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25}>
                       <ToggleButtonGroup
@@ -417,6 +499,15 @@ export default function CustomerRecords({ history, location }) {
                         size="small"
                         onChange={(event, value) => { if (value) setPeriod(value); }}
                         aria-label="Purchase history period"
+                        sx={{
+                          width: { xs: '100%', sm: 'auto' },
+                          '& .MuiToggleButton-root': {
+                            minWidth: 0,
+                            minHeight: 44,
+                            flex: { xs: '1 1 0', sm: '0 0 auto' },
+                            px: { xs: 0.75, sm: 1.25 },
+                          },
+                        }}
                       >
                         {Object.values(FILTER_PERIODS).map((value) => (
                           <ToggleButton key={value} value={value} sx={{ textTransform: 'capitalize' }}>{value}</ToggleButton>
@@ -426,34 +517,35 @@ export default function CustomerRecords({ history, location }) {
                         variant="contained"
                         startIcon={exporting ? <CircularProgress size={17} color="inherit" /> : <DownloadRounded />}
                         onClick={handleExport}
-                        disabled={exporting}
+                        disabled={exporting || invoicesLoading || !invoiceableStats || invoiceableStats.totalDue <= 0}
                       >
-                        {exporting ? 'Creating…' : 'Export invoice'}
+                        {exporting ? 'Creating…' : 'Create invoice'}
                       </Button>
                     </Stack>
                   </Stack>
                   {periodStats && (
                     <Grid container spacing={2} sx={{ mt: 1 }}>
-                      <Grid item xs={6} sm={3}><Stat label="Orders" value={periodStats.totalOrders} /></Grid>
+                      <Grid item xs={6} sm={3}><Stat label="Sales" value={periodStats.totalOrders} /></Grid>
                       <Grid item xs={6} sm={3}><Stat label="Bottles" value={periodStats.totalBottles} /></Grid>
-                      <Grid item xs={6} sm={3}><Stat label="Top type" value={periodStats.mostPurchased} /></Grid>
-                      <Grid item xs={6} sm={3}><Stat label="Revenue" value={formatCurrency(periodStats.totalRevenue)} /></Grid>
+                      <Grid item xs={6} sm={3}><Stat label="Gross" value={formatCurrency(periodStats.totalRevenue)} /></Grid>
+                      <Grid item xs={6} sm={3}><Stat label="Amount due" value={formatCurrency(periodStats.totalDue)} /></Grid>
                     </Grid>
                   )}
-                </CardContent>
-              </Card>
+                </Box>
+              </Box>
+              )}
 
-              <Card sx={cardSx}>
+              {detailTab === 'invoices' && (
+              <Card
+                component={motion.div}
+                initial={{ opacity: 0, x: 8 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.22 }}
+                sx={cardSx}
+              >
                 <Box sx={{ p: 2.5, pb: 1.5 }}>
-                  <Stack direction="row" justifyContent="space-between" alignItems="center">
-                    <Box>
-                      <Typography variant="h6">Customer invoices</Typography>
-                      <Typography variant="body2" color="text.secondary">{customerInvoices.length} invoices linked to this customer</Typography>
-                    </Box>
-                    <Button size="small" startIcon={<EditRounded />} onClick={() => history.push(`/app/customers/${selected.id}/edit`)}>
-                      Edit customer
-                    </Button>
-                  </Stack>
+                  <Typography variant="h6">Customer invoices</Typography>
+                  <Typography variant="body2" color="text.secondary">{customerInvoices.length} invoices linked to this customer</Typography>
                 </Box>
                 {invoicesLoading ? (
                   <Stack direction="row" spacing={1.25} alignItems="center" sx={{ p: 2.5 }}>
@@ -490,9 +582,9 @@ export default function CustomerRecords({ history, location }) {
                             </Typography>
                           </Box>
                           <Stack direction="row" spacing={0.75} alignItems="center" flexWrap="wrap" useFlexGap>
-                            <Chip size="small" color={invoice.paymentStatus === 'paid' ? 'success' : 'warning'} label={invoice.paymentStatus === 'paid' ? 'Paid' : 'Unpaid'} />
+                            <Chip size="small" {...invoiceStatusChip(invoice.paymentStatus)} />
                             {invoice.validated && <Chip size="small" color="info" variant="outlined" label="Validated" />}
-                            {invoice.paymentStatus !== 'paid' && (
+                            {invoice.paymentStatus === 'unpaid' && (
                               <Button
                                 size="small"
                                 variant="contained"
@@ -522,8 +614,16 @@ export default function CustomerRecords({ history, location }) {
                   </Stack>
                 )}
               </Card>
+              )}
 
-              <Card sx={cardSx}>
+              {detailTab === 'sales' && (
+              <Card
+                component={motion.div}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.22, delay: 0.04 }}
+                sx={cardSx}
+              >
                 <Box sx={{ p: 2.5, pb: 1.5 }}>
                   <Typography variant="h6">Purchase history</Typography>
                   <Typography variant="body2" color="text.secondary">{displayHistory.length} transactions in this period</Typography>
@@ -536,6 +636,7 @@ export default function CustomerRecords({ history, location }) {
                   />
                 </Box>
               </Card>
+              )}
             </Stack>
           )}
         </Grid>
@@ -578,7 +679,7 @@ export default function CustomerRecords({ history, location }) {
                     <TableCell>{(invoice.customer && invoice.customer.name) || invoice.customerId || 'Customer'}</TableCell>
                     <TableCell sx={mobileOptionalCellSx}>{formatDate(invoice.invoiceDate)}</TableCell>
                     <TableCell>{formatCurrency(invoice.totalAmount)}</TableCell>
-                    <TableCell><Chip size="small" color={invoice.paymentStatus === 'paid' ? 'success' : 'warning'} label={invoice.paymentStatus === 'paid' ? 'Paid' : 'Unpaid'} /></TableCell>
+                    <TableCell><Chip size="small" {...invoiceStatusChip(invoice.paymentStatus)} /></TableCell>
                   </TableRow>
                 ))}
                 {!allInvoices.length && (

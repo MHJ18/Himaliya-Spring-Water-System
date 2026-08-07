@@ -3,6 +3,7 @@ import {
   Avatar,
   Box,
   Button,
+  ButtonBase,
   Card,
   CardContent,
   Chip,
@@ -13,11 +14,11 @@ import {
   InputAdornment,
   List,
   ListItem,
-  ListItemAvatar,
   ListItemButton,
-  ListItemText,
   Stack,
   TextField,
+  ToggleButton,
+  ToggleButtonGroup,
   Typography,
 } from '@mui/material';
 import {
@@ -26,6 +27,7 @@ import {
   CalendarMonthRounded,
   CloseRounded,
   EditRounded,
+  LocalShippingRounded,
   LocationOnRounded,
   PersonAddAltRounded,
   PersonOutlineRounded,
@@ -46,6 +48,7 @@ const initialForm = {
   address: '',
   email: '',
   photo: '',
+  paymentSchedule: 'monthly',
 };
 
 const panelBaseSx = {
@@ -53,7 +56,7 @@ const panelBaseSx = {
   border: '1px solid',
   borderColor: 'divider',
   bgcolor: 'background.paper',
-  boxShadow: '0 20px 60px rgba(4, 18, 43, 0.12)',
+  boxShadow: { xs: '0 12px 32px rgba(4, 18, 43, 0.08)', sm: '0 20px 60px rgba(4, 18, 43, 0.12)' },
 };
 
 const formPanelSx = {
@@ -153,14 +156,14 @@ export default function AddCustomer({ history }) {
       title="Add customer"
       subtitle="Register a delivery account or review an existing customer profile."
     >
-      <Grid container spacing={3} alignItems="flex-start">
+      <Grid container spacing={{ xs: 2, md: 3 }} alignItems="flex-start">
         <Grid item xs={12} lg={5}>
           <Card sx={formPanelSx}>
             <Box
               sx={{
                 p: { xs: 2.25, sm: 3 },
                 color: 'common.white',
-                background: 'linear-gradient(135deg, #1473e6 0%, #5c3ce5 100%)',
+                background: 'linear-gradient(135deg, var(--hs-primary) 0%, var(--hs-secondary) 100%)',
               }}
             >
               <Stack direction="row" spacing={1.5} alignItems="center">
@@ -176,17 +179,32 @@ export default function AddCustomer({ history }) {
               </Stack>
             </Box>
             <CardContent sx={{ p: { xs: 2.25, sm: 3 } }}>
-              <Box component="form" onSubmit={handleSubmit} noValidate>
+              <Box
+                component="form"
+                onSubmit={handleSubmit}
+                noValidate
+                sx={{ '& .MuiOutlinedInput-root': { minHeight: 44 } }}
+              >
                 <Stack spacing={2.25}>
                   <Stack alignItems="center" spacing={1}>
-                    <input
-                      id="customer-photo"
-                      type="file"
-                      accept="image/*"
-                      hidden
-                      onChange={handleImage}
-                    />
-                    <Box component="label" htmlFor="customer-photo" sx={{ cursor: 'pointer', position: 'relative' }}>
+                    <ButtonBase
+                      component="label"
+                      aria-label="Choose a customer photo"
+                      focusRipple
+                      sx={{
+                        position: 'relative',
+                        borderRadius: '50%',
+                        p: 0.5,
+                        '&:focus-visible': { outline: '3px solid', outlineColor: 'primary.main', outlineOffset: 3 },
+                      }}
+                    >
+                      <input
+                        id="customer-photo"
+                        type="file"
+                        accept="image/*"
+                        hidden
+                        onChange={handleImage}
+                      />
                       <Avatar
                         src={preview || undefined}
                         sx={{
@@ -201,8 +219,10 @@ export default function AddCustomer({ history }) {
                       <Box sx={{ position: 'absolute', right: -2, bottom: -2, width: 30, height: 30, borderRadius: '50%', bgcolor: 'background.paper', color: 'primary.main', display: 'grid', placeItems: 'center', boxShadow: 2 }}>
                         <AddAPhotoOutlined sx={{ fontSize: 17 }} />
                       </Box>
-                    </Box>
-                    <Typography variant="caption" color="text.secondary">Optional photo. Large images are compressed automatically.</Typography>
+                    </ButtonBase>
+                    <Typography variant="caption" color="text.secondary" textAlign="center">
+                      Optional photo. Large images are compressed automatically.
+                    </Typography>
                   </Stack>
 
                   <TextField
@@ -248,12 +268,48 @@ export default function AddCustomer({ history }) {
                     autoComplete="email"
                     InputProps={{ startAdornment: <InputAdornment position="start"><AlternateEmailRounded /></InputAdornment> }}
                   />
+                  <Box>
+                    <Typography variant="body2" fontWeight={800} sx={{ mb: 0.75 }}>
+                      Payment schedule
+                    </Typography>
+                    <ToggleButtonGroup
+                      exclusive
+                      fullWidth
+                      value={form.paymentSchedule}
+                      onChange={(event, value) => {
+                        if (value) updateForm('paymentSchedule', value);
+                      }}
+                      aria-label="Customer payment schedule"
+                      sx={{
+                        '& .MuiToggleButton-root': {
+                          minWidth: 0,
+                          minHeight: 48,
+                          gap: 0.75,
+                          px: { xs: 1, sm: 1.5 },
+                          whiteSpace: 'normal',
+                        },
+                      }}
+                    >
+                      <ToggleButton value="monthly" aria-label="Monthly account">
+                        <CalendarMonthRounded fontSize="small" />
+                        Monthly account
+                      </ToggleButton>
+                      <ToggleButton value="on_delivery" aria-label="Pay on delivery">
+                        <LocalShippingRounded fontSize="small" />
+                        Pay on delivery
+                      </ToggleButton>
+                    </ToggleButtonGroup>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.75 }}>
+                      Monthly deliveries build an account balance; pay-on-delivery entries capture cash with each sale.
+                    </Typography>
+                  </Box>
                   <Button
                     type="submit"
                     variant="contained"
                     size="large"
                     disabled={saving}
                     startIcon={saving ? <CircularProgress size={18} color="inherit" /> : <PersonAddAltRounded />}
+                    fullWidth
                     sx={{ minHeight: 48 }}
                   >
                     {saving ? 'Saving customer…' : 'Add customer'}
@@ -275,25 +331,36 @@ export default function AddCustomer({ history }) {
                     Select a person to review or edit their profile.
                   </Typography>
                 </Box>
-                <Chip label={`${customers.length} registered`} color="primary" variant="outlined" />
+                <Chip
+                  label={search ? `${filteredCustomers.length} of ${customers.length}` : `${customers.length} registered`}
+                  color="primary"
+                  variant="outlined"
+                  aria-live="polite"
+                  sx={{ alignSelf: { xs: 'flex-start', sm: 'center' } }}
+                />
               </Stack>
               <TextField
                 fullWidth
                 size="small"
+                label="Search customers"
                 placeholder="Search by name, email, or phone"
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                sx={{ mt: 2.5 }}
                 InputProps={{
                   startAdornment: <InputAdornment position="start"><SearchRounded /></InputAdornment>,
                   endAdornment: search ? (
                     <InputAdornment position="end">
-                      <IconButton aria-label="Clear customer search" size="small" onClick={() => setSearch('')}>
+                      <IconButton
+                        aria-label="Clear customer search"
+                        onClick={() => setSearch('')}
+                        sx={{ width: 44, height: 44 }}
+                      >
                         <CloseRounded />
                       </IconButton>
                     </InputAdornment>
                   ) : null,
                 }}
+                sx={{ mt: 2.5, '& .MuiOutlinedInput-root': { minHeight: 48 } }}
               />
             </Box>
             <Divider />
@@ -311,31 +378,64 @@ export default function AddCustomer({ history }) {
                 </Typography>
               </Stack>
             ) : (
-              <List disablePadding sx={{ maxHeight: { xs: 420, lg: 520 }, overflowY: 'auto' }}>
+              <List
+                disablePadding
+                aria-label="Existing customers"
+                sx={{ maxHeight: { xs: 440, lg: 560 }, overflowY: 'auto', overscrollBehavior: 'contain' }}
+              >
                 {filteredCustomers.map((customer, index) => (
-                  <ListItem key={customer.id} disablePadding divider>
+                  <ListItem
+                    key={customer.id}
+                    divider
+                    disablePadding
+                    sx={{
+                      display: 'block',
+                    }}
+                  >
                     <ListItemButton
-                      selected={selectedId === customer.id}
+                      aria-label={`Open ${customer.name}`}
+                      aria-expanded={selectedId === customer.id}
+                      aria-controls={selectedId === customer.id ? 'customer-profile-details' : undefined}
                       onClick={() => setSelectedId(customer.id)}
-                      sx={{ py: 1.25, px: { xs: 2, sm: 3 } }}
+                      sx={{
+                      px: { xs: 1.25, sm: 2 },
+                      py: { xs: 1.25, sm: 1.5 },
+                      color: 'text.primary',
+                      bgcolor: selectedId === customer.id ? 'action.selected' : 'transparent',
+                      transition: 'background-color 160ms ease, transform 160ms ease',
+                      '&:hover': { bgcolor: selectedId === customer.id ? 'action.selected' : 'action.hover' },
+                      '&:focus-visible': { outline: '3px solid', outlineColor: 'primary.light', outlineOffset: -3 },
+                      }}
                     >
-                      <ListItemAvatar>
-                        <Avatar src={customer.photo || getCustomerAvatar(index)}>
-                          {(customer.name || '?').charAt(0).toUpperCase()}
-                        </Avatar>
-                      </ListItemAvatar>
-                      <ListItemText
-                        primary={customer.name}
-                        secondary={customer.phone || customer.email || 'No contact details'}
-                        primaryTypographyProps={{ fontWeight: 700, noWrap: true }}
-                        secondaryTypographyProps={{ noWrap: true }}
-                      />
-                      <Stack direction="row" spacing={0.75} sx={{ display: { xs: 'none', sm: 'flex' } }}>
-                        {(customer.source === 'portal' || customer.source === 'both') && (
-                          <Chip size="small" label="App customer" color="info" variant="outlined" />
-                        )}
-                        <Chip size="small" label={`${customer.orderCount === undefined ? (customer.purchaseHistory || []).length : customer.orderCount} orders`} />
-                      </Stack>
+                    <Box
+                      sx={{
+                        display: 'grid',
+                        gridTemplateColumns: 'auto minmax(0, 1fr)',
+                        alignItems: 'center',
+                        columnGap: 1.25,
+                        rowGap: 1,
+                        minWidth: 0,
+                      }}
+                    >
+                      <Avatar src={customer.photo || getCustomerAvatar(index)}>
+                        {(customer.name || '?').charAt(0).toUpperCase()}
+                      </Avatar>
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography variant="body2" fontWeight={800} noWrap>{customer.name}</Typography>
+                        <Typography variant="caption" color="text.secondary" display="block" noWrap>
+                          {customer.phone || customer.email || 'No contact details'}
+                        </Typography>
+                        <Stack direction="row" spacing={0.75} useFlexGap flexWrap="wrap" sx={{ mt: 0.75 }}>
+                          {(customer.source === 'portal' || customer.source === 'both') && (
+                            <Chip size="small" label="App customer" color="info" variant="outlined" />
+                          )}
+                          <Chip
+                            size="small"
+                            label={`${customer.orderCount === undefined ? (customer.purchaseHistory || []).length : customer.orderCount} orders`}
+                          />
+                        </Stack>
+                      </Box>
+                    </Box>
                     </ListItemButton>
                   </ListItem>
                 ))}
@@ -344,11 +444,11 @@ export default function AddCustomer({ history }) {
           </Card>
 
           {selected && (
-            <Card sx={listPanelSx}>
-              <Box sx={{ p: { xs: 2.25, sm: 3 }, color: 'common.white', background: 'linear-gradient(135deg, #1473e6, #5c3ce5)' }}>
-                <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={2}>
-                  <Stack direction="row" alignItems="center" spacing={1.5} sx={{ minWidth: 0 }}>
-                    <Avatar src={selected.photo || getCustomerAvatar(0)} sx={{ width: 56, height: 56, border: '2px solid rgba(255,255,255,.4)' }}>
+            <Card id="customer-profile-details" sx={listPanelSx}>
+              <Box sx={{ px: { xs: 2, sm: 3 }, py: { xs: 1.5, sm: 2 }, color: 'common.white', background: 'linear-gradient(135deg, var(--hs-primary), var(--hs-secondary))' }}>
+                <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
+                  <Stack direction="row" alignItems="center" spacing={1.25} sx={{ minWidth: 0, flex: 1 }}>
+                    <Avatar src={selected.photo || getCustomerAvatar(0)} sx={{ width: { xs: 44, sm: 52 }, height: { xs: 44, sm: 52 }, border: '2px solid rgba(255,255,255,.4)' }}>
                       {(selected.name || '?').charAt(0).toUpperCase()}
                     </Avatar>
                     <Box sx={{ minWidth: 0 }}>
@@ -356,7 +456,7 @@ export default function AddCustomer({ history }) {
                       <Typography variant="body2" sx={{ color: 'rgba(255,255,255,.72)' }}>Customer profile</Typography>
                     </Box>
                   </Stack>
-                  <IconButton aria-label="Close customer details" onClick={() => setSelectedId(null)} sx={{ color: 'inherit' }}>
+                  <IconButton aria-label="Close customer details" onClick={() => setSelectedId(null)} sx={{ color: 'inherit', flex: '0 0 auto', width: 44, height: 44 }}>
                     <CloseRounded />
                   </IconButton>
                 </Stack>
@@ -366,6 +466,11 @@ export default function AddCustomer({ history }) {
                   <Grid item xs={12} sm={6}><DetailRow icon={<PhoneRounded />} label="Phone">{selected.phone}</DetailRow></Grid>
                   <Grid item xs={12} sm={6}><DetailRow icon={<AlternateEmailRounded />} label="Email">{selected.email}</DetailRow></Grid>
                   <Grid item xs={12}><DetailRow icon={<LocationOnRounded />} label="Delivery address">{selected.address}</DetailRow></Grid>
+                  <Grid item xs={12} sm={6}>
+                    <DetailRow icon={<LocalShippingRounded />} label="Payment terms">
+                      {selected.paymentSchedule === 'on_delivery' ? 'Pay on delivery' : 'Monthly account'}
+                    </DetailRow>
+                  </Grid>
                   <Grid item xs={12} sm={6}>
                     <DetailRow icon={<CalendarMonthRounded />} label="Date added">
                       {selected.createdAt
@@ -379,15 +484,37 @@ export default function AddCustomer({ history }) {
                     </DetailRow>
                   </Grid>
                 </Grid>
-                <Button
-                  variant="outlined"
-                  startIcon={<EditRounded />}
-                  onClick={() => history.push(`/app/customers/${selected.id}/edit`)}
-                  sx={{ mt: 3 }}
-                >
-                  Edit customer
-                </Button>
               </CardContent>
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  px: { xs: 2.25, sm: 3 },
+                  pb: { xs: 2.25, sm: 3 },
+                  pt: 0,
+                }}
+              >
+                <Button
+                  variant="contained"
+                  size="large"
+                  startIcon={<EditRounded />}
+                  aria-label={`Edit ${selected.name}`}
+                  onClick={() => history.push(`/app/customers/${selected.id}/edit`)}
+                  sx={{
+                    minHeight: 48,
+                    minWidth: { xs: 0, sm: 210 },
+                    width: { xs: '100%', sm: 'auto' },
+                    maxWidth: '100%',
+                    px: { xs: 2, sm: 2.5 },
+                    color: 'common.white',
+                    background: 'linear-gradient(135deg, var(--hs-primary) 0%, var(--hs-secondary) 100%)',
+                    boxShadow: '0 12px 28px color-mix(in srgb, var(--hs-primary) 28%, transparent)',
+                    '&:hover': { filter: 'brightness(1.06)', boxShadow: '0 16px 32px color-mix(in srgb, var(--hs-primary) 34%, transparent)' },
+                  }}
+                >
+                  Edit customer details
+                </Button>
+              </Box>
             </Card>
           )}
           </Stack>

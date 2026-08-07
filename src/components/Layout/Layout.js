@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 import { Switch, Route, withRouter, Redirect } from 'react-router-dom';
-import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
 
 import Header from '../Header/Header';
 import Sidebar from '../Sidebar/Sidebar';
@@ -12,6 +12,7 @@ import { closeSidebar, changeActiveSidebarItem } from '../../actions/navigation'
 import { pageTransition } from '../../utils/motion';
 import { prefetchAdminNotifications } from '../../services/api/customerPortalApi';
 import s from './Layout.module.scss';
+import { useSettings } from '../../context/SettingsContext';
 
 const Dashboard = React.lazy(() => import('../../pages/himalaya/Dashboard'));
 const AddCustomer = React.lazy(() => import('../../pages/himalaya/AddCustomer'));
@@ -20,6 +21,7 @@ const EditCustomer = React.lazy(() => import('../../pages/himalaya/EditCustomer'
 const DailySales = React.lazy(() => import('../../pages/himalaya/DailySales'));
 const Analytics = React.lazy(() => import('../../pages/himalaya/Analytics'));
 const Settings = React.lazy(() => import('../../pages/himalaya/Settings'));
+const UiSettings = React.lazy(() => import('../../pages/himalaya/UiSettings'));
 const AdminUsers = React.lazy(() => import('../../pages/himalaya/AdminUsers'));
 const Messages = React.lazy(() => import('../../pages/himalaya/Messages'));
 const loadNotificationsCenter = () => import('../../pages/himalaya/NotificationsCenter');
@@ -29,6 +31,7 @@ const Profile = React.lazy(() => import('../../pages/himalaya/Profile'));
 const CustomerOrders = React.lazy(() => import('../../pages/himalaya/CustomerOrders'));
 const EntryHistory = React.lazy(() => import('../../pages/himalaya/EntryHistory'));
 const RiderTracking = React.lazy(() => import('../../pages/himalaya/RiderTracking'));
+const BottleDesigner = React.lazy(() => import('../../pages/himalaya/BottleDesigner'));
 
 function getAdminLoadingVariant(pathname) {
   if (pathname.includes('analytics')) return 'analytics';
@@ -53,14 +56,10 @@ function AnimatedRoutes({ pathname, children }) {
       animate: { opacity: 1 },
       exit: { opacity: 1 },
     }
-    : {
-      ...pageTransition,
-      initial: { opacity: 1, y: 6 },
-      exit: { opacity: 0.98, y: -3, transition: { duration: 0.1 } },
-    };
+    : pageTransition;
 
   return (
-    <AnimatePresence initial={false}>
+    <AnimatePresence initial={false} mode="wait">
       <motion.div
         key={pathname}
         className={s.routeMotion}
@@ -123,6 +122,8 @@ class Layout extends React.Component {
     else if (pathname.includes('rider-tracking')) active = 'rider-tracking';
     else if (pathname.includes('history')) active = 'history';
     else if (pathname.includes('admins') || pathname.includes('users')) active = 'users';
+    else if (pathname.includes('ui-settings')) active = 'ui-settings';
+    else if (pathname.includes('bottle-designer')) active = 'bottle-designer';
     else if (pathname.includes('settings')) active = 'settings';
     else if (pathname.includes('messages')) active = 'messages';
     else if (pathname.includes('notifications')) active = 'notifications';
@@ -156,7 +157,7 @@ class Layout extends React.Component {
                   />
                 )}
               >
-                <Switch>
+                <Switch location={this.props.location}>
                   <Route path="/app" exact render={() => <Redirect to="/app/main/dashboard" />} />
                   <Route path="/app/main" exact render={() => <Redirect to="/app/main/dashboard" />} />
                   <Route path="/app/main/dashboard" exact component={Dashboard} />
@@ -172,6 +173,8 @@ class Layout extends React.Component {
                   <Route path="/app/users" exact component={AdminUsers} />
                   <Route path="/app/admins" exact component={AdminUsers} />
                   <Route path="/app/settings" exact component={Settings} />
+                  <Route path="/app/ui-settings" exact component={UiSettings} />
+                  <Route path="/app/bottle-designer" exact component={BottleDesigner} />
                   <Route path="/history" exact render={() => <Redirect to="/app/history" />} />
                   <Route path="/messages" exact component={Messages} />
                   <Route path="/notifications" exact component={NotificationsCenter} />
@@ -180,14 +183,23 @@ class Layout extends React.Component {
                 </Switch>
               </React.Suspense>
             </AnimatedRoutes>
-            <footer className={s.contentFooter}>
-              Himaliya Spring Water &mdash; Admin workspace
-            </footer>
+            <LocalizedFooter />
           </main>
         </div>
       </div>
     );
   }
+}
+
+function LocalizedFooter() {
+  const { settings } = useSettings();
+  return (
+    <footer className={s.contentFooter}>
+      {settings.sidebarBrandTitle || 'Himaliya Spring Water'}
+      {' — '}
+      {settings.language === 'ur' ? 'ایڈمن ورک اسپیس' : 'Admin workspace'}
+    </footer>
+  );
 }
 
 function mapStateToProps(store) {
@@ -198,4 +210,19 @@ function mapStateToProps(store) {
   };
 }
 
-export default withRouter(connect(mapStateToProps)(Layout));
+const ConnectedLayout = withRouter(connect((store, ownProps) => ({
+  ...mapStateToProps(store),
+  sidebarPosition: ownProps.settingsSidebarPosition || store.navigation.sidebarPosition,
+  sidebarVisibility: ownProps.settingsSidebarVisibility || store.navigation.sidebarVisibility,
+}))(Layout));
+
+export default function LayoutSettingsBridge(props) {
+  const { settings } = useSettings();
+  return (
+    <ConnectedLayout
+      {...props}
+      settingsSidebarPosition={settings.language === 'ur' ? 'right' : settings.sidebarPosition}
+      settingsSidebarVisibility={settings.sidebarVisibility}
+    />
+  );
+}

@@ -27,7 +27,12 @@ export function validateCustomerForm({ name, phone, address, email }) {
   return errors;
 }
 
-export function validateSaleForm({ bottleType, quantity, pricePerBottle }) {
+export function validateSaleForm({
+  bottleType,
+  quantity,
+  pricePerBottle,
+  amountPaid,
+}) {
   const errors = {};
   if (!bottleType) errors.bottleType = 'Select a bottle type';
   const qty = Number(quantity);
@@ -35,6 +40,15 @@ export function validateSaleForm({ bottleType, quantity, pricePerBottle }) {
   const price = Number(pricePerBottle);
   if (!price || Number.isNaN(price) || price < 1) {
     errors.pricePerBottle = 'Unit price must be greater than 0';
+  }
+  const paidValue = amountPaid === undefined || amountPaid === null || amountPaid === '' ? 0 : amountPaid;
+  const paid = Number(paidValue);
+  if (Number.isNaN(paid)) {
+    errors.amountPaid = 'Enter an amount paid of 0 or more';
+  } else if (paid < 0) {
+    errors.amountPaid = 'Amount paid cannot be negative';
+  } else if (qty > 0 && price > 0 && paid > qty * price) {
+    errors.amountPaid = 'Amount paid cannot exceed the sale total';
   }
   return errors;
 }

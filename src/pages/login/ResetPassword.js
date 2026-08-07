@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { Link, withRouter } from 'react-router-dom';
 import { KeyRound } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { clearStoredSession, updatePasswordWithToken } from '../../services/cloud/supabaseClient';
 import './WaterLogin.css';
 

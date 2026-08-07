@@ -3,6 +3,9 @@
   publish = "build"
   functions = "netlify/functions"
 
+[build.environment]
+  NODE_VERSION = "24.18.0"
+
 # React Router owns application routes. Netlify must serve the SPA shell when
 # a visitor refreshes or directly opens a private route such as /app/customers.
 [[redirects]]
@@ -29,8 +32,8 @@
   for = "/*"
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
-    Content-Security-Policy = "default-src 'self'; base-uri 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co; font-src 'self' data: https://fonts.gstatic.com; form-action 'self'; frame-ancestors 'none'; img-src 'self' data: blob: https://*.basemaps.cartocdn.com https://*.cartocdn.com; manifest-src 'self'; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; worker-src 'self' blob:"
-    Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+    Content-Security-Policy = "default-src 'self'; base-uri 'self'; child-src blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://tiles.openfreemap.org https://photon.komoot.io https://router.project-osrm.org; font-src 'self' data: https://fonts.gstatic.com; form-action 'self'; frame-ancestors 'none'; img-src 'self' data: blob: https://tiles.openfreemap.org; manifest-src 'self'; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; worker-src 'self' blob:"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=(self), payment=(), usb=()"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Cross-Origin-Opener-Policy = "same-origin"
     Cross-Origin-Resource-Policy = "same-origin"

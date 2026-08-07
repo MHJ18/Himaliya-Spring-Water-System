@@ -5,17 +5,44 @@ function requireCloud() {
   if (!isSupabaseConfigured()) throw new Error('Supabase configuration is required.');
 }
 
-const NON_BILLABLE_ORDER_STATUSES = new Set(['canceled', 'rejected']);
+const BILLABLE_ORDER_STATUSES = new Set(['delivered', 'fulfilled', 'completed']);
 
 function number(value) {
   const parsed = Number(value || 0);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
 }
 
-export function toCustomerOrderHistory(order) {
-  if (!order || NON_BILLABLE_ORDER_STATUSES.has(order.status)) return [];
+function paymentSchedule(value) {
+  return value === 'on_delivery' ? 'on_delivery' : 'monthly';
+}
 
-  const savedItems = Array.isArray(order.items) ? order.items : [];
+export function toCustomerOrderHistory(
+  order,
+  allocationsBySource = new Map(),
+  customerPaymentSchedule = 'monthly',
+) {
+  if (!order || !BILLABLE_ORDER_STATUSES.has(order.status)) return [];
+
+  const orderedItems = Array.isArray(order.items) ? order.items : [];
+  const deliveredItems = Array.isArray(order.delivered_items) ? order.delivered_items : [];
+  const usesDeliveredAllocation = deliveredItems.length > 0;
+  const savedItems = usesDeliveredAllocation
+    ? deliveredItems.map((item) => {
+        const bottleType = item && (item.bottleType || item.bottle_type);
+        const orderedItem = orderedItems.find((candidate) => (
+          (candidate && (candidate.bottleType || candidate.bottle_type)) === bottleType
+        ));
+        return {
+          ...item,
+          unitPrice: item && (
+            item.unitPrice !== undefined ? item.unitPrice : item.unit_price
+          ),
+          fallbackUnitPrice: orderedItem && (
+            orderedItem.unitPrice !== undefined ? orderedItem.unitPrice : orderedItem.unit_price
+          ),
+        };
+      })
+    : orderedItems;
   const items = savedItems.length ? savedItems : [{
     bottleType: order.bottle_type,
     quantity: order.quantity,
@@ -27,52 +54,88 @@ export function toCustomerOrderHistory(order) {
       const quantity = number(item && (item.quantity !== undefined ? item.quantity : item.qty));
       const pricePerBottle = number(item && (
         item.unitPrice !== undefined ? item.unitPrice : item.unit_price
-      )) || (items.length === 1 ? number(order.unit_price) : 0);
+      )) || number(item && item.fallbackUnitPrice)
+        || (items.length === 1 ? number(order.unit_price) : 0);
       const savedTotal = number(item && (
         item.totalAmount !== undefined ? item.totalAmount : item.total_amount
       ));
       const totalAmount = savedTotal
         || (quantity * pricePerBottle)
-        || (items.length === 1 ? number(order.total_amount) : 0);
+        || (!usesDeliveredAllocation && items.length === 1 ? number(order.total_amount) : 0);
       const bottleType = String(
         (item && (item.bottleType || item.bottle_type)) || order.bottle_type || ''
       ).trim();
 
       if (!bottleType || quantity <= 0) return null;
+      const sourceKey = `customer-order:${order.id}:${index}`;
+      const amountPaid = Math.min(
+        totalAmount,
+        Math.max(0, Number(allocationsBySource.get(sourceKey)) || 0),
+      );
       return {
-        id: `customer-order:${order.id}:${index}`,
+        id: sourceKey,
         orderId: order.id,
         recordType: 'customer_order',
         readOnly: true,
         status: order.status || 'pending',
-        date: order.created_at,
+        date: order.delivered_at || order.updated_at || order.created_at,
         bottleType,
         quantity,
         pricePerBottle,
         totalAmount,
+        amountPaid,
+        amountDue: Math.max(0, totalAmount - amountPaid),
+        paymentSchedule: paymentSchedule(
+          order.payment_schedule || customerPaymentSchedule,
+        ),
         notes: order.notes || '',
       };
     })
     .filter(Boolean);
 }
 
-function toCustomer(row, sales, orders) {
+function toCustomer(
+  row,
+  sales,
+  orders,
+  billingProfile,
+  allocationsBySource,
+  paymentEvents,
+) {
+  const customerPaymentSchedule = paymentSchedule(
+    billingProfile && billingProfile.payment_schedule,
+  );
   const customerSales = sales
     .filter((sale) => sale.customer_id === row.id)
-    .map((sale) => ({
-      id: sale.id,
-      recordType: 'sale',
-      date: sale.created_at,
-      bottleType: sale.bottle_type,
-      quantity: Number(sale.quantity) || 0,
-      pricePerBottle: Number(sale.price_per_bottle) || 0,
-      totalAmount: Number(sale.total_amount) || 0,
-      notes: sale.notes || '',
-    }));
+    .map((sale) => {
+      const totalAmount = Number(sale.total_amount) || 0;
+      const directAmountPaid = Math.min(
+        totalAmount,
+        Math.max(0, Number(sale.amount_paid) || 0),
+      );
+      const allocatedAmount = Math.max(0, Number(allocationsBySource.get(String(sale.id))) || 0);
+      const amountPaid = Math.min(totalAmount, directAmountPaid + allocatedAmount);
+      return {
+        id: sale.id,
+        recordType: 'sale',
+        date: sale.created_at,
+        bottleType: sale.bottle_type,
+        quantity: Number(sale.quantity) || 0,
+        pricePerBottle: Number(sale.price_per_bottle) || 0,
+        totalAmount,
+        amountPaid,
+        directAmountPaid,
+        amountDue: Math.max(0, totalAmount - amountPaid),
+        paymentSchedule: sale.payment_schedule === 'on_delivery' ? 'on_delivery' : (sale.payment_schedule === 'monthly' ? 'monthly' : undefined),
+        notes: sale.notes || '',
+      };
+    });
   const customerOrders = orders.filter((order) => (
-    order.customer_id === row.id && !NON_BILLABLE_ORDER_STATUSES.has(order.status)
+    order.customer_id === row.id && BILLABLE_ORDER_STATUSES.has(order.status)
   ));
-  const orderHistory = customerOrders.flatMap(toCustomerOrderHistory);
+  const orderHistory = customerOrders.flatMap((order) => (
+    toCustomerOrderHistory(order, allocationsBySource, customerPaymentSchedule)
+  ));
 
   return {
     id: row.id,
@@ -85,8 +148,15 @@ function toCustomer(row, sales, orders) {
     source: row.source || 'admin',
     authUserId: row.auth_user_id || null,
     active: row.active !== false,
+    paymentSchedule: customerPaymentSchedule,
     createdAt: row.created_at,
     orderCount: customerSales.length + customerOrders.length,
+    collectionEvents: (paymentEvents || []).map((payment) => ({
+      id: payment.id,
+      amount: Math.max(0, Number(payment.amount) || 0),
+      receivedAt: payment.received_at,
+      paymentType: payment.payment_type === 'invoice' ? 'invoice' : 'monthly',
+    })),
     purchaseHistory: [...customerSales, ...orderHistory]
       .sort((left, right) => new Date(left.date) - new Date(right.date)),
   };
@@ -108,14 +178,31 @@ function toCustomerRow(customer) {
   };
 }
 
+function toBillingProfileRow(customer) {
+  return {
+    customer_id: customer.id,
+    payment_schedule: paymentSchedule(customer.paymentSchedule),
+    updated_at: new Date().toISOString(),
+  };
+}
+
 function toSaleRow(customer, sale) {
+  const totalAmount = Number(sale.totalAmount) || 0;
+  const amountPaid = Math.min(
+    totalAmount,
+    Math.max(0, Number(
+      sale.directAmountPaid === undefined ? sale.amountPaid : sale.directAmountPaid
+    ) || 0),
+  );
   return {
     id: sale.id,
     customer_id: customer.id,
     bottle_type: sale.bottleType,
     quantity: Number(sale.quantity) || 0,
     price_per_bottle: Number(sale.pricePerBottle) || 0,
-    total_amount: Number(sale.totalAmount) || 0,
+    total_amount: totalAmount,
+    amount_paid: amountPaid,
+    payment_schedule: sale.paymentSchedule === 'on_delivery' ? 'on_delivery' : 'monthly',
     notes: sale.notes || '',
     created_at: sale.date || new Date().toISOString(),
   };
@@ -129,22 +216,102 @@ function isAdministratorIdentity(customer, adminRows) {
   ));
 }
 
+function isMissingBillingProfilesError(error) {
+  return ['PGRST204', 'PGRST205', '42P01'].includes(error && error.code)
+    || /customer_billing_profiles|schema cache|could not find the table/i.test(
+      String((error && error.message) || ''),
+    );
+}
+
+async function getCustomerBillingProfiles() {
+  try {
+    return await dbRequest('/customer_billing_profiles?select=customer_id,payment_schedule');
+  } catch (error) {
+    // A frontend may briefly deploy before its database migration. Customer
+    // records must remain visible while billing terms fall back to monthly.
+    if (isMissingBillingProfilesError(error)) return [];
+    throw error;
+  }
+}
+
+async function getActivePaymentAllocations() {
+  try {
+    return await dbRequest('/customer_active_payment_allocations?select=source_key,amount');
+  } catch (error) {
+    const missingLedger = ['PGRST204', 'PGRST205', '42P01'].includes(error && error.code)
+      || /customer_active_payment_allocations|schema cache|could not find the table/i.test(
+        String((error && error.message) || ''),
+      );
+    if (missingLedger) return [];
+    throw error;
+  }
+}
+
+async function getAppliedCustomerPayments() {
+  try {
+    return await dbRequest(
+      '/customer_payments?status=eq.applied&select=id,customer_id,payment_type,amount,received_at&order=received_at.asc',
+    );
+  } catch (error) {
+    const missingLedger = ['PGRST204', 'PGRST205', '42P01'].includes(error && error.code)
+      || /customer_payments|schema cache|could not find the table/i.test(
+        String((error && error.message) || ''),
+      );
+    if (missingLedger) return [];
+    throw error;
+  }
+}
+
 export async function getCloudCustomers() {
   requireCloud();
-  const [customers, sales, orders, adminRows] = await Promise.all([
+  const [
+    customers,
+    sales,
+    orders,
+    adminRows,
+    billingProfiles,
+    paymentAllocations,
+    paymentEvents,
+  ] = await Promise.all([
     dbRequest('/customers?select=*&order=created_at.asc'),
     dbRequest('/sales?select=*&order=created_at.asc'),
     dbRequest('/customer_orders?select=*&order=created_at.asc'),
     dbRequest('/admin_profiles?select=auth_user_id,email'),
+    getCustomerBillingProfiles(),
+    getActivePaymentAllocations(),
+    getAppliedCustomerPayments(),
   ]);
+  const billingProfilesByCustomer = new Map(
+    (billingProfiles || []).map((profile) => [profile.customer_id, profile]),
+  );
+  const allocationsBySource = new Map(
+    (paymentAllocations || []).map((allocation) => [
+      String(allocation.source_key || ''),
+      Number(allocation.amount) || 0,
+    ]),
+  );
+  const paymentEventsByCustomer = new Map();
+  (paymentEvents || []).forEach((payment) => {
+    const customerPayments = paymentEventsByCustomer.get(payment.customer_id) || [];
+    customerPayments.push(payment);
+    paymentEventsByCustomer.set(payment.customer_id, customerPayments);
+  });
   return customers
     .filter((customer) => !isAdministratorIdentity(customer, adminRows))
-    .map((customer) => toCustomer(customer, sales, orders));
+    .map((customer) => toCustomer(
+      customer,
+      sales,
+      orders,
+      billingProfilesByCustomer.get(customer.id),
+      allocationsBySource,
+      paymentEventsByCustomer.get(customer.id),
+    ));
 }
 
 export async function saveCloudCustomers(customers) {
   requireCloud();
   const customerRows = customers.map(toCustomerRow);
+  const billingProfileRows = customers.map(toBillingProfileRow);
   const saleRows = customers.flatMap((customer) =>
     (customer.purchaseHistory || [])
       .filter((sale) => sale.recordType !== 'customer_order')
@@ -169,12 +336,33 @@ export async function saveCloudCustomers(customers) {
     }
   }
 
+  if (billingProfileRows.length) {
+    try {
+      await dbRequest('/customer_billing_profiles?on_conflict=owner_id,customer_id', {
+        method: 'POST',
+        prefer: 'resolution=merge-duplicates,return=minimal',
+        body: JSON.stringify(billingProfileRows),
+      });
+    } catch (error) {
+      if (!isMissingBillingProfilesError(error)) throw error;
+    }
+  }
+
   if (saleRows.length) {
-    await dbRequest('/sales?on_conflict=id', {
-      method: 'POST',
-      prefer: 'resolution=merge-duplicates,return=minimal',
-      body: JSON.stringify(saleRows),
-    });
+    try {
+      await dbRequest('/sales?on_conflict=id', {
+        method: 'POST',
+        prefer: 'resolution=merge-duplicates,return=minimal',
+        body: JSON.stringify(saleRows),
+      });
+    } catch (error) {
+      if (error.code !== 'PGRST204' && !/payment_schedule|schema cache/i.test(error.message || '')) throw error;
+      await dbRequest('/sales?on_conflict=id', {
+        method: 'POST',
+        prefer: 'resolution=merge-duplicates,return=minimal',
+        body: JSON.stringify(saleRows.map(({ payment_schedule: _paymentSchedule, ...row }) => row)),
+      });
+    }
   }
 
   return true;

@@ -27,12 +27,17 @@ body.dashboard-light {
   --hs-sidebar-bg-solid: rgba(244, 248, 255, 0.98);
   --hs-sidebar-account-bg: rgba(36, 119, 255, 0.08);
   --hs-sidebar-menu-bg: rgba(255, 255, 255, 0.98);
+  --hs-sidebar-brand-accent: #087596;
+  --hs-sidebar-active-text: #075675;
+  --hs-sidebar-active-bg: linear-gradient(105deg, rgba(7, 142, 173, 0.15), rgba(64, 95, 210, 0.08));
+  --hs-sidebar-active-border: rgba(7, 118, 151, 0.28);
+  --hs-sidebar-active-indicator: #078ead;
+  --hs-sidebar-active-glow: rgba(7, 142, 173, 0.3);
+  --hs-sidebar-active-shadow: 0 8px 22px rgba(31, 84, 106, 0.1);
   --hs-dropdown-bg: #ffffff;
   --hs-map-bg: rgba(255, 255, 255, 0.74);
   --hs-map-stat-bg: rgba(255, 255, 255, 0.82);
-  background:
-    radial-gradient(circle at 18% 0%, rgba(80, 150, 255, 0.13), transparent 32rem),
-    linear-gradient(135deg, #f6f9ff 0%, #eaf1fb 100%);
+  background: var(--hs-page-bg);
   color: #182033;
 
   .content,
@@ -160,13 +165,17 @@ body.dashboard-dark {
   --hs-sidebar-bg-solid: rgba(4, 22, 38, 0.98);
   --hs-sidebar-account-bg: rgba(41, 183, 255, 0.1);
   --hs-sidebar-menu-bg: rgba(6, 30, 50, 0.98);
+  --hs-sidebar-brand-accent: #7de2ff;
+  --hs-sidebar-active-text: #d9f9ff;
+  --hs-sidebar-active-bg: linear-gradient(105deg, rgba(7, 142, 173, 0.27), rgba(64, 95, 210, 0.13));
+  --hs-sidebar-active-border: rgba(104, 220, 236, 0.23);
+  --hs-sidebar-active-indicator: #7de2ff;
+  --hs-sidebar-active-glow: rgba(125, 226, 255, 0.38);
+  --hs-sidebar-active-shadow: 0 9px 24px rgba(0, 11, 24, 0.22);
   --hs-dropdown-bg: #082238;
   --hs-map-bg: rgba(3, 21, 36, 0.38);
   --hs-map-stat-bg: rgba(5, 29, 48, 0.72);
-  background:
-    radial-gradient(circle at 12% 0%, rgba(0, 194, 255, 0.18), transparent 28rem),
-    radial-gradient(circle at 82% 8%, rgba(56, 124, 255, 0.13), transparent 34rem),
-    linear-gradient(135deg, #061827 0%, #082238 48%, #03111f 100%);
+  background: var(--hs-page-bg);
 
   input.form-control,
   textarea.form-control,
@@ -251,6 +260,134 @@ body.dashboard-dark {
   }
 }
 
+body.dashboard-light[data-admin-theme='ocean'] {
+  --hs-page-bg:
+    radial-gradient(circle at 14% 0%, rgba(37, 99, 235, 0.15), transparent 31rem),
+    radial-gradient(circle at 90% 12%, rgba(8, 145, 178, 0.1), transparent 28rem),
+    linear-gradient(135deg, #f7f9ff 0%, #ebf2ff 100%);
+  --hs-header-hover: #1d4ed8;
+  --hs-sidebar-brand-accent: #1d4ed8;
+  --hs-sidebar-hover: rgba(37, 99, 235, 0.08);
+  --hs-sidebar-active-text: #173f9e;
+  --hs-sidebar-active-bg: linear-gradient(105deg, rgba(37, 99, 235, 0.15), rgba(8, 145, 178, 0.08));
+  --hs-sidebar-active-border: rgba(37, 99, 235, 0.28);
+  --hs-sidebar-active-indicator: #2563eb;
+  --hs-sidebar-active-glow: rgba(37, 99, 235, 0.28);
+  background: var(--hs-page-bg);
+}
+
+body.dashboard-dark[data-admin-theme='ocean'] {
+  --hs-page-bg:
+    radial-gradient(circle at 12% 0%, rgba(37, 99, 235, 0.23), transparent 29rem),
+    radial-gradient(circle at 86% 8%, rgba(8, 145, 178, 0.13), transparent 31rem),
+    linear-gradient(135deg, #071426 0%, #091c35 48%, #040d1b 100%);
+  --hs-header-hover: #8ab9ff;
+  --hs-sidebar-brand-accent: #8ab9ff;
+  --hs-sidebar-hover: rgba(96, 165, 250, 0.13);
+  --hs-sidebar-active-text: #e5efff;
+  --hs-sidebar-active-bg: linear-gradient(105deg, rgba(37, 99, 235, 0.29), rgba(8, 145, 178, 0.13));
+  --hs-sidebar-active-border: rgba(96, 165, 250, 0.26);
+  --hs-sidebar-active-indicator: #79aefc;
+  --hs-sidebar-active-glow: rgba(96, 165, 250, 0.38);
+  background: var(--hs-page-bg);
+}
+
+body.dashboard-light[data-admin-theme='indigo'] {
+  --hs-page-bg:
+    radial-gradient(circle at 16% 0%, rgba(104, 87, 217, 0.15), transparent 31rem),
+    radial-gradient(circle at 91% 9%, rgba(192, 68, 143, 0.09), transparent 29rem),
+    linear-gradient(135deg, #fbf9ff 0%, #efedfb 100%);
+  --hs-header-hover: #5946c3;
+  --hs-sidebar-brand-accent: #5946c3;
+  --hs-sidebar-hover: rgba(104, 87, 217, 0.08);
+  --hs-sidebar-active-text: #4d3caf;
+  --hs-sidebar-active-bg: linear-gradient(105deg, rgba(104, 87, 217, 0.15), rgba(192, 68, 143, 0.07));
+  --hs-sidebar-active-border: rgba(104, 87, 217, 0.28);
+  --hs-sidebar-active-indicator: #6857d9;
+  --hs-sidebar-active-glow: rgba(104, 87, 217, 0.3);
+  background: var(--hs-page-bg);
+}
+
+body.dashboard-dark[data-admin-theme='indigo'] {
+  --hs-page-bg:
+    radial-gradient(circle at 13% 0%, rgba(104, 87, 217, 0.26), transparent 30rem),
+    radial-gradient(circle at 87% 9%, rgba(192, 68, 143, 0.14), transparent 32rem),
+    linear-gradient(135deg, #100f27 0%, #171330 48%, #090b1a 100%);
+  --hs-header-hover: #b6a9ff;
+  --hs-sidebar-brand-accent: #b6a9ff;
+  --hs-sidebar-hover: rgba(155, 140, 242, 0.13);
+  --hs-sidebar-active-text: #f0edff;
+  --hs-sidebar-active-bg: linear-gradient(105deg, rgba(104, 87, 217, 0.31), rgba(192, 68, 143, 0.13));
+  --hs-sidebar-active-border: rgba(155, 140, 242, 0.28);
+  --hs-sidebar-active-indicator: #a596fb;
+  --hs-sidebar-active-glow: rgba(155, 140, 242, 0.4);
+  background: var(--hs-page-bg);
+}
+
+body.dashboard-light[data-admin-theme='emerald'] {
+  --hs-page-bg:
+    radial-gradient(circle at 15% 0%, rgba(15, 143, 111, 0.14), transparent 31rem),
+    radial-gradient(circle at 90% 11%, rgba(13, 135, 165, 0.09), transparent 28rem),
+    linear-gradient(135deg, #f6fbf9 0%, #eaf5f1 100%);
+  --hs-header-hover: #087052;
+  --hs-sidebar-brand-accent: #087052;
+  --hs-sidebar-hover: rgba(15, 143, 111, 0.08);
+  --hs-sidebar-active-text: #09654d;
+  --hs-sidebar-active-bg: linear-gradient(105deg, rgba(15, 143, 111, 0.15), rgba(13, 135, 165, 0.08));
+  --hs-sidebar-active-border: rgba(15, 143, 111, 0.28);
+  --hs-sidebar-active-indicator: #0f8f6f;
+  --hs-sidebar-active-glow: rgba(15, 143, 111, 0.3);
+  background: var(--hs-page-bg);
+}
+
+body.dashboard-dark[data-admin-theme='emerald'] {
+  --hs-page-bg:
+    radial-gradient(circle at 12% 0%, rgba(15, 143, 111, 0.23), transparent 29rem),
+    radial-gradient(circle at 87% 9%, rgba(13, 135, 165, 0.13), transparent 31rem),
+    linear-gradient(135deg, #071b18 0%, #0a2522 48%, #041210 100%);
+  --hs-header-hover: #7ae8c3;
+  --hs-sidebar-brand-accent: #7ae8c3;
+  --hs-sidebar-hover: rgba(85, 214, 173, 0.12);
+  --hs-sidebar-active-text: #e1fff5;
+  --hs-sidebar-active-bg: linear-gradient(105deg, rgba(15, 143, 111, 0.3), rgba(13, 135, 165, 0.13));
+  --hs-sidebar-active-border: rgba(85, 214, 173, 0.27);
+  --hs-sidebar-active-indicator: #62dfb7;
+  --hs-sidebar-active-glow: rgba(85, 214, 173, 0.38);
+  background: var(--hs-page-bg);
+}
+
+body.dashboard-light[data-admin-theme='sunset'] {
+  --hs-page-bg:
+    radial-gradient(circle at 15% 0%, rgba(220, 100, 59, 0.14), transparent 31rem),
+    radial-gradient(circle at 91% 10%, rgba(189, 63, 119, 0.09), transparent 29rem),
+    linear-gradient(135deg, #fffaf7 0%, #f8efed 100%);
+  --hs-header-hover: #b74629;
+  --hs-sidebar-brand-accent: #b74629;
+  --hs-sidebar-hover: rgba(220, 100, 59, 0.08);
+  --hs-sidebar-active-text: #9f3923;
+  --hs-sidebar-active-bg: linear-gradient(105deg, rgba(220, 100, 59, 0.15), rgba(189, 63, 119, 0.07));
+  --hs-sidebar-active-border: rgba(220, 100, 59, 0.28);
+  --hs-sidebar-active-indicator: #dc643b;
+  --hs-sidebar-active-glow: rgba(220, 100, 59, 0.3);
+  background: var(--hs-page-bg);
+}
+
+body.dashboard-dark[data-admin-theme='sunset'] {
+  --hs-page-bg:
+    radial-gradient(circle at 12% 0%, rgba(220, 100, 59, 0.24), transparent 29rem),
+    radial-gradient(circle at 86% 9%, rgba(189, 63, 119, 0.15), transparent 32rem),
+    linear-gradient(135deg, #21100d 0%, #2b171b 48%, #13090c 100%);
+  --hs-header-hover: #ffc09d;
+  --hs-sidebar-brand-accent: #ffc09d;
+  --hs-sidebar-hover: rgba(245, 160, 111, 0.12);
+  --hs-sidebar-active-text: #fff0e8;
+  --hs-sidebar-active-bg: linear-gradient(105deg, rgba(220, 100, 59, 0.31), rgba(189, 63, 119, 0.14));
+  --hs-sidebar-active-border: rgba(245, 160, 111, 0.28);
+  --hs-sidebar-active-indicator: #f5a06f;
+  --hs-sidebar-active-glow: rgba(245, 160, 111, 0.4);
+  background: var(--hs-page-bg);
+}
+
 body.dashboard-light,
 body.dashboard-dark {
   font-size: 15px;
@@ -306,6 +443,71 @@ body.dashboard-dark {
 
   .progress {
     background: rgba(119, 147, 190, 0.22) !important;
+  }
+}
+
+body.dashboard-compact {
+  font-size: 13px;
+
+  .page-title {
+    font-size: 1.42rem;
+  }
+
+  .page-title small {
+    font-size: 0.66rem;
+  }
+
+  .widget p,
+  .widget td,
+  .widget th,
+  .widget label {
+    font-size: 0.77rem;
+    line-height: 1.42;
+  }
+
+  .widget small,
+  .description,
+  .deemphasize,
+  .help-block {
+    font-size: 0.66rem;
+  }
+
+  .widget h2 { font-size: 1.08rem; }
+  .widget h3 { font-size: 0.94rem; }
+  .widget h4,
+  .widget h5,
+  .widget h6 { font-size: 0.82rem; }
+
+  .btn {
+    min-height: 36px;
+    padding: 0.42rem 0.72rem;
+    font-size: 0.71rem;
+    border-radius: 0.68rem;
+  }
+
+  .form-control,
+  select.form-control,
+  textarea.form-control {
+    min-height: 38px;
+    padding: 0.42rem 0.65rem;
+    font-size: 0.75rem;
+  }
+}
+
+@media (pointer: coarse) {
+  body.dashboard-compact {
+    font-size: 14px;
+
+    .btn {
+      min-height: 44px;
+    }
+
+    .form-control,
+    select.form-control,
+    textarea.form-control {
+      min-height: 46px;
+      font-size: 16px;
+    }
   }
 }
 
@@ -1036,6 +1238,61 @@ body.dashboard-light .himalaya-add-customer .MuiDivider-root {
 
   50% {
     transform: translateY(-14px) scale(1.04);
+  }
+}
+
+@media (min-width: 768px) {
+  body.dashboard-compact {
+    .widget-body,
+    .card-body {
+      padding: 0.85rem;
+    }
+
+    .table th,
+    .table td {
+      padding: 0.42rem 0.55rem;
+      font-size: 0.72rem;
+    }
+
+    .daily-sales-hero {
+      padding: 20px;
+      margin-bottom: 16px;
+      border-radius: 20px;
+    }
+
+    .daily-sales-hero h2 {
+      font-size: clamp(1.35rem, 3vw, 2rem);
+    }
+
+    .daily-sales-hero p {
+      font-size: 0.78rem;
+    }
+
+    .daily-sales-search .input-group-text,
+    .daily-sales-search .form-control,
+    .daily-sales-search-btn,
+    .daily-sales-form-card form .form-control,
+    .price-default-item .form-control {
+      min-height: 38px;
+      font-size: 0.75rem;
+    }
+
+    .daily-sales-customer-card {
+      min-height: 150px;
+      padding: 14px;
+      border-radius: 17px;
+    }
+
+    .daily-sales-customer-card img {
+      width: 40px;
+      height: 40px;
+      margin-bottom: 8px;
+      border-radius: 12px;
+    }
+
+    .daily-sales-customer-card strong {
+      font-size: 0.82rem;
+    }
   }
 }
 

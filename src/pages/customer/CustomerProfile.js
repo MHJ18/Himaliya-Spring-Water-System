@@ -32,11 +32,13 @@ import SecurityRoundedIcon from '@mui/icons-material/SecurityRounded';
 import LightModeRoundedIcon from '@mui/icons-material/LightModeRounded';
 import DarkModeRoundedIcon from '@mui/icons-material/DarkModeRounded';
 import GradientRoundedIcon from '@mui/icons-material/GradientRounded';
+import ColorLensRoundedIcon from '@mui/icons-material/ColorLensRounded';
+import ViewModuleRoundedIcon from '@mui/icons-material/ViewModuleRounded';
 import SaveRoundedIcon from '@mui/icons-material/SaveRounded';
 import NotificationsActiveRoundedIcon from '@mui/icons-material/NotificationsActiveRounded';
 import LocalShippingRoundedIcon from '@mui/icons-material/LocalShippingRounded';
 import ReceiptLongRoundedIcon from '@mui/icons-material/ReceiptLongRounded';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { toast } from 'react-toastify';
 import { getCustomerProfile, saveCustomerProfile } from '../../services/api/customerPortalApi';
 import LoadingState from '../../components/LoadingState/LoadingState';
@@ -61,6 +63,12 @@ function buildCustomerTheme(theme) {
     shape: { borderRadius: 14 },
     typography: {
       fontFamily: '"Inter", "Segoe UI", sans-serif',
+      fontSize: 12.5,
+      h5: { fontSize: '1.1rem', fontWeight: 800 },
+      h6: { fontSize: '.98rem', fontWeight: 800 },
+      subtitle1: { fontSize: '.9rem' },
+      body1: { fontSize: '.8rem' },
+      body2: { fontSize: '.76rem' },
       button: { textTransform: 'none', fontWeight: 750 },
     },
     components: {
@@ -181,7 +189,12 @@ function PreferenceSwitch({
 }
 
 function CustomerProfile({ history }) {
-  const { theme, setTheme } = useCustomerTheme();
+  const {
+    theme,
+    setTheme,
+    dashboardStyle,
+    setDashboardStyle,
+  } = useCustomerTheme();
   const [profile, setProfile] = React.useState(null);
   const [form, setForm] = React.useState({ name: '', email: '', phone: '', address: '' });
   const [preferences, setPreferences] = React.useState({
@@ -401,6 +414,67 @@ function CustomerProfile({ history }) {
                     <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: -1, mb: 2 }}>
                       Saved only in this browser, so it can be different on each device.
                     </Typography>
+
+                    <Divider sx={{ mb: 2 }} />
+                    <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+                      <ColorLensRoundedIcon color="primary" fontSize="small" />
+                      <Box>
+                        <Typography variant="subtitle2" fontWeight={850}>Dashboard colors</Typography>
+                        <Typography variant="caption" color="text.secondary">Personalize the accent, header, and card surfaces.</Typography>
+                      </Box>
+                    </Stack>
+                    <Grid container spacing={1.5} sx={{ mb: 2 }}>
+                      <Grid item xs={12} md={4}>
+                        <Typography variant="caption" color="text.secondary" fontWeight={800}>Accent</Typography>
+                        <ToggleButtonGroup
+                          exclusive
+                          fullWidth
+                          size="small"
+                          value={dashboardStyle.accent}
+                          onChange={(event, value) => value && setDashboardStyle({ accent: value })}
+                          sx={{ mt: .5 }}
+                        >
+                          <ToggleButton value="aqua">Aqua</ToggleButton>
+                          <ToggleButton value="blue">Blue</ToggleButton>
+                          <ToggleButton value="violet">Violet</ToggleButton>
+                          <ToggleButton value="emerald">Green</ToggleButton>
+                        </ToggleButtonGroup>
+                      </Grid>
+                      <Grid item xs={12} md={4}>
+                        <Typography variant="caption" color="text.secondary" fontWeight={800}>Header</Typography>
+                        <Select
+                          size="small"
+                          fullWidth
+                          value={dashboardStyle.header}
+                          onChange={(event) => setDashboardStyle({ header: event.target.value })}
+                          sx={{ mt: .5 }}
+                          inputProps={{ 'aria-label': 'Dashboard header color' }}
+                        >
+                          <MenuItem value="ocean">Ocean</MenuItem>
+                          <MenuItem value="midnight">Midnight</MenuItem>
+                          <MenuItem value="violet">Violet</MenuItem>
+                          <MenuItem value="emerald">Emerald</MenuItem>
+                        </Select>
+                      </Grid>
+                      <Grid item xs={12} md={4}>
+                        <Typography variant="caption" color="text.secondary" fontWeight={800}>Cards</Typography>
+                        <Select
+                          size="small"
+                          fullWidth
+                          value={dashboardStyle.cards}
+                          onChange={(event) => setDashboardStyle({ cards: event.target.value })}
+                          sx={{ mt: .5 }}
+                          inputProps={{ 'aria-label': 'Dashboard card style' }}
+                        >
+                          <MenuItem value="clean">Clean</MenuItem>
+                          <MenuItem value="tinted">Tinted</MenuItem>
+                          <MenuItem value="glass">Glass</MenuItem>
+                        </Select>
+                      </Grid>
+                    </Grid>
+                    <Alert icon={<ViewModuleRoundedIcon />} severity="info" sx={{ mb: 2 }}>
+                      Dashboard color changes are saved immediately on this device.
+                    </Alert>
 
                     <Divider />
                     <Stack spacing={1} sx={{ mt: 1.5, mb: 2 }}>

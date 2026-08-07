@@ -4,6 +4,8 @@ import { withRouter } from 'react-router-dom';
 import {
   Button,
   CircularProgress,
+  Dialog,
+  DialogContent,
   FormControl,
   IconButton,
   InputLabel,
@@ -117,6 +119,8 @@ function RiderTracking({ location }) {
   const [liveSharing, setLiveSharing] = React.useState(false);
   const [riders, setRiders] = React.useState([]);
   const [assigning, setAssigning] = React.useState(false);
+  const [deliveryToConfirm, setDeliveryToConfirm] = React.useState(null);
+  const lastLocationPublish = React.useRef(0);
   const focusedOrderId = location.state && location.state.focusOrderId;
 
   React.useEffect(() => {
@@ -266,20 +270,23 @@ function RiderTracking({ location }) {
     }
   };
 
-  const markDelivered = async (order) => {
-    if (settings.requireDeliveryConfirmation) {
-      const confirmed = window.confirm(
-        `Confirm delivery for ${(order.profile && order.profile.name) || 'this customer'}?`,
-      );
-      if (!confirmed) return;
-    }
+  const completeDelivery = async (order) => {
     try {
       await advanceTracking(order, 'delivered');
       setLiveSharing(false);
+      setDeliveryToConfirm(null);
       toast.success('Delivery completed. The customer has been notified.');
     } catch {
       // Error toast is handled by advanceTracking.
     }
+  };
+
+  const markDelivered = (order) => {
+    if (settings.requireDeliveryConfirmation) {
+      setDeliveryToConfirm(order);
+      return;
+    }
+    completeDelivery(order);
   };
 
   const publishLocation = React.useCallback(async (position) => {
@@ -335,7 +342,10 @@ function RiderTracking({ location }) {
     const watchId = navigator.geolocation.watchPosition(
       (position) => {
         if (canceled || inflight) return;
+        const refreshMs = Math.max(5000, (Number(settings.riderLocationRefreshSeconds) || 15) * 1000);
+        if (Date.now() - lastLocationPublish.current < refreshMs) return;
         inflight = true;
+        lastLocationPublish.current = Date.now();
         publishLocation(position)
           .catch(() => { if (!canceled) setLiveSharing(false); })
           .finally(() => { inflight = false; });
@@ -352,7 +362,7 @@ function RiderTracking({ location }) {
       canceled = true;
       navigator.geolocation.clearWatch(watchId);
     };
-  }, [liveSharing, publishLocation, selectedOrder]);
+  }, [liveSharing, publishLocation, selectedOrder, settings.riderLocationRefreshSeconds]);
 
   const copyTrackingLink = async () => {
     if (!selectedOrder || !selectedOrder.trackingToken) {
@@ -620,6 +630,7 @@ function RiderTracking({ location }) {
                       riderName={selectedOrder.riderName || riderName}
                       stops={mapStops}
                       className="route-console__map"
+                      overviewMode
                     />
                   </div>
 
@@ -689,6 +700,49 @@ function RiderTracking({ location }) {
           </div>
         </div>
       )}
+
+      <Dialog
+        open={Boolean(deliveryToConfirm)}
+        onClose={() => { if (!updating) setDeliveryToConfirm(null); }}
+        maxWidth="xs"
+        fullWidth
+        aria-labelledby="delivery-confirmation-title"
+        PaperProps={{ className: 'route-confirmation-card' }}
+      >
+        <DialogContent className="route-confirmation-card__content">
+          <span className="route-confirmation-card__icon" aria-hidden="true">
+            <CheckCircleRoundedIcon />
+          </span>
+          <div className="route-confirmation-card__copy">
+            <small>Final delivery step</small>
+            <h2 id="delivery-confirmation-title">Confirm paid delivery?</h2>
+            <p>
+              Mark the delivery for{' '}
+              <strong>{(deliveryToConfirm && deliveryToConfirm.profile && deliveryToConfirm.profile.name) || 'this customer'}</strong>
+              {' '}as completed and notify the customer.
+            </p>
+          </div>
+          <div className="route-confirmation-card__actions">
+            <Button
+              type="button"
+              color="inherit"
+              disabled={Boolean(updating)}
+              onClick={() => setDeliveryToConfirm(null)}
+            >
+              Not yet
+            </Button>
+            <Button
+              type="button"
+              variant="contained"
+              startIcon={updating ? <CircularProgress size={15} color="inherit" /> : <CheckCircleRoundedIcon />}
+              disabled={Boolean(updating)}
+              onClick={() => completeDelivery(deliveryToConfirm)}
+            >
+              {updating ? 'Confirming...' : 'Yes, confirm'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </PageShell>
   );
 }

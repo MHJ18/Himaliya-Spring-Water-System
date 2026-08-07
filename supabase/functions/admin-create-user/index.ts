@@ -92,12 +92,55 @@ Deno.serve(async (request) => {
   let createdUserId = '';
   try {
     const caller = await supabaseRequest(url, key, '/auth/v1/user', { headers: { Authorization: authorization } }) as { id?: string };
-    const callerProfiles = await supabaseRequest(url, key, `/rest/v1/admin_profiles?auth_user_id=eq.${encodeURIComponent(caller.id || '')}&active=eq.true&role=eq.Owner&must_change_password=eq.false&select=owner_id&limit=1`) as Array<{ owner_id?: string }>;
-    const ownerId = callerProfiles?.[0]?.owner_id;
-    if (!ownerId) return json(403, { message: 'Only an active owner can manage team accounts.' });
+    const callerProfiles = await supabaseRequest(url, key, `/rest/v1/admin_profiles?auth_user_id=eq.${encodeURIComponent(caller.id || '')}&active=eq.true&must_change_password=eq.false&select=owner_id,role&limit=1`) as Array<{ owner_id?: string; role?: string }>;
+    const callerProfile = callerProfiles?.[0];
+    const ownerId = callerProfile?.owner_id;
+    const callerRole = callerProfile?.role;
+    if (!ownerId) return json(403, { message: 'Your administrator account is not authorized for this action.' });
 
     if (request.method === 'DELETE') {
-      const payload = await request.json() as { profileId?: string };
+      const payload = await request.json() as { profileId?: string; customerId?: string };
+      const customerId = String(payload.customerId || '').trim();
+      if (customerId) {
+        if (callerRole === 'Rider') return json(403, { message: 'Rider accounts cannot remove customer accounts.' });
+        if (!/^[a-z0-9][a-z0-9._:-]{0,127}$/i.test(customerId)) {
+          return json(400, { message: 'Select a valid customer account.' });
+        }
+        const customerMatches = await supabaseRequest(
+          url,
+          key,
+          `/rest/v1/customers?id=eq.${encodeURIComponent(customerId)}&owner_id=eq.${encodeURIComponent(ownerId)}&select=id,auth_user_id,name,email&limit=1`,
+        ) as Array<{ id?: string; auth_user_id?: string; name?: string; email?: string }>;
+        const customer = customerMatches?.[0];
+        if (!customer?.id) return json(404, { message: 'Customer account not found.' });
+
+        if (customer.auth_user_id) {
+          await supabaseRequest(
+            url,
+            key,
+            `/auth/v1/admin/users/${encodeURIComponent(customer.auth_user_id)}`,
+            { method: 'DELETE' },
+          );
+        }
+        const deletedProfiles = await supabaseRequest(
+          url,
+          key,
+          `/rest/v1/customers?id=eq.${encodeURIComponent(customer.id)}&owner_id=eq.${encodeURIComponent(ownerId)}&select=id`,
+          { method: 'DELETE', headers: { Prefer: 'return=representation' } },
+        ) as unknown[];
+        if (!deletedProfiles || deletedProfiles.length !== 1) {
+          throw new Error('Customer profile could not be removed after deleting its login identity.');
+        }
+        return json(200, {
+          deleted: true,
+          customerId: customer.id,
+          name: customer.name || 'Customer',
+          email: customer.email || '',
+          authIdentityDeleted: Boolean(customer.auth_user_id),
+        });
+      }
+
+      if (callerRole !== 'Owner') return json(403, { message: 'Only an active owner can manage team accounts.' });
       const profileId = String(payload.profileId || '').trim();
       if (!/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(profileId)) {
         return json(400, { message: 'Select a valid rider account.' });
@@ -112,6 +155,8 @@ Deno.serve(async (request) => {
       await supabaseRequest(url, key, `/auth/v1/admin/users/${encodeURIComponent(target.auth_user_id)}`, { method: 'DELETE' });
       return json(200, { deleted: true, profileId: target.id, name: target.name || 'Rider' });
     }
+
+    if (callerRole !== 'Owner') return json(403, { message: 'Only an active owner can manage team accounts.' });
 
     const payload = await request.json() as { name?: string; email?: string; password?: string; role?: string; phone?: string };
     const name = String(payload.name || '').trim();

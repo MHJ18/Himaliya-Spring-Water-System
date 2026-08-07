@@ -11,6 +11,8 @@ import {
 } from '@mui/material';
 import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined';
 import PlaceOutlinedIcon from '@mui/icons-material/PlaceOutlined';
+import CalendarMonthRoundedIcon from '@mui/icons-material/CalendarMonthRounded';
+import PaymentsOutlinedIcon from '@mui/icons-material/PaymentsOutlined';
 import { filterTransactionsByPeriod, computePurchaseStats } from '../../utils/analytics';
 import { formatCurrency, getInitials } from '../../utils/formatters';
 
@@ -27,10 +29,9 @@ export default function CustomerSummary({ customer }) {
   if (!customer) return null;
 
   const metrics = [
-    { label: 'Total bottles', value: stats.all.totalBottles },
-    { label: 'This month', value: stats.monthly.totalBottles },
-    { label: 'Today', value: stats.daily.totalBottles },
-    { label: 'Revenue', value: formatCurrency(stats.all.totalRevenue) },
+    { label: 'Lifetime sales', value: formatCurrency(stats.all.totalRevenue), color: 'primary.main' },
+    { label: 'Outstanding', value: formatCurrency(stats.all.totalDue), color: stats.all.totalDue > 0 ? 'warning.main' : 'success.main' },
+    { label: 'Bottles held', value: Number(customer.bottlesHeld) || 0, color: 'text.primary' },
   ];
 
   return (
@@ -48,7 +49,13 @@ export default function CustomerSummary({ customer }) {
             <Stack direction="row" flexWrap="wrap" alignItems="center" gap={1}>
               <Typography variant="h4" sx={{ overflowWrap: 'anywhere' }}>{customer.name}</Typography>
               <Chip size="small" color={customer.active === false ? 'default' : 'success'} label={customer.active === false ? 'Inactive' : 'Active'} />
-              <Chip size="small" color="info" variant="outlined" label={`${Number(customer.bottlesHeld) || 0} bottles held`} />
+              <Chip
+                size="small"
+                color={customer.paymentSchedule === 'on_delivery' ? 'success' : 'secondary'}
+                variant="outlined"
+                icon={customer.paymentSchedule === 'on_delivery' ? <PaymentsOutlinedIcon /> : <CalendarMonthRoundedIcon />}
+                label={customer.paymentSchedule === 'on_delivery' ? 'Pays on delivery' : 'Monthly account'}
+              />
             </Stack>
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={{ xs: 0.5, sm: 2 }} sx={{ mt: 1 }}>
               <Stack direction="row" alignItems="center" spacing={0.6} color="text.secondary">
@@ -64,18 +71,18 @@ export default function CustomerSummary({ customer }) {
         </Stack>
         <Grid container spacing={1.5} sx={{ mt: 1.5 }}>
           {metrics.map((metric) => (
-            <Grid item xs={6} md={3} key={metric.label}>
+            <Grid item xs={4} key={metric.label}>
               <Box sx={{
-                minHeight: 76,
+                minHeight: 72,
                 p: 1.25,
-                bgcolor: 'rgba(29,155,240,.07)',
+                bgcolor: 'action.hover',
                 border: 1,
                 borderColor: 'divider',
                 borderRadius: 2,
               }}
               >
                 <Typography variant="caption" color="text.secondary">{metric.label}</Typography>
-                <Typography variant="h6" sx={{ mt: 0.4, fontVariantNumeric: 'tabular-nums', overflowWrap: 'anywhere' }}>
+                <Typography color={metric.color} variant="h6" sx={{ mt: 0.4, fontVariantNumeric: 'tabular-nums', overflowWrap: 'anywhere' }}>
                   {metric.value}
                 </Typography>
               </Box>

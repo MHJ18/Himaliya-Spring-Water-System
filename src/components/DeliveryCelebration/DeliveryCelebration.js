@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import Lottie from 'lottie-react';
 import { CheckCircle2, X } from 'lucide-react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion, useReducedMotion } from 'motion/react';
 import './DeliveryCelebration.css';
 
 export default function DeliveryCelebration({ animationPath, title, message, onClose }) {

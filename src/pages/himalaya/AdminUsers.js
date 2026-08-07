@@ -75,6 +75,18 @@ const cardSx = {
   boxShadow: '0 18px 55px rgba(4, 18, 43, .1)',
 };
 
+const ROLE_VISUALS = {
+  owner: { color: 'warning', avatar: 'warning.main', label: 'Owner' },
+  admin: { color: 'primary', avatar: 'primary.main', label: 'Admin' },
+  manager: { color: 'secondary', avatar: 'secondary.main', label: 'Manager' },
+  rider: { color: 'info', avatar: 'info.main', label: 'Rider' },
+};
+
+function roleVisual(role) {
+  return ROLE_VISUALS[String(role || '').toLowerCase()]
+    || { color: 'default', avatar: 'text.secondary', label: role || 'Team member' };
+}
+
 function phoneKey(phone) {
   return (phone || '').replace(/\D/g, '');
 }
@@ -319,7 +331,7 @@ export default function AdminUsers() {
       <Grid container spacing={3} alignItems="stretch">
         <Grid item xs={12} lg={5}>
           <Card sx={cardSx}>
-            <Box sx={{ p: { xs: 2.25, sm: 3 }, color: 'common.white', background: 'linear-gradient(135deg, #155eef, #5538d8)' }}>
+            <Box sx={{ p: { xs: 2.25, sm: 3 }, color: 'common.white', background: 'linear-gradient(135deg, var(--hs-primary), var(--hs-secondary))' }}>
               <Stack direction="row" spacing={1.5} alignItems="center">
                 <Avatar sx={{ bgcolor: 'rgba(255,255,255,.15)' }}><ShieldOutlined /></Avatar>
                 <Box>
@@ -421,11 +433,13 @@ export default function AdminUsers() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {admins.map((admin) => (
-                    <TableRow key={admin.id} hover>
+                  {admins.map((admin) => {
+                    const roleStyle = roleVisual(admin.role);
+                    return (
+                    <TableRow key={admin.id} hover sx={{ '& td:first-of-type': { borderLeft: '4px solid', borderLeftColor: roleStyle.avatar } }}>
                       <TableCell>
                         <Stack direction="row" spacing={1.25} alignItems="center">
-                          <Avatar sx={{ width: 38, height: 38, bgcolor: 'primary.main', fontSize: '.9rem' }}>
+                          <Avatar sx={{ width: 38, height: 38, bgcolor: roleStyle.avatar, fontSize: '.9rem' }}>
                             {(admin.name || '?').charAt(0).toUpperCase()}
                           </Avatar>
                           <Box sx={{ minWidth: 0 }}>
@@ -434,7 +448,14 @@ export default function AdminUsers() {
                           </Box>
                         </Stack>
                       </TableCell>
-                      <TableCell>{admin.role}</TableCell>
+                      <TableCell>
+                        <Chip
+                          size="small"
+                          color={roleStyle.color}
+                          label={roleStyle.label}
+                          sx={{ minWidth: 78, justifyContent: 'center' }}
+                        />
+                      </TableCell>
                       <TableCell sx={mobileOptionalCellSx}><Chip size="small" color="success" label="Allowed" /></TableCell>
                       <TableCell align="right">
                         <Tooltip title={currentAdmin && currentAdmin.id === admin.id ? 'You cannot remove your current account' : `Remove ${admin.role === 'Rider' ? 'rider' : 'admin'}`}>
@@ -444,6 +465,7 @@ export default function AdminUsers() {
                               color="error"
                               disabled={Boolean(currentAdmin && currentAdmin.id === admin.id)}
                               onClick={() => setDeleteTarget(admin)}
+                              sx={{ width: 44, height: 44 }}
                             >
                               <DeleteOutlineRounded />
                             </IconButton>
@@ -451,7 +473,8 @@ export default function AdminUsers() {
                         </Tooltip>
                       </TableCell>
                     </TableRow>
-                  ))}
+                    );
+                  })}
                   {!admins.length && <EmptyRow columns={4}>{loading ? 'Loading administrators…' : 'No administrators found.'}</EmptyRow>}
                 </TableBody>
               </Table>
@@ -486,7 +509,7 @@ export default function AdminUsers() {
             <TableBody>
               {customers.map((customer) => (
                 <TableRow key={`${customer.userType}-${customer.id}`} hover>
-                  <TableCell sx={mobileOptionalCellSx}>
+                  <TableCell>
                     <Stack direction="row" spacing={1.25} alignItems="center">
                       <Avatar sx={{ width: 38, height: 38, bgcolor: 'info.main', fontSize: '.9rem' }}>
                         {(customer.name || '?').charAt(0).toUpperCase()}
@@ -497,7 +520,7 @@ export default function AdminUsers() {
                       </Box>
                     </Stack>
                   </TableCell>
-                  <TableCell>
+                  <TableCell sx={mobileOptionalCellSx}>
                     <Stack direction="row" spacing={0.75} alignItems="center">
                       <PhoneRounded sx={{ fontSize: 17, color: 'text.secondary' }} />
                       <Typography variant="body2" noWrap>{customer.phone || 'Not provided'}</Typography>
@@ -521,6 +544,7 @@ export default function AdminUsers() {
                             color={customer.active ? 'warning' : 'success'}
                             disabled={updatingCustomerStatus === customer.id}
                             onClick={() => handleCustomerStatus(customer)}
+                            sx={{ width: 44, height: 44 }}
                           >
                             {customer.active ? <BlockRounded /> : <CheckCircleRounded />}
                           </IconButton>
@@ -538,13 +562,19 @@ export default function AdminUsers() {
                                 setTemporaryPassword('');
                                 setResetOwnerPassword('');
                               }}
+                              sx={{ width: 44, height: 44 }}
                             >
                               <KeyRounded />
                             </IconButton>
                           </Tooltip>
                         )}
                         <Tooltip title="Remove customer app profile">
-                          <IconButton aria-label={`Remove ${customer.name}`} color="error" onClick={() => setCustomerDeleteTarget(customer)}>
+                          <IconButton
+                            aria-label={`Remove ${customer.name}`}
+                            color="error"
+                            onClick={() => setCustomerDeleteTarget(customer)}
+                            sx={{ width: 44, height: 44 }}
+                          >
                             <DeleteOutlineRounded />
                           </IconButton>
                         </Tooltip>
@@ -607,7 +637,13 @@ export default function AdminUsers() {
                 endAdornment: (
                   <InputAdornment position="end">
                     <Tooltip title="Copy password">
-                      <IconButton aria-label="Copy temporary password" edge="end" onClick={copyTemporaryPassword} disabled={!temporaryPassword}>
+                      <IconButton
+                        aria-label="Copy temporary password"
+                        edge="end"
+                        onClick={copyTemporaryPassword}
+                        disabled={!temporaryPassword}
+                        sx={{ width: 44, height: 44 }}
+                      >
                         <ContentCopyRounded />
                       </IconButton>
                     </Tooltip>

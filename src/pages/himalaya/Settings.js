@@ -8,15 +8,17 @@ import {
   CardHeader,
   Chip,
   CircularProgress,
-  Divider,
+  Collapse,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   FormControl,
   Grid,
+  IconButton,
   InputAdornment,
   InputLabel,
+  LinearProgress,
   MenuItem,
   Select,
   Stack,
@@ -24,19 +26,14 @@ import {
   Tab,
   Tabs,
   TextField,
-  ToggleButton,
-  ToggleButtonGroup,
   Typography,
+  useMediaQuery,
 } from '@mui/material';
-import PaletteOutlinedIcon from '@mui/icons-material/PaletteOutlined';
 import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined';
 import AccountTreeOutlinedIcon from '@mui/icons-material/AccountTreeOutlined';
 import WaterDropOutlinedIcon from '@mui/icons-material/WaterDropOutlined';
 import CloudDoneOutlinedIcon from '@mui/icons-material/CloudDoneOutlined';
 import SecurityOutlinedIcon from '@mui/icons-material/SecurityOutlined';
-import LightModeRoundedIcon from '@mui/icons-material/LightModeRounded';
-import DarkModeRoundedIcon from '@mui/icons-material/DarkModeRounded';
-import SettingsBrightnessRoundedIcon from '@mui/icons-material/SettingsBrightnessRounded';
 import DownloadRoundedIcon from '@mui/icons-material/DownloadRounded';
 import SaveRoundedIcon from '@mui/icons-material/SaveRounded';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
@@ -44,8 +41,6 @@ import AutorenewRoundedIcon from '@mui/icons-material/AutorenewRounded';
 import NotificationsActiveRoundedIcon from '@mui/icons-material/NotificationsActiveRounded';
 import VerifiedRoundedIcon from '@mui/icons-material/VerifiedRounded';
 import CancelScheduleSendRoundedIcon from '@mui/icons-material/CancelScheduleSendRounded';
-import ViewCompactRoundedIcon from '@mui/icons-material/ViewCompactRounded';
-import MotionPhotosOffRoundedIcon from '@mui/icons-material/MotionPhotosOffRounded';
 import MapRoundedIcon from '@mui/icons-material/MapRounded';
 import DatabaseRoundedIcon from '@mui/icons-material/StorageRounded';
 import DeleteSweepRoundedIcon from '@mui/icons-material/DeleteSweepRounded';
@@ -55,7 +50,13 @@ import RefreshRoundedIcon from '@mui/icons-material/RefreshRounded';
 import GroupsRoundedIcon from '@mui/icons-material/GroupsRounded';
 import ReceiptLongRoundedIcon from '@mui/icons-material/ReceiptLongRounded';
 import PaymentsRoundedIcon from '@mui/icons-material/PaymentsRounded';
+import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
+import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded';
+import VisibilityOffRoundedIcon from '@mui/icons-material/VisibilityOffRounded';
+import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded';
+import ExpandMoreRoundedIcon from '@mui/icons-material/ExpandMoreRounded';
 import { toast } from 'react-toastify';
+import { alpha } from '@mui/material/styles';
 import PageShell from '../../components/PageShell/PageShell';
 import { useSettings } from '../../context/SettingsContext';
 import { useCustomers } from '../../context/CustomerContext';
@@ -73,37 +74,89 @@ import {
   resetBusinessData,
 } from '../../services/api/databaseAdminApi';
 import { formatCurrency } from '../../utils/formatters';
+import './UtilityPages.css';
 
 const emptyBottleValues = BOTTLE_TYPES.reduce((acc, type) => ({ ...acc, [type]: '' }), {});
+const RESET_CONFIRMATION_PHRASE = 'RESET DATABASE';
 
 function SettingsCard({
-  title, subtitle, icon, children, action,
+  id, title, subtitle, icon, children, action, className, mobile, expanded, onToggle,
 }) {
+  const contentId = `${id}-settings-content`;
   return (
-    <Card sx={{ height: '100%' }}>
+    <Card
+      className={`settings-card${mobile ? ' settings-card--accordion' : ''}${className ? ` ${className}` : ''}`}
+      sx={{ height: '100%' }}
+    >
       <CardHeader
+        component={mobile ? 'button' : 'div'}
+        {...(mobile ? {
+          type: 'button',
+          onClick: onToggle,
+          'aria-expanded': expanded,
+          'aria-controls': contentId,
+          'aria-label': `${expanded ? 'Collapse' : 'Expand'} ${title}`,
+        } : {})}
         avatar={(
-          <Box sx={{
-            display: 'grid',
-            width: 42,
-            height: 42,
-            placeItems: 'center',
-            color: 'primary.light',
-            bgcolor: 'rgba(29, 155, 240, 0.12)',
-            borderRadius: 2,
-          }}
+          <Box
+            className="settings-card__icon"
+            sx={(theme) => ({
+              display: 'grid',
+              width: 42,
+              height: 42,
+              placeItems: 'center',
+              color: theme.palette.mode === 'dark' ? 'primary.light' : 'primary.dark',
+              bgcolor: alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.16 : 0.1),
+              border: '1px solid',
+              borderColor: alpha(theme.palette.primary.main, 0.15),
+              borderRadius: 2,
+              boxShadow: `0 10px 24px ${alpha(theme.palette.primary.main, 0.1)}`,
+            })}
           >
             {icon}
           </Box>
         )}
         title={title}
         subheader={subtitle}
-        action={action}
+        action={mobile ? (
+          <ExpandMoreRoundedIcon
+            aria-hidden="true"
+            sx={{
+              transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
+              transition: 'transform 200ms ease',
+            }}
+          />
+        ) : action}
         titleTypographyProps={{ variant: 'h5' }}
         subheaderTypographyProps={{ variant: 'body2' }}
-        sx={{ pb: 1 }}
+        sx={{
+          pb: mobile ? 2 : 1,
+          width: '100%',
+          color: 'inherit',
+          textAlign: 'left',
+          bgcolor: 'transparent',
+          border: 0,
+          cursor: mobile ? 'pointer' : 'default',
+          '& .MuiCardHeader-action': {
+            alignSelf: 'center',
+            display: 'grid',
+            minWidth: mobile ? 44 : 'auto',
+            minHeight: mobile ? 44 : 'auto',
+            m: 0,
+            placeItems: 'center',
+          },
+        }}
       />
-      <CardContent sx={{ pt: 1 }}>{children}</CardContent>
+      <Collapse in={!mobile || expanded} timeout={220} unmountOnExit={mobile}>
+        <CardContent id={contentId} sx={{ pt: 1 }}>
+          {mobile && action && (
+            <Box sx={{ display: 'flex', mb: 2, justifyContent: 'flex-start' }}>
+              {action}
+            </Box>
+          )}
+          {children}
+        </CardContent>
+      </Collapse>
     </Card>
   );
 }
@@ -112,34 +165,40 @@ function SettingsToggle({
   label, description, checked, onChange, disabled, icon,
 }) {
   return (
-    <Box sx={{
-      display: 'flex',
-      minHeight: 72,
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: 1.5,
-      my: 0.75,
-      p: 1.25,
-      bgcolor: checked ? 'rgba(29, 155, 240, 0.08)' : 'action.hover',
-      border: '1px solid',
-      borderColor: checked ? 'rgba(29, 155, 240, 0.28)' : 'divider',
-      borderRadius: 2.5,
-      transition: 'background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease',
-      boxShadow: checked ? '0 8px 24px rgba(29, 155, 240, 0.08)' : 'none',
-    }}
+    <Box
+      className={`settings-toggle${checked ? ' is-checked' : ''}`}
+      sx={(theme) => ({
+        display: 'flex',
+        minHeight: 68,
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 1.5,
+        my: 0.65,
+        p: 1.15,
+        bgcolor: checked ? alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.12 : 0.07) : 'action.hover',
+        border: '1px solid',
+        borderColor: checked ? alpha(theme.palette.primary.main, 0.3) : 'divider',
+        borderRadius: 2.25,
+        transition: 'background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease',
+        boxShadow: checked ? `0 8px 24px ${alpha(theme.palette.primary.main, 0.09)}` : 'none',
+      })}
     >
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, minWidth: 0 }}>
-        <Box sx={{
-          display: 'grid',
-          width: 40,
-          height: 40,
-          flex: '0 0 40px',
-          placeItems: 'center',
-          color: checked ? 'primary.main' : 'text.secondary',
-          bgcolor: checked ? 'rgba(29, 155, 240, 0.14)' : 'action.selected',
-          borderRadius: 2,
-          '& svg': { fontSize: 21 },
-        }}
+        <Box
+          className="settings-toggle__icon"
+          sx={(theme) => ({
+            display: 'grid',
+            width: 40,
+            height: 40,
+            flex: '0 0 40px',
+            placeItems: 'center',
+            color: checked
+              ? (theme.palette.mode === 'dark' ? 'primary.light' : 'primary.dark')
+              : 'text.secondary',
+            bgcolor: checked ? alpha(theme.palette.primary.main, 0.14) : 'action.selected',
+            borderRadius: 1.75,
+            '& svg': { fontSize: 21 },
+          })}
         >
           {icon}
         </Box>
@@ -156,6 +215,7 @@ function SettingsToggle({
           {checked ? 'On' : 'Off'}
         </Typography>
         <Switch
+          className="settings-toggle__switch"
           checked={Boolean(checked)}
           onChange={onChange}
           disabled={disabled}
@@ -224,7 +284,9 @@ function DatabaseMetric({ icon, label, value, detail, tone }) {
 export default function Settings() {
   const { settings, updateSettings } = useSettings();
   const { customers, refresh: refreshCustomers } = useCustomers();
+  const mobile = useMediaQuery((theme) => theme.breakpoints.down('md'), { noSsr: true });
   const [tab, setTab] = useState(0);
+  const [openMobileCard, setOpenMobileCard] = useState(null);
   const [form, setForm] = useState({ ...settings });
   const [bottlePrices, setBottlePrices] = useState(emptyBottleValues);
   const [inventory, setInventory] = useState(emptyBottleValues);
@@ -238,9 +300,21 @@ export default function Settings() {
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
   const [resetPhrase, setResetPhrase] = useState('');
   const [resetOwnerPassword, setResetOwnerPassword] = useState('');
+  const [showResetPassword, setShowResetPassword] = useState(false);
   const [resetError, setResetError] = useState('');
   const [resettingDatabase, setResettingDatabase] = useState(false);
   const cloudReady = isSupabaseConfigured();
+  const resetPhraseMatchesPrefix = RESET_CONFIRMATION_PHRASE.startsWith(resetPhrase);
+  const resetPhraseReady = resetPhrase === RESET_CONFIRMATION_PHRASE;
+  const resetPhraseProgress = resetPhraseMatchesPrefix
+    ? Math.min(100, Math.round((resetPhrase.length / RESET_CONFIRMATION_PHRASE.length) * 100))
+    : 0;
+  const cardProps = (id) => ({
+    id,
+    mobile,
+    expanded: openMobileCard === id,
+    onToggle: () => setOpenMobileCard((current) => (current === id ? null : id)),
+  });
 
   const loadBottlePrices = useCallback(async () => {
     try {
@@ -293,19 +367,30 @@ export default function Settings() {
     setForm((current) => ({ ...current, [field]: value }));
   };
 
-  const updatePreference = (partial) => {
-    setForm((current) => ({ ...current, ...partial }));
-    updateSettings(partial);
-  };
-
   const handleSaveBusiness = (event) => {
     event.preventDefault();
     updateSettings({
       businessName: form.businessName.trim(),
       businessPhone: form.businessPhone.trim(),
+      businessEmail: String(form.businessEmail || '').trim().toLowerCase(),
       businessAddress: form.businessAddress.trim(),
+      serviceArea: String(form.serviceArea || '').trim(),
+      invoiceFooter: String(form.invoiceFooter || '').trim(),
     });
     toast.success('Business profile saved.');
+  };
+
+  const handleSaveCompanyFeatures = (event) => {
+    event.preventDefault();
+    updateSettings({
+      featureCustomerOrders: form.featureCustomerOrders !== false,
+      featureInvoices: form.featureInvoices !== false,
+      featureRiderTracking: form.featureRiderTracking !== false,
+      featureMessaging: form.featureMessaging !== false,
+      featureInventory: form.featureInventory !== false,
+      featureAnalytics: form.featureAnalytics !== false,
+    });
+    toast.success('Company features updated.');
   };
 
   const handleSaveWorkflow = (event) => {
@@ -317,6 +402,11 @@ export default function Settings() {
       adminOrderNotifications: Boolean(form.adminOrderNotifications),
       requireDeliveryConfirmation: Boolean(form.requireDeliveryConfirmation),
       allowCustomerCancellation: Boolean(form.allowCustomerCancellation),
+      riderLocationRefreshSeconds: Math.max(5, Number(form.riderLocationRefreshSeconds) || 15),
+      routeOptimization: Boolean(form.routeOptimization),
+      riderStatusNotifications: Boolean(form.riderStatusNotifications),
+      requireBottleCollectionCount: Boolean(form.requireBottleCollectionCount),
+      autoAssignNearestRider: Boolean(form.autoAssignNearestRider),
       invoiceDueDays: Math.max(0, Number(form.invoiceDueDays) || 0),
       lowStockThreshold: Math.max(0, Number(form.lowStockThreshold) || 0),
       orderCutoffTime: form.orderCutoffTime || '18:00',
@@ -356,6 +446,7 @@ export default function Settings() {
     setResetDialogOpen(false);
     setResetPhrase('');
     setResetOwnerPassword('');
+    setShowResetPassword(false);
     setResetError('');
   };
 
@@ -364,8 +455,8 @@ export default function Settings() {
       setResetError('Only the signed-in Owner can reset the database.');
       return;
     }
-    if (resetPhrase !== 'RESET DATABASE') {
-      setResetError('Type RESET DATABASE exactly to continue.');
+    if (resetPhrase !== RESET_CONFIRMATION_PHRASE) {
+      setResetError(`Type ${RESET_CONFIRMATION_PHRASE} exactly to continue.`);
       return;
     }
     if (!resetOwnerPassword) {
@@ -383,6 +474,7 @@ export default function Settings() {
       setResetDialogOpen(false);
       setResetPhrase('');
       setResetOwnerPassword('');
+      setShowResetPassword(false);
       toast.success(`Database cleared. ${Number(result.deletedRows) || 0} records removed; user accounts were preserved.`);
     } catch (error) {
       setResetError(error.message || 'The database could not be reset.');
@@ -392,17 +484,21 @@ export default function Settings() {
   };
 
   return (
-    <PageShell title="Settings" subtitle="Control the admin workspace, ordering rules, prices, and account security">
-      <Card sx={{ mb: 3, overflow: 'visible' }}>
+    <PageShell title="App settings" subtitle="Control company details, business features, ordering rules, prices, and data">
+      <Card className="settings-tabs-card" sx={{ mb: 3, overflow: 'visible' }}>
         <Tabs
+          className="settings-tabs"
           value={tab}
-          onChange={(event, value) => setTab(value)}
+          onChange={(event, value) => {
+            setTab(value);
+            setOpenMobileCard(null);
+          }}
           variant="scrollable"
           scrollButtons="auto"
           aria-label="Settings sections"
           sx={{ px: { xs: 0.5, sm: 1.5 }, minHeight: 58 }}
         >
-          <Tab icon={<PaletteOutlinedIcon />} iconPosition="start" label="Workspace" />
+          <Tab icon={<BusinessOutlinedIcon />} iconPosition="start" label="Company" />
           <Tab icon={<AccountTreeOutlinedIcon />} iconPosition="start" label="Operations" />
           <Tab icon={<WaterDropOutlinedIcon />} iconPosition="start" label="Catalog" />
           <Tab icon={<SecurityOutlinedIcon />} iconPosition="start" label="Data & security" />
@@ -415,85 +511,9 @@ export default function Settings() {
         <Grid container spacing={3}>
           <Grid item xs={12} lg={6}>
             <SettingsCard
-              title="Appearance"
-              subtitle="Choose a comfortable, consistent workspace"
-              icon={<PaletteOutlinedIcon />}
-            >
-              <Typography variant="overline" color="text.secondary">Color theme</Typography>
-              <ToggleButtonGroup
-                exclusive
-                fullWidth
-                value={form.themeMode || (form.darkMode ? 'dark' : 'light')}
-                onChange={(event, value) => value && updatePreference({
-                  themeMode: value,
-                  darkMode: value === 'dark',
-                })}
-                sx={{ mt: 0.5, mb: 2 }}
-              >
-                <ToggleButton value="light"><LightModeRoundedIcon sx={{ mr: 1 }} />Light</ToggleButton>
-                <ToggleButton value="dark"><DarkModeRoundedIcon sx={{ mr: 1 }} />Dark</ToggleButton>
-                <ToggleButton value="system"><SettingsBrightnessRoundedIcon sx={{ mr: 1 }} />System</ToggleButton>
-              </ToggleButtonGroup>
-
-              <Divider />
-              <SettingsToggle
-                label="Compact workspace"
-                description="Fit more rows and controls on desktop screens."
-                checked={form.compactMode}
-                onChange={(event) => updatePreference({ compactMode: event.target.checked })}
-                icon={<ViewCompactRoundedIcon />}
-              />
-              <SettingsToggle
-                label="Reduce animations"
-                description="Use calmer page and status transitions."
-                checked={form.reduceMotion}
-                onChange={(event) => updatePreference({ reduceMotion: event.target.checked })}
-                icon={<MotionPhotosOffRoundedIcon />}
-              />
-              <SettingsToggle
-                label="Show customer map"
-                description="Display geographic coverage on the main dashboard."
-                checked={form.showDashboardMap}
-                onChange={(event) => updatePreference({ showDashboardMap: event.target.checked })}
-                icon={<MapRoundedIcon />}
-              />
-
-              <Grid container spacing={2} sx={{ mt: 0.5 }}>
-                <Grid item xs={12} sm={6}>
-                  <FormControl fullWidth>
-                    <InputLabel id="sidebar-position-label">Sidebar position</InputLabel>
-                    <Select
-                      labelId="sidebar-position-label"
-                      label="Sidebar position"
-                      value={form.sidebarPosition || 'left'}
-                      onChange={(event) => updatePreference({ sidebarPosition: event.target.value })}
-                    >
-                      <MenuItem value="left">Left</MenuItem>
-                      <MenuItem value="right">Right</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <FormControl fullWidth>
-                    <InputLabel id="page-size-label">Rows per page</InputLabel>
-                    <Select
-                      labelId="page-size-label"
-                      label="Rows per page"
-                      value={Number(form.defaultPageSize) || 10}
-                      onChange={(event) => updatePreference({ defaultPageSize: Number(event.target.value) })}
-                    >
-                      {[10, 20, 50].map((value) => <MenuItem key={value} value={value}>{value} rows</MenuItem>)}
-                    </Select>
-                  </FormControl>
-                </Grid>
-              </Grid>
-            </SettingsCard>
-          </Grid>
-
-          <Grid item xs={12} lg={6}>
-            <SettingsCard
+              {...cardProps('business-profile')}
               title="Business profile"
-              subtitle="Used on invoices and customer-facing records"
+              subtitle="Used on invoices, customer records, and delivery information"
               icon={<BusinessOutlinedIcon />}
             >
               <Box component="form" onSubmit={handleSaveBusiness}>
@@ -513,6 +533,15 @@ export default function Settings() {
                     fullWidth
                   />
                   <TextField
+                    label="Support email"
+                    type="email"
+                    value={form.businessEmail || ''}
+                    onChange={updateForm('businessEmail')}
+                    placeholder="support@himaliya.com"
+                    autoComplete="email"
+                    fullWidth
+                  />
+                  <TextField
                     label="Business address"
                     value={form.businessAddress || ''}
                     onChange={updateForm('businessAddress')}
@@ -521,10 +550,84 @@ export default function Settings() {
                     helperText="This address appears on invoices and public invoice lookup."
                     fullWidth
                   />
+                  <TextField
+                    label="Delivery service area"
+                    value={form.serviceArea || ''}
+                    onChange={updateForm('serviceArea')}
+                    placeholder="Sialkot and surrounding areas"
+                    helperText="Shown to staff when planning routes and customer coverage."
+                    fullWidth
+                  />
+                  <TextField
+                    label="Invoice footer"
+                    value={form.invoiceFooter || ''}
+                    onChange={updateForm('invoiceFooter')}
+                    placeholder="Thank you for choosing Himaliya Spring Water."
+                    multiline
+                    minRows={2}
+                    fullWidth
+                  />
                   <Button type="submit" variant="contained" startIcon={<SaveRoundedIcon />} sx={{ alignSelf: 'flex-start' }}>
                     Save business profile
                   </Button>
                 </Stack>
+              </Box>
+            </SettingsCard>
+          </Grid>
+
+          <Grid item xs={12} lg={6}>
+            <SettingsCard
+              {...cardProps('company-features')}
+              title="Company features"
+              subtitle="Turn major application modules on or off for your team"
+              icon={<AccountTreeOutlinedIcon />}
+            >
+              <Box component="form" onSubmit={handleSaveCompanyFeatures}>
+                <SettingsToggle
+                  label="Customer ordering"
+                  description="Show the customer order queue and dashboard delivery schedule."
+                  checked={form.featureCustomerOrders !== false}
+                  onChange={(event) => setForm((current) => ({ ...current, featureCustomerOrders: event.target.checked }))}
+                  icon={<AccountTreeOutlinedIcon />}
+                />
+                <SettingsToggle
+                  label="Invoices"
+                  description="Enable invoice center navigation and invoice workflows."
+                  checked={form.featureInvoices !== false}
+                  onChange={(event) => setForm((current) => ({ ...current, featureInvoices: event.target.checked }))}
+                  icon={<ReceiptLongRoundedIcon />}
+                />
+                <SettingsToggle
+                  label="Rider tracking"
+                  description="Enable delivery tracking and route-management tools."
+                  checked={form.featureRiderTracking !== false}
+                  onChange={(event) => setForm((current) => ({ ...current, featureRiderTracking: event.target.checked }))}
+                  icon={<MapRoundedIcon />}
+                />
+                <SettingsToggle
+                  label="Customer messaging"
+                  description="Show the shared inbox and customer support conversations."
+                  checked={form.featureMessaging !== false}
+                  onChange={(event) => setForm((current) => ({ ...current, featureMessaging: event.target.checked }))}
+                  icon={<NotificationsActiveRoundedIcon />}
+                />
+                <SettingsToggle
+                  label="Inventory tracking"
+                  description="Track reusable stock and expose inventory controls."
+                  checked={form.featureInventory !== false}
+                  onChange={(event) => setForm((current) => ({ ...current, featureInventory: event.target.checked }))}
+                  icon={<Inventory2OutlinedIcon />}
+                />
+                <SettingsToggle
+                  label="Analytics"
+                  description="Show revenue reports and analytical navigation."
+                  checked={form.featureAnalytics !== false}
+                  onChange={(event) => setForm((current) => ({ ...current, featureAnalytics: event.target.checked }))}
+                  icon={<InsightsRoundedIcon />}
+                />
+                <Button type="submit" variant="contained" startIcon={<SaveRoundedIcon />} sx={{ mt: 2 }}>
+                  Save company features
+                </Button>
               </Box>
             </SettingsCard>
           </Grid>
@@ -535,6 +638,7 @@ export default function Settings() {
         <Grid container spacing={3}>
           <Grid item xs={12} lg={7}>
             <SettingsCard
+              {...cardProps('order-workflow')}
               title="Order workflow"
               subtitle="Rules applied to customer ordering and admin fulfilment"
               icon={<AccountTreeOutlinedIcon />}
@@ -587,6 +691,68 @@ export default function Settings() {
                       Create a Rider account in Users before enabling automatic transfer.
                     </Alert>
                   )}
+                </Box>
+                <Box sx={{ my: 1.25, p: 1.5, bgcolor: 'action.hover', border: '1px solid', borderColor: 'divider', borderRadius: 2.5 }}>
+                  <Typography variant="body2" fontWeight={800}>Rider operations</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Tune location updates, route assistance, and delivery handover controls.
+                  </Typography>
+                  <Grid container spacing={2} sx={{ mt: 0.25, mb: 1 }}>
+                    <Grid item xs={12} sm={6}>
+                      <FormControl fullWidth>
+                        <InputLabel id="rider-refresh-label">Live location interval</InputLabel>
+                        <Select
+                          labelId="rider-refresh-label"
+                          label="Live location interval"
+                          value={Number(form.riderLocationRefreshSeconds) || 15}
+                          onChange={updateForm('riderLocationRefreshSeconds')}
+                        >
+                          <MenuItem value={5}>Every 5 seconds</MenuItem>
+                          <MenuItem value={15}>Every 15 seconds</MenuItem>
+                          <MenuItem value={30}>Every 30 seconds</MenuItem>
+                          <MenuItem value={60}>Every minute</MenuItem>
+                        </Select>
+                      </FormControl>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <FormControl fullWidth>
+                        <InputLabel id="rider-route-mode-label">Route guidance</InputLabel>
+                        <Select
+                          labelId="rider-route-mode-label"
+                          label="Route guidance"
+                          value={form.routeOptimization === false ? 'manual' : 'optimized'}
+                          onChange={(event) => setForm((current) => ({
+                            ...current,
+                            routeOptimization: event.target.value === 'optimized',
+                          }))}
+                        >
+                          <MenuItem value="optimized">Optimize delivery order</MenuItem>
+                          <MenuItem value="manual">Keep dispatcher order</MenuItem>
+                        </Select>
+                      </FormControl>
+                    </Grid>
+                  </Grid>
+                  <SettingsToggle
+                    label="Delivery status notifications"
+                    description="Notify admins when a rider starts, arrives, or completes a delivery."
+                    checked={form.riderStatusNotifications !== false}
+                    onChange={(event) => setForm((current) => ({ ...current, riderStatusNotifications: event.target.checked }))}
+                    icon={<NotificationsActiveRoundedIcon />}
+                  />
+                  <SettingsToggle
+                    label="Require returned-bottle count"
+                    description="Keep reusable bottle collection visible during rider handover."
+                    checked={form.requireBottleCollectionCount !== false}
+                    onChange={(event) => setForm((current) => ({ ...current, requireBottleCollectionCount: event.target.checked }))}
+                    icon={<Inventory2OutlinedIcon />}
+                  />
+                  <SettingsToggle
+                    label="Assign nearest available rider"
+                    description="Use the nearest active rider when automatic assignment is enabled."
+                    checked={Boolean(form.autoAssignNearestRider)}
+                    onChange={(event) => setForm((current) => ({ ...current, autoAssignNearestRider: event.target.checked }))}
+                    icon={<MapRoundedIcon />}
+                  />
                 </Box>
                 <SettingsToggle
                   label="Notify admins about new orders"
@@ -649,8 +815,10 @@ export default function Settings() {
             </SettingsCard>
           </Grid>
 
+          {form.featureInventory !== false && (
           <Grid item xs={12} lg={5}>
             <SettingsCard
+              {...cardProps('live-inventory')}
               title="Live inventory"
               subtitle="Sales reduce these quantities automatically"
               icon={<Inventory2OutlinedIcon />}
@@ -685,11 +853,13 @@ export default function Settings() {
               </Box>
             </SettingsCard>
           </Grid>
+          )}
         </Grid>
       )}
 
       {tab === 2 && (
         <SettingsCard
+          {...cardProps('customer-prices')}
           title="Customer bottle prices"
           subtitle="Fixed unit prices shown before a customer confirms an order"
           icon={<WaterDropOutlinedIcon />}
@@ -733,6 +903,7 @@ export default function Settings() {
         <Grid container spacing={3}>
           <Grid item xs={12} lg={5}>
             <SettingsCard
+              {...cardProps('cloud-data')}
               title="Cloud data"
               subtitle="Storage status and portable exports"
               icon={<CloudDoneOutlinedIcon />}
@@ -769,6 +940,7 @@ export default function Settings() {
           </Grid>
           <Grid item xs={12} lg={7}>
             <SettingsCard
+              {...cardProps('account-security')}
               title="Account security"
               subtitle="Update the password for the signed-in administrator"
               icon={<SecurityOutlinedIcon />}
@@ -784,6 +956,7 @@ export default function Settings() {
       {tab === 4 && (
         <Stack spacing={3}>
           <SettingsCard
+            {...cardProps('database-information')}
             title="Database information"
             subtitle="Live business totals and storage information from Supabase"
             icon={<InsightsRoundedIcon />}
@@ -881,6 +1054,7 @@ export default function Settings() {
           </SettingsCard>
 
           <SettingsCard
+            {...cardProps('hosted-usage')}
             title="Egress and hosted usage"
             subtitle="Supabase measures outbound traffic at the project and organization level"
             icon={<CloudDoneOutlinedIcon />}
@@ -905,9 +1079,11 @@ export default function Settings() {
 
       {tab === 5 && (
         <SettingsCard
+          {...cardProps('reset-database')}
           title="Reset business database"
           subtitle="Remove all operational data while preserving user accounts"
           icon={<DeleteSweepRoundedIcon />}
+          className="settings-danger-card"
         >
           <Alert severity="error" sx={{ mb: 2 }}>
             This permanently deletes customers, sales, orders, invoices, messages, notifications, inventory,
@@ -937,40 +1113,112 @@ export default function Settings() {
         </SettingsCard>
       )}
 
-      <Dialog open={resetDialogOpen} onClose={closeResetDialog} fullWidth maxWidth="sm">
-        <DialogTitle>Reset the business database?</DialogTitle>
+      <Dialog
+        open={resetDialogOpen}
+        onClose={closeResetDialog}
+        fullWidth
+        maxWidth="sm"
+        aria-describedby="reset-database-description"
+      >
+        <DialogTitle>
+          <Stack direction="row" spacing={1.5} alignItems="center">
+            <span className="settings-reset-dialog__icon" aria-hidden="true">
+              <WarningAmberRoundedIcon />
+            </span>
+            <Box component="span" sx={{ display: 'grid' }}>
+              <Typography component="span" variant="h5">Reset the business database?</Typography>
+              <Typography component="span" variant="caption" color="text.secondary">
+                Owner verification is required
+              </Typography>
+            </Box>
+          </Stack>
+        </DialogTitle>
         <DialogContent>
-          <Stack spacing={2} sx={{ pt: 1 }}>
-            <Alert severity="error">
+          <Stack spacing={2} sx={{ pt: 0.5 }}>
+            <Alert severity="error" id="reset-database-description">
               This cannot be undone from the app. Export any records you need before continuing.
             </Alert>
+            <Box className="settings-reset-token">
+              <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1}>
+                <Box>
+                  <Typography variant="caption" color="text.secondary" fontWeight={800}>
+                    Confirmation phrase
+                  </Typography>
+                  <Box component="code">{RESET_CONFIRMATION_PHRASE}</Box>
+                </Box>
+                <Typography
+                  variant="caption"
+                  color={resetPhraseReady ? 'success.main' : resetPhraseMatchesPrefix ? 'text.secondary' : 'error.main'}
+                  fontWeight={850}
+                >
+                  {resetPhraseReady ? 'Confirmed' : `${resetPhraseProgress}%`}
+                </Typography>
+              </Stack>
+              <LinearProgress
+                variant="determinate"
+                value={resetPhraseProgress}
+                color={resetPhraseReady ? 'success' : resetPhraseMatchesPrefix ? 'primary' : 'error'}
+                aria-label="Confirmation phrase progress"
+              />
+            </Box>
             <TextField
-              label="Type RESET DATABASE"
+              label="Confirmation phrase"
+              placeholder={RESET_CONFIRMATION_PHRASE}
               value={resetPhrase}
               onChange={(event) => { setResetPhrase(event.target.value); setResetError(''); }}
               autoComplete="off"
               disabled={resettingDatabase}
               autoFocus
+              error={Boolean(resetPhrase) && !resetPhraseMatchesPrefix}
+              helperText={
+                resetPhrase && !resetPhraseMatchesPrefix
+                  ? `Match ${RESET_CONFIRMATION_PHRASE} exactly.`
+                  : 'Uppercase letters and the space must match.'
+              }
+              InputProps={{
+                endAdornment: resetPhraseReady ? (
+                  <InputAdornment position="end">
+                    <CheckRoundedIcon color="success" aria-label="Confirmation phrase matched" />
+                  </InputAdornment>
+                ) : null,
+              }}
             />
             <TextField
               label="Owner password"
-              type="password"
+              type={showResetPassword ? 'text' : 'password'}
               value={resetOwnerPassword}
               onChange={(event) => { setResetOwnerPassword(event.target.value); setResetError(''); }}
               autoComplete="current-password"
               disabled={resettingDatabase}
-              error={Boolean(resetError)}
-              helperText={resetError || 'Your password is checked again before any data is removed.'}
+              helperText="Your password is checked again before any data is removed."
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      size="small"
+                      edge="end"
+                      aria-label={showResetPassword ? 'Hide owner password' : 'Show owner password'}
+                      onClick={() => setShowResetPassword((visible) => !visible)}
+                      disabled={resettingDatabase}
+                    >
+                      {showResetPassword ? <VisibilityOffRoundedIcon /> : <VisibilityRoundedIcon />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
             />
+            {resetError && <Alert severity="error">{resetError}</Alert>}
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={closeResetDialog} disabled={resettingDatabase}>Cancel</Button>
+          <Button variant="outlined" color="inherit" onClick={closeResetDialog} disabled={resettingDatabase}>
+            Keep my data
+          </Button>
           <Button
             color="error"
             variant="contained"
             onClick={handleResetDatabase}
-            disabled={resetPhrase !== 'RESET DATABASE' || !resetOwnerPassword || resettingDatabase}
+            disabled={!resetPhraseReady || !resetOwnerPassword || resettingDatabase}
             startIcon={resettingDatabase ? <CircularProgress size={17} color="inherit" /> : <DeleteSweepRoundedIcon />}
           >
             {resettingDatabase ? 'Clearing data…' : 'Reset database'}

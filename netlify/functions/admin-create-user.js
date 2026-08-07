@@ -111,15 +111,62 @@ exports.handler = async (event) => {
     const callerProfiles = await supabaseRequest(
       supabaseUrl,
       serviceKey,
-      `/rest/v1/admin_profiles?auth_user_id=eq.${encodeURIComponent(caller.id)}&active=eq.true&role=eq.Owner&must_change_password=eq.false&select=owner_id&limit=1`,
+      `/rest/v1/admin_profiles?auth_user_id=eq.${encodeURIComponent(caller.id)}&active=eq.true&must_change_password=eq.false&select=owner_id,role&limit=1`,
     );
-    const ownerId = callerProfiles && callerProfiles[0] && callerProfiles[0].owner_id;
+    const callerProfile = callerProfiles && callerProfiles[0];
+    const ownerId = callerProfile && callerProfile.owner_id;
+    const callerRole = callerProfile && callerProfile.role;
     if (!ownerId) {
-      return json(403, { message: 'Only an active owner can manage team accounts.' });
+      return json(403, { message: 'Your administrator account is not authorized for this action.' });
     }
 
     if (event.httpMethod === 'DELETE') {
       const payload = JSON.parse(event.body || '{}');
+      const customerId = String(payload.customerId || '').trim();
+      if (customerId) {
+        if (callerRole === 'Rider') {
+          return json(403, { message: 'Rider accounts cannot remove customer accounts.' });
+        }
+        if (!/^[a-z0-9][a-z0-9._:-]{0,127}$/i.test(customerId)) {
+          return json(400, { message: 'Select a valid customer account.' });
+        }
+        const customerMatches = await supabaseRequest(
+          supabaseUrl,
+          serviceKey,
+          `/rest/v1/customers?id=eq.${encodeURIComponent(customerId)}&owner_id=eq.${encodeURIComponent(ownerId)}&select=id,auth_user_id,name,email&limit=1`,
+        );
+        const customer = customerMatches && customerMatches[0];
+        if (!customer) return json(404, { message: 'Customer account not found.' });
+
+        if (customer.auth_user_id) {
+          await supabaseRequest(
+            supabaseUrl,
+            serviceKey,
+            `/auth/v1/admin/users/${encodeURIComponent(customer.auth_user_id)}`,
+            { method: 'DELETE' },
+          );
+        }
+        const deletedProfiles = await supabaseRequest(
+          supabaseUrl,
+          serviceKey,
+          `/rest/v1/customers?id=eq.${encodeURIComponent(customer.id)}&owner_id=eq.${encodeURIComponent(ownerId)}&select=id`,
+          { method: 'DELETE', headers: { Prefer: 'return=representation' } },
+        );
+        if (!deletedProfiles || deletedProfiles.length !== 1) {
+          throw new Error('Customer profile could not be removed after deleting its login identity.');
+        }
+        return json(200, {
+          deleted: true,
+          customerId: customer.id,
+          name: customer.name || 'Customer',
+          email: customer.email || '',
+          authIdentityDeleted: Boolean(customer.auth_user_id),
+        });
+      }
+
+      if (callerRole !== 'Owner') {
+        return json(403, { message: 'Only an active owner can manage team accounts.' });
+      }
       const profileId = String(payload.profileId || '').trim();
       if (!/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(profileId)) {
         return json(400, { message: 'Select a valid rider account.' });
@@ -140,6 +187,10 @@ exports.handler = async (event) => {
         { method: 'DELETE' },
       );
       return json(200, { deleted: true, profileId: target.id, name: target.name || 'Rider' });
+    }
+
+    if (callerRole !== 'Owner') {
+      return json(403, { message: 'Only an active owner can manage team accounts.' });
     }
 
     const payload = JSON.parse(event.body || '{}');

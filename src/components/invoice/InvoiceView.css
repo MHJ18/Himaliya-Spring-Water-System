@@ -95,7 +95,7 @@
 
 .invoice-view__summary {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
   margin-top: 22px;
 }
@@ -124,13 +124,14 @@
 
 .invoice-view__table-wrap {
   margin-top: 22px;
-  overflow: hidden;
+  overflow-x: auto;
   border: 1px solid #e2e8f0;
   border-radius: 14px;
 }
 
 .invoice-view__table {
   width: 100%;
+  min-width: 860px;
   border-collapse: collapse;
 }
 
@@ -162,9 +163,13 @@
 .invoice-view__table td:nth-child(3),
 .invoice-view__table td:nth-child(4),
 .invoice-view__table td:nth-child(5),
+.invoice-view__table td:nth-child(6),
+.invoice-view__table td:nth-child(7),
 .invoice-view__table th:nth-child(3),
 .invoice-view__table th:nth-child(4),
-.invoice-view__table th:nth-child(5) {
+.invoice-view__table th:nth-child(5),
+.invoice-view__table th:nth-child(6),
+.invoice-view__table th:nth-child(7) {
   text-align: right;
 }
 
@@ -229,6 +234,11 @@
 .invoice-view__status--unpaid {
   color: #78350f;
   background: #fde68a;
+}
+
+.invoice-view__status--void {
+  color: #7f1d1d;
+  background: #fecaca;
 }
 
 .invoice-view__status--validated {

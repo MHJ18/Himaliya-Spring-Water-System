@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { withRouter } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import {
   BellRing,
   CreditCard,
@@ -24,6 +24,8 @@ import {
 import LoadingState from '../../components/LoadingState/LoadingState';
 import './UtilityPages.css';
 
+const ALERT_TYPES = new Set(['invoice_overdue', 'stock']);
+
 function timeLabel(value) {
   if (!value) return '';
   const diff = Date.now() - new Date(value).getTime();
@@ -45,9 +47,10 @@ function groupLabel(value) {
 }
 
 function notificationIcon(type) {
+  if (type === 'invoice_overdue') return TriangleAlert;
   if (type === 'payment') return CreditCard;
   if (type === 'stock') return TriangleAlert;
-  if (type === 'tracking') return Route;
+  if (type === 'tracking' || type === 'delivery') return Route;
   if (type === 'message') return MessageCircle;
   if (type === 'order') return Package;
   if (type === 'account') return UserPlus;
@@ -55,9 +58,10 @@ function notificationIcon(type) {
 }
 
 function notificationTypeLabel(type) {
+  if (type === 'invoice_overdue') return 'Overdue invoice';
   if (type === 'payment') return 'Payment';
   if (type === 'stock') return 'Stock';
-  if (type === 'tracking') return 'Delivery';
+  if (type === 'tracking' || type === 'delivery') return 'Delivery';
   if (type === 'message') return 'Message';
   if (type === 'order') return 'Order';
   if (type === 'account') return 'Account';
@@ -65,6 +69,10 @@ function notificationTypeLabel(type) {
 }
 
 function notificationDestination(item) {
+  if (item.type === 'invoice_overdue') {
+    const match = String(item.title || '').match(/Invoice\s+(.+?)\s+is overdue/i);
+    return { pathname: match ? `/app/invoice?invoice=${encodeURIComponent(match[1])}` : '/app/invoice' };
+  }
   if (item.type === 'order') return { pathname: '/app/customer-orders', state: { focusOrderId: item.orderId } };
   if (item.type === 'tracking' || item.type === 'delivery') return { pathname: '/app/rider-tracking', state: { focusOrderId: item.orderId } };
   if (item.type === 'message') return { pathname: '/messages' };
@@ -90,6 +98,8 @@ function NotificationsCenter({ history }) {
   }, [initialItems]);
 
   const unread = items.filter((item) => !item.read).length;
+  const alertItems = items.filter((item) => ALERT_TYPES.has(item.type));
+  const updateItems = items.filter((item) => !ALERT_TYPES.has(item.type));
   const markRead = async (item) => {
     if (item.read || marking) return true;
     setMarking(item.id);
@@ -144,14 +154,21 @@ function NotificationsCenter({ history }) {
 
   return (
     <PageShell title="Notifications" subtitle="Customer portal orders, delivery, payment, and stock alerts">
-      <motion.section className="water-page-card" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
+      <motion.section
+        className="water-page-card notification-center-card"
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
         <div className="water-page-card__header">
           <div>
             <span>Notification center</span>
             <h2>
-              Updates
+              Inbox
               {unread > 0 && (
-                <span className="notification-count-badge">{unread} unread</span>
+                <span className="notification-count-badge">
+                  <BellRing size={13} aria-hidden="true" />
+                  {unread} unread
+                </span>
               )}
             </h2>
           </div>
@@ -180,52 +197,100 @@ function NotificationsCenter({ history }) {
         </div>
         <div className="notification-list">
           {loading && <LoadingState label="Loading notifications..." variant="table" compact />}
-          {!loading && !items.length && <p style={{ margin: 0, padding: '1.5rem' }}>No notifications yet. New customer orders will appear here.</p>}
-          {['Today', 'Yesterday', 'Earlier'].map((group) => {
-            const groupedItems = items.filter((item) => groupLabel(item.createdAt) === group);
-            if (!groupedItems.length) return null;
-            return (
-              <section className="notification-group" key={group} aria-labelledby={`notifications-${group.toLowerCase()}`}>
-                <h3 id={`notifications-${group.toLowerCase()}`} className="notification-group__title">{group}</h3>
-                <div className="notification-group__card">
-                  {groupedItems.map((item) => {
-                    const Icon = notificationIcon(item.type);
-                    return (
-                      <article
-                        key={item.id}
-                        className={`notification-item notification-item--${item.type} ${item.read ? 'is-read' : ''}`}
-                        role="button"
-                        tabIndex={0}
-                        aria-label={`${item.read ? 'Read' : 'Unread'} notification: ${item.title}`}
-                        onClick={() => openNotification(item)}
-                        onKeyDown={(event) => {
-                          if (event.key === 'Enter' || event.key === ' ') {
-                            event.preventDefault();
-                            openNotification(item);
-                          }
-                        }}
-                      >
-                        <span className={`notification-icon notification-icon--${item.type}`}>
-                          <Icon size={18} strokeWidth={2.2} aria-hidden="true" />
-                        </span>
-                        <div className="notification-item__copy">
-                          <div className="notification-item__title-row">
-                            <h3>{item.title}</h3>
-                            <span className={`notification-type-badge notification-type-badge--${item.type}`}>
-                              {notificationTypeLabel(item.type)}
-                            </span>
-                          </div>
-                          <p>{item.detail}</p>
-                          <time>{timeLabel(item.createdAt)}</time>
-                        </div>
-                        {!item.read && <span className="notification-unread" aria-label="Unread" />}
-                      </article>
-                    );
-                  })}
-                </div>
-              </section>
-            );
-          })}
+          {!loading && !items.length && (
+            <p className="notification-empty">
+              No notifications yet. New customer orders will appear here.
+            </p>
+          )}
+          {!loading && items.length > 0 && (
+            <div className="notification-windows">
+              {[
+                {
+                  key: 'updates',
+                  title: 'Notifications',
+                  description: 'Orders, deliveries, payments, messages, and accounts',
+                  entries: updateItems,
+                  icon: BellRing,
+                },
+                {
+                  key: 'alerts',
+                  title: 'Alerts',
+                  description: 'Items that may need attention',
+                  entries: alertItems,
+                  icon: TriangleAlert,
+                },
+              ].map((window) => {
+                const WindowIcon = window.icon;
+                const windowUnread = window.entries.filter((item) => !item.read).length;
+                return (
+                  <section className={`notification-window notification-window--${window.key}`} key={window.key} aria-labelledby={`notification-window-${window.key}`}>
+                    <header className="notification-window__header">
+                      <span className="notification-window__icon"><WindowIcon size={18} aria-hidden="true" /></span>
+                      <div>
+                        <h3 id={`notification-window-${window.key}`}>{window.title}</h3>
+                        <p>{window.description}</p>
+                      </div>
+                      <span className="notification-window__count">
+                        {windowUnread > 0 ? `${windowUnread} new` : window.entries.length}
+                      </span>
+                    </header>
+                    <div className="notification-window__body">
+                      {!window.entries.length && (
+                        <p className="notification-window__empty">
+                          {window.key === 'alerts' ? 'No active alerts.' : 'No notifications in this section.'}
+                        </p>
+                      )}
+                      {['Today', 'Yesterday', 'Earlier'].map((group) => {
+                        const groupedItems = window.entries.filter((item) => groupLabel(item.createdAt) === group);
+                        if (!groupedItems.length) return null;
+                        return (
+                          <section className="notification-group" key={group} aria-labelledby={`${window.key}-${group.toLowerCase()}`}>
+                            <h4 id={`${window.key}-${group.toLowerCase()}`} className="notification-group__title">{group}</h4>
+                            <div className="notification-group__card">
+                              {groupedItems.map((item) => {
+                                const Icon = notificationIcon(item.type);
+                                return (
+                                  <article
+                                    key={item.id}
+                                    className={`notification-item notification-item--${item.type} ${item.read ? 'is-read' : ''}`}
+                                    role="button"
+                                    tabIndex={0}
+                                    aria-label={`${item.read ? 'Read' : 'Unread'} notification: ${item.title}`}
+                                    onClick={() => openNotification(item)}
+                                    onKeyDown={(event) => {
+                                      if (event.key === 'Enter' || event.key === ' ') {
+                                        event.preventDefault();
+                                        openNotification(item);
+                                      }
+                                    }}
+                                  >
+                                    <span className={`notification-icon notification-icon--${item.type}`}>
+                                      <Icon size={18} strokeWidth={2.2} aria-hidden="true" />
+                                    </span>
+                                    <div className="notification-item__copy">
+                                      <div className="notification-item__title-row">
+                                        <h3>{item.title}</h3>
+                                        <span className={`notification-type-badge notification-type-badge--${item.type}`}>
+                                          {notificationTypeLabel(item.type)}
+                                        </span>
+                                      </div>
+                                      <p>{item.detail}</p>
+                                      <time>{timeLabel(item.createdAt)}</time>
+                                    </div>
+                                    {!item.read && <span className="notification-unread" aria-label="Unread" />}
+                                  </article>
+                                );
+                              })}
+                            </div>
+                          </section>
+                        );
+                      })}
+                    </div>
+                  </section>
+                );
+              })}
+            </div>
+          )}
         </div>
       </motion.section>
     </PageShell>

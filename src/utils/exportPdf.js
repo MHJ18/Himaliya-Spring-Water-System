@@ -2,6 +2,7 @@ import { jsPDF } from 'jspdf';
 import * as autoTableModule from 'jspdf-autotable';
 import { DEFAULT_SETTINGS } from '../data/constants';
 import { formatCurrency, formatDate } from './formatters';
+import { normalizeInvoiceHistory, resolveInvoiceDocument } from './invoiceTotals';
 
 const autoTable = autoTableModule.default || autoTableModule.autoTable || autoTableModule;
 
@@ -30,8 +31,11 @@ function drawCompanyLogo(doc, x, y, size) {
 }
 
 function buildLocalInvoice(customer, historyItems = [], company = DEFAULT_SETTINGS) {
-  const totalAmount = historyItems.reduce((sum, item) => sum + Number(item.totalAmount || 0), 0);
-  const totalQty = historyItems.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+  const normalizedHistory = normalizeInvoiceHistory(historyItems);
+  const grossAmount = normalizedHistory.reduce((sum, item) => sum + item.grossAmount, 0);
+  const amountPaid = normalizedHistory.reduce((sum, item) => sum + item.amountPaid, 0);
+  const totalAmount = normalizedHistory.reduce((sum, item) => sum + item.balanceDue, 0);
+  const totalQty = normalizedHistory.reduce((sum, item) => sum + item.quantity, 0);
   const invoiceNumber = `HSW-${String(customer.id || customer.phone || customer.name || Date.now()).slice(-6).toUpperCase()}`;
 
   return {
@@ -54,15 +58,25 @@ function buildLocalInvoice(customer, historyItems = [], company = DEFAULT_SETTIN
         email: company.ownerEmail || 'admin@himaliya.com',
         role: company.ownerRole || 'Owner',
       },
-      history: historyItems.map((item) => ({
+      history: normalizedHistory.map((item) => ({
+        id: item.id,
+        recordType: item.recordType || (String(item.id || '').startsWith('customer-order:')
+          ? 'customer_order'
+          : 'sale'),
+        paymentSchedule: item.paymentSchedule || item.payment_schedule || 'monthly',
         date: item.date,
         bottleType: item.bottleType,
         quantity: Number(item.quantity) || 0,
         pricePerBottle: Number(item.pricePerBottle) || 0,
         totalAmount: Number(item.totalAmount) || 0,
+        grossAmount: Number(item.grossAmount) || 0,
+        amountPaid: Number(item.amountPaid) || 0,
+        balanceDue: Number(item.balanceDue) || 0,
       })),
       summary: {
         entryCount: historyItems.length,
+        grossAmount,
+        amountPaid,
         totalAmount,
         totalQty,
       },
@@ -80,15 +94,20 @@ function getVerifyUrl(invoiceNumber) {
 }
 
 export function exportInvoicePdf(invoice) {
-  const payload = invoice.payload || {};
+  const document = resolveInvoiceDocument(invoice);
+  const payload = document.payload;
   const company = payload.company || {};
   const customer = payload.customer || {};
   const preparedBy = payload.preparedBy || {};
-  const history = Array.isArray(payload.history) ? payload.history : [];
-  const summary = payload.summary || {};
+  const history = document.history;
+  const summary = document.summary;
   const invoiceNumber = invoice.invoiceNumber || invoice.invoice_number || '—';
   const billDate = new Date(invoice.invoiceDate || invoice.invoice_date || Date.now());
   const visibleHistory = history.slice(0, 10);
+  const isMonthlyAccountInvoice = history.length > 0
+    && history.every((item) => item.paymentSchedule !== 'on_delivery');
+  const showPaidColumn = history.some((item) => item.paymentSchedule === 'on_delivery');
+  const paymentSummaryLabel = isMonthlyAccountInvoice ? 'Account payments' : 'Payments applied';
 
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const accent = [37, 99, 235];
@@ -160,14 +179,15 @@ export function exportInvoicePdf(invoice) {
 
   const summaryY = 75;
   [
-    { label: 'Entries', value: String(summary.entryCount || history.length) },
-    { label: 'Quantity', value: String(summary.totalQty || 0) },
-    { label: 'Total', value: formatCurrency(summary.totalAmount || 0) },
+    { label: 'Sales', value: String(summary.entryCount || history.length) },
+    { label: 'Gross', value: formatCurrency(summary.grossAmount) },
+    { label: paymentSummaryLabel, value: formatCurrency(summary.amountPaid) },
+    { label: 'Amount due', value: formatCurrency(summary.totalAmount) },
   ].forEach((item, index) => {
-    const x = 14 + (index * 61);
+    const x = 14 + (index * 46);
     doc.setDrawColor(226, 232, 240);
     doc.setFillColor(248, 250, 252);
-    doc.roundedRect(x, summaryY, 57, 14, 2, 2, 'FD');
+    doc.roundedRect(x, summaryY, 43, 14, 2, 2, 'FD');
     doc.setTextColor(muted[0], muted[1], muted[2]);
     doc.setFontSize(7);
     doc.text(item.label.toUpperCase(), x + 4, summaryY + 5);
@@ -178,24 +198,36 @@ export function exportInvoicePdf(invoice) {
     doc.setFont('helvetica', 'normal');
   });
 
-  autoTable(doc, {
-    startY: 95,
-    margin: { left: 14, right: 14 },
-    theme: 'plain',
-    head: [['Date', 'Bottle Type', 'Qty', 'Unit Price', 'Total']],
-    body: visibleHistory.length
-      ? visibleHistory.map((item) => [
+  const tableHead = showPaidColumn
+    ? ['Date', 'Bottle', 'Qty', 'Unit', 'Gross', 'Paid on delivery', 'Due']
+    : ['Date', 'Bottle', 'Qty', 'Unit', 'Gross', 'Due'];
+  const tableBody = visibleHistory.length
+    ? visibleHistory.map((item) => {
+        const cells = [
           formatDate(item.date),
           safeText(item.bottleType, '—'),
           String(item.quantity || 0),
           formatCurrency(item.pricePerBottle),
-          formatCurrency(item.totalAmount),
-        ])
-      : [['No transactions recorded', '', '', '', '']],
+          formatCurrency(item.grossAmount),
+        ];
+        if (showPaidColumn) {
+          cells.push(item.paymentSchedule === 'on_delivery' ? formatCurrency(item.amountPaid) : '—');
+        }
+        cells.push(formatCurrency(item.balanceDue));
+        return cells;
+      })
+    : [tableHead.map((value, index) => (index === 0 ? 'No transactions recorded' : ''))];
+
+  autoTable(doc, {
+    startY: 95,
+    margin: { left: 14, right: 14 },
+    theme: 'plain',
+    head: [tableHead],
+    body: tableBody,
     styles: {
       font: 'helvetica',
-      fontSize: 9,
-      cellPadding: 3,
+      fontSize: 8,
+      cellPadding: 2.35,
       textColor: ink,
       lineColor: [226, 232, 240],
       lineWidth: 0.15,
@@ -210,12 +242,21 @@ export function exportInvoicePdf(invoice) {
     alternateRowStyles: {
       fillColor: [255, 255, 255],
     },
-    columnStyles: {
-      0: { cellWidth: 30 },
-      1: { cellWidth: 54 },
-      2: { halign: 'center', cellWidth: 16 },
-      3: { halign: 'right', cellWidth: 26 },
-      4: { halign: 'right', cellWidth: 26, fontStyle: 'bold' },
+    columnStyles: showPaidColumn ? {
+      0: { cellWidth: 25 },
+      1: { cellWidth: 39 },
+      2: { halign: 'center', cellWidth: 12 },
+      3: { halign: 'right', cellWidth: 25 },
+      4: { halign: 'right', cellWidth: 27 },
+      5: { halign: 'right', cellWidth: 27 },
+      6: { halign: 'right', cellWidth: 27, fontStyle: 'bold' },
+    } : {
+      0: { cellWidth: 27 },
+      1: { cellWidth: 43 },
+      2: { halign: 'center', cellWidth: 12 },
+      3: { halign: 'right', cellWidth: 30 },
+      4: { halign: 'right', cellWidth: 33 },
+      5: { halign: 'right', cellWidth: 37, fontStyle: 'bold' },
     },
   });
 
@@ -237,13 +278,19 @@ export function exportInvoicePdf(invoice) {
   doc.setFontSize(10);
   doc.setTextColor(ink[0], ink[1], ink[2]);
   doc.text('Amount due', 14, cursorY);
-  doc.text(formatCurrency(summary.totalAmount || 0), 196, cursorY, { align: 'right' });
+  doc.text(formatCurrency(summary.totalAmount), 196, cursorY, { align: 'right' });
 
   cursorY += 10;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8.5);
   doc.setTextColor(muted[0], muted[1], muted[2]);
-  doc.text('Payment: cash on delivery or monthly account.', 14, cursorY);
+  doc.text(
+    isMonthlyAccountInvoice
+      ? 'Payment terms: monthly account. No daily-paid column is included.'
+      : 'Payment terms: cash on delivery or monthly account.',
+    14,
+    cursorY,
+  );
   cursorY += 5;
   doc.text('Policies: sanitized bottles, sealed delivery, and routine water quality checks.', 14, cursorY);
   cursorY += 5;

@@ -19,6 +19,8 @@ import ForumOutlinedIcon from '@mui/icons-material/ForumOutlined';
 import NotificationsNoneRoundedIcon from '@mui/icons-material/NotificationsNoneRounded';
 import PeopleAltOutlinedIcon from '@mui/icons-material/PeopleAltOutlined';
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
+import PaletteOutlinedIcon from '@mui/icons-material/PaletteOutlined';
+import TranslateRoundedIcon from '@mui/icons-material/TranslateRounded';
 import PersonOutlineRoundedIcon from '@mui/icons-material/PersonOutlineRounded';
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
 import KeyboardArrowDownRoundedIcon from '@mui/icons-material/KeyboardArrowDownRounded';
@@ -34,15 +36,19 @@ import {
 } from '../../services/api/customerPortalApi';
 import { getAdminUnreadMessageCount } from '../../services/api/messagingApi';
 import s from './Header.module.scss';
+import { useSettings } from '../../context/SettingsContext';
 
 function Header({
   dispatch, history, location, isSidebarOpened,
 }) {
   const [accountAnchor, setAccountAnchor] = React.useState(null);
+  const [languageAnchor, setLanguageAnchor] = React.useState(null);
   const [admin, setAdmin] = React.useState(getCurrentAdmin());
   const [unreadNotifications, setUnreadNotifications] = React.useState(0);
   const [unreadMessages, setUnreadMessages] = React.useState(0);
   const notificationRequestRunning = React.useRef(false);
+  const { settings, updateSettings } = useSettings();
+  const urdu = settings.language === 'ur';
 
   const loadUnreadNotifications = React.useCallback((forceRefresh = false) => {
     if (document.hidden || notificationRequestRunning.current) return Promise.resolve();
@@ -101,48 +107,36 @@ function Header({
   return (
     <Box component="header" className={s.header}>
       <Box className={s.mobileIdentity}>
-        <Tooltip title="Notifications">
-          <IconButton
-            component={Link}
-            to="/notifications"
-            color="inherit"
-            aria-label={`${unreadNotifications} unread notifications`}
-            className={[s.mobileNotification, unreadNotifications ? s.notificationActive : ''].filter(Boolean).join(' ')}
-          >
-            <NotificationsNoneRoundedIcon fontSize="small" />
-            {unreadNotifications > 0 && (
-              <span className={s.notificationBadge} aria-hidden="true">
-                {unreadNotifications > 9 ? '9+' : unreadNotifications}
-              </span>
-            )}
-          </IconButton>
-        </Tooltip>
         <IconButton color="inherit" onClick={toggleSidebar} aria-label="Open navigation menu">
           <MenuRoundedIcon />
         </IconButton>
-        <Typography component="span" className={s.mobileBrand}>Himaliya Spring</Typography>
+        <Typography component="span" className={s.mobileBrand}>
+          {settings.sidebarBrandTitle || 'Himaliya Spring'}
+        </Typography>
       </Box>
 
       <Paper className={s.toolbar} elevation={0}>
         <HeaderSearch />
         <Divider orientation="vertical" flexItem className={s.searchDivider} />
 
-        <Tooltip title="Messages">
-          <IconButton
-            component={Link}
-            to="/messages"
-            color="inherit"
-            aria-label={unreadMessages ? `${unreadMessages} unread messages` : 'Open messages'}
-            className={s.notificationButton}
-          >
-            <ForumOutlinedIcon fontSize="small" />
-            {unreadMessages > 0 && (
-              <span className={s.notificationBadge} aria-hidden="true">
-                {unreadMessages > 9 ? '9+' : unreadMessages}
-              </span>
-            )}
-          </IconButton>
-        </Tooltip>
+        {settings.featureMessaging !== false && (
+          <Tooltip title={urdu ? 'پیغامات' : 'Messages'}>
+            <IconButton
+              component={Link}
+              to="/messages"
+              color="inherit"
+              aria-label={unreadMessages ? `${unreadMessages} unread messages` : 'Open messages'}
+              className={`${s.notificationButton} ${s.mobileOptionalAction}`}
+            >
+              <ForumOutlinedIcon fontSize="small" />
+              {unreadMessages > 0 && (
+                <span className={s.notificationBadge} aria-hidden="true">
+                  {unreadMessages > 9 ? '9+' : unreadMessages}
+                </span>
+              )}
+            </IconButton>
+          </Tooltip>
+        )}
 
         <Tooltip title="Notifications">
           <IconButton
@@ -150,7 +144,7 @@ function Header({
             to="/notifications"
             color="inherit"
             aria-label={`${unreadNotifications} unread notifications`}
-            className={[s.notificationButton, s.desktopNotification, unreadNotifications ? s.notificationActive : ''].filter(Boolean).join(' ')}
+            className={[s.notificationButton, unreadNotifications ? s.notificationActive : ''].filter(Boolean).join(' ')}
           >
             <NotificationsNoneRoundedIcon fontSize="small" />
             {unreadNotifications > 0 && (
@@ -162,6 +156,45 @@ function Header({
         </Tooltip>
 
         <DarkModeToggle />
+        <button
+          type="button"
+          className={s.languageButton}
+          onClick={(event) => setLanguageAnchor(event.currentTarget)}
+          aria-label={urdu ? 'زبان تبدیل کریں' : 'Change language'}
+          aria-haspopup="menu"
+          aria-expanded={Boolean(languageAnchor)}
+        >
+          <TranslateRoundedIcon fontSize="small" />
+          <span>{urdu ? 'اردو' : 'EN'}</span>
+          <KeyboardArrowDownRoundedIcon className={s.languageChevron} />
+        </button>
+        <Menu
+          anchorEl={languageAnchor}
+          open={Boolean(languageAnchor)}
+          onClose={() => setLanguageAnchor(null)}
+          transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+          anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+          PaperProps={{ className: s.languageMenu }}
+        >
+          <MenuItem
+            selected={!urdu}
+            onClick={() => {
+              updateSettings({ language: 'en', sidebarPosition: 'left' });
+              setLanguageAnchor(null);
+            }}
+          >
+            English
+          </MenuItem>
+          <MenuItem
+            selected={urdu}
+            onClick={() => {
+              updateSettings({ language: 'ur', sidebarPosition: 'right' });
+              setLanguageAnchor(null);
+            }}
+          >
+            اردو
+          </MenuItem>
+        </Menu>
         <Divider orientation="vertical" flexItem className={s.accountDivider} />
 
         <button
@@ -194,20 +227,24 @@ function Header({
           <Divider />
           <MenuItem onClick={() => navigateTo('/app/users')}>
             <ListItemIcon><PeopleAltOutlinedIcon fontSize="small" /></ListItemIcon>
-            All users
+            {urdu ? 'تمام صارفین' : 'All users'}
           </MenuItem>
           <MenuItem onClick={() => navigateTo('/app/settings')}>
             <ListItemIcon><SettingsOutlinedIcon fontSize="small" /></ListItemIcon>
-            Settings
+            {urdu ? 'ایپ سیٹنگز' : 'App settings'}
+          </MenuItem>
+          <MenuItem onClick={() => navigateTo('/app/ui-settings')}>
+            <ListItemIcon><PaletteOutlinedIcon fontSize="small" /></ListItemIcon>
+            {urdu ? 'یو آئی سیٹنگز' : 'UI settings'}
           </MenuItem>
           <MenuItem onClick={() => navigateTo('/profile')}>
             <ListItemIcon><PersonOutlineRoundedIcon fontSize="small" /></ListItemIcon>
-            My profile
+            {urdu ? 'میری پروفائل' : 'My profile'}
           </MenuItem>
           <Divider />
           <MenuItem onClick={doLogout} className={s.logoutItem}>
             <ListItemIcon><LogoutRoundedIcon fontSize="small" color="error" /></ListItemIcon>
-            Sign out
+            {urdu ? 'سائن آؤٹ' : 'Sign out'}
           </MenuItem>
         </Menu>
       </Paper>

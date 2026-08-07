@@ -1,19 +1,75 @@
 import React, {
-  createContext, useContext, useState, useEffect, useCallback, useMemo,
+  createContext, useContext, useState, useEffect, useCallback, useMemo, useRef,
 } from 'react';
-import { DEFAULT_SETTINGS } from '../data/constants';
+import { DEFAULT_SETTINGS, getAdminThemePreset } from '../data/constants';
 import { settingsApi } from '../services/api/settingsApi';
 import { getSessionReadyEventName, hasStoredSessionType } from '../services/cloud/supabaseClient';
 
 const SettingsContext = createContext(null);
+const LOCAL_INTERFACE_SETTINGS_KEY = 'hs_interface_settings';
+const LOCAL_INTERFACE_KEYS = [
+  'themeMode', 'darkMode', 'colorTheme', 'compactMode', 'reduceMotion',
+  'highContrast', 'fontScale', 'surfaceStyle', 'dashboardLayout', 'language',
+  'headerColor', 'headerTextColor', 'sidebarColor', 'sidebarTextColor',
+  'sidebarBrandTitle', 'sidebarBrandSubtitle', 'authAccentColor', 'authPanelColor',
+  'authLayout', 'showLoginStats', 'showBreadcrumbs', 'stickyHeader',
+  'sidebarPosition', 'sidebarVisibility', 'bottleBranding',
+];
+
+function readLocalInterfaceSettings() {
+  try {
+    const saved = JSON.parse(window.localStorage.getItem(LOCAL_INTERFACE_SETTINGS_KEY) || '{}');
+    return LOCAL_INTERFACE_KEYS.reduce((next, key) => (
+      Object.prototype.hasOwnProperty.call(saved, key) ? { ...next, [key]: saved[key] } : next
+    ), {});
+  } catch {
+    return {};
+  }
+}
+
+function saveLocalInterfaceSettings(settings) {
+  try {
+    const payload = LOCAL_INTERFACE_KEYS.reduce((next, key) => (
+      Object.prototype.hasOwnProperty.call(settings, key) ? { ...next, [key]: settings[key] } : next
+    ), {});
+    window.localStorage.setItem(LOCAL_INTERFACE_SETTINGS_KEY, JSON.stringify(payload));
+  } catch {
+    // The cloud copy remains authoritative when local storage is unavailable.
+  }
+}
 
 export function SettingsProvider({ children }) {
-  const [settings, setSettings] = useState(DEFAULT_SETTINGS);
+  const [settings, setSettings] = useState(() => ({
+    ...DEFAULT_SETTINGS,
+    ...readLocalInterfaceSettings(),
+  }));
+  const [systemDark, setSystemDark] = useState(
+    () => Boolean(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
+  );
+  const settingsRef = useRef(settings);
+  const transitionTimer = useRef(null);
+
+  const beginAppearanceTransition = useCallback((reduceMotion = false) => {
+    window.clearTimeout(transitionTimer.current);
+    if (reduceMotion) {
+      document.documentElement.classList.remove('theme-transitioning');
+      return;
+    }
+    document.documentElement.classList.add('theme-transitioning');
+    transitionTimer.current = window.setTimeout(
+      () => document.documentElement.classList.remove('theme-transitioning'),
+      520
+    );
+  }, []);
 
   useEffect(() => {
     const loadSettings = () => {
       if (!hasStoredSessionType('admin')) return;
-      settingsApi.get().then((data) => setSettings(data)).catch(() => {});
+      settingsApi.get().then((data) => {
+        const next = { ...data, ...readLocalInterfaceSettings() };
+        settingsRef.current = next;
+        setSettings(next);
+      }).catch(() => {});
     };
     loadSettings();
     window.addEventListener(getSessionReadyEventName(), loadSettings);
@@ -21,39 +77,146 @@ export function SettingsProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    const systemDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const isDark = settings.themeMode === 'system' ? systemDark : settings.themeMode === 'dark' || settings.darkMode;
-    document.body.classList.toggle('dashboard-dark', isDark);
-    document.body.classList.toggle('dashboard-light', !isDark);
-    document.body.classList.toggle('dashboard-compact', Boolean(settings.compactMode));
-    document.documentElement.classList.toggle('dark', isDark);
-    document.documentElement.classList.toggle('light', !isDark);
-    document.documentElement.classList.toggle('reduce-motion', Boolean(settings.reduceMotion));
-    document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
-  }, [settings]);
+    if (!window.matchMedia) return undefined;
+    const media = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleSystemThemeChange = (event) => {
+      const current = settingsRef.current;
+      if (current.themeMode === 'system') {
+        beginAppearanceTransition(Boolean(current.reduceMotion));
+      }
+      setSystemDark(event.matches);
+    };
+    setSystemDark(media.matches);
+    if (media.addEventListener) media.addEventListener('change', handleSystemThemeChange);
+    else media.addListener(handleSystemThemeChange);
+    return () => {
+      if (media.removeEventListener) media.removeEventListener('change', handleSystemThemeChange);
+      else media.removeListener(handleSystemThemeChange);
+    };
+  }, [beginAppearanceTransition]);
 
-  const toggleDarkMode = useCallback(() => {
-    document.documentElement.classList.add('theme-transitioning');
-    window.setTimeout(() => document.documentElement.classList.remove('theme-transitioning'), 500);
-    setSettings((prev) => {
-      const next = { ...prev, darkMode: !prev.darkMode };
-      next.themeMode = next.darkMode ? 'dark' : 'light';
-      settingsApi.save(next).catch(() => setSettings(prev));
-      return next;
-    });
-  }, []);
+  const resolvedDarkMode = settings.themeMode === 'system'
+    ? systemDark
+    : settings.themeMode === 'dark' || settings.darkMode;
+
+  useEffect(() => {
+    const themePreset = getAdminThemePreset(settings.colorTheme);
+    const root = document.documentElement;
+    document.body.classList.toggle('dashboard-dark', resolvedDarkMode);
+    document.body.classList.toggle('dashboard-light', !resolvedDarkMode);
+    document.body.classList.toggle('dashboard-compact', Boolean(settings.compactMode));
+    document.body.dataset.adminTheme = themePreset.id;
+    root.classList.toggle('dark', resolvedDarkMode);
+    root.classList.toggle('light', !resolvedDarkMode);
+    root.classList.toggle('dashboard-compact', Boolean(settings.compactMode));
+    root.classList.toggle('reduce-motion', Boolean(settings.reduceMotion));
+    root.classList.toggle('high-contrast', Boolean(settings.highContrast));
+    root.dataset.adminTheme = themePreset.id;
+    root.dataset.surfaceStyle = settings.surfaceStyle || 'soft';
+    root.dataset.dashboardLayout = settings.dashboardLayout || 'studio';
+    root.dataset.stickyHeader = settings.stickyHeader === false ? 'off' : 'on';
+    root.dataset.language = settings.language === 'ur' ? 'ur' : 'en';
+    root.lang = settings.language === 'ur' ? 'ur' : 'en';
+    root.dir = settings.language === 'ur' ? 'rtl' : 'ltr';
+    const baseFontSize = settings.fontScale === 'large'
+      ? 17
+      : settings.fontScale === 'small' ? 15 : 16;
+    root.style.fontSize = `${baseFontSize - (settings.compactMode ? 1 : 0)}px`;
+    root.style.colorScheme = resolvedDarkMode ? 'dark' : 'light';
+    root.style.setProperty('--hs-primary', themePreset.primary);
+    root.style.setProperty('--hs-primary-light', themePreset.primaryLight);
+    root.style.setProperty('--hs-primary-dark', themePreset.primaryDark);
+    root.style.setProperty('--hs-secondary', themePreset.secondary);
+    root.style.setProperty('--hs-header-custom', settings.headerColor || '#08090b');
+    root.style.setProperty('--hs-header-custom-text', settings.headerTextColor || '#f7f8fa');
+    root.style.setProperty('--hs-sidebar-custom', settings.sidebarColor || '#111214');
+    root.style.setProperty('--hs-sidebar-custom-text', settings.sidebarTextColor || '#e7e9ed');
+    root.style.setProperty('--hs-header-bg', settings.headerColor || '#08090b');
+    root.style.setProperty('--hs-header-text', settings.headerTextColor || '#f7f8fa');
+    root.style.setProperty('--hs-sidebar-bg', settings.sidebarColor || '#111214');
+    root.style.setProperty('--hs-sidebar-text', settings.sidebarTextColor || '#e7e9ed');
+    root.style.setProperty('--hs-auth-accent', settings.authAccentColor || themePreset.primary);
+    root.style.setProperty('--hs-auth-panel', settings.authPanelColor || '#071d2a');
+    document.body.style.setProperty('--hs-header-bg', settings.headerColor || '#08090b');
+    document.body.style.setProperty('--hs-header-text', settings.headerTextColor || '#f7f8fa');
+    document.body.style.setProperty('--hs-sidebar-bg', settings.sidebarColor || '#111214');
+    document.body.style.setProperty('--hs-sidebar-text', settings.sidebarTextColor || '#e7e9ed');
+    document.body.style.setProperty('--hs-auth-accent', settings.authAccentColor || themePreset.primary);
+    document.body.style.setProperty('--hs-auth-panel', settings.authPanelColor || '#071d2a');
+  }, [
+    resolvedDarkMode,
+    settings.colorTheme,
+    settings.compactMode,
+    settings.fontScale,
+    settings.highContrast,
+    settings.headerColor,
+    settings.headerTextColor,
+    settings.language,
+    settings.reduceMotion,
+    settings.stickyHeader,
+    settings.dashboardLayout,
+    settings.sidebarColor,
+    settings.sidebarTextColor,
+    settings.surfaceStyle,
+    settings.authAccentColor,
+    settings.authPanelColor,
+  ]);
 
   const updateSettings = useCallback((partial) => {
-    setSettings((prev) => {
-      const next = { ...prev, ...partial };
-      settingsApi.save(next).catch(() => setSettings(prev));
-      return next;
+    const previous = settingsRef.current;
+    const changes = typeof partial === 'function' ? partial(previous) : partial;
+    if (!changes || typeof changes !== 'object') return;
+    const appearanceChanged = [
+      'themeMode', 'darkMode', 'colorTheme', 'fontScale', 'surfaceStyle',
+      'highContrast', 'dashboardLayout', 'headerColor', 'headerTextColor',
+      'sidebarColor', 'sidebarTextColor', 'sidebarBrandTitle',
+      'sidebarBrandSubtitle', 'authAccentColor', 'authPanelColor', 'authLayout',
+      'showLoginStats', 'language', 'compactMode', 'reduceMotion',
+      'showBreadcrumbs', 'stickyHeader', 'sidebarPosition', 'sidebarVisibility',
+      'bottleBranding',
+    ].some(
+      (key) => Object.prototype.hasOwnProperty.call(changes, key) && changes[key] !== previous[key]
+    );
+    const canPersistLocally = Object.keys(changes)
+      .every((key) => LOCAL_INTERFACE_KEYS.includes(key));
+    if (appearanceChanged) beginAppearanceTransition(Boolean(previous.reduceMotion));
+
+    const next = { ...previous, ...changes };
+    saveLocalInterfaceSettings(next);
+    settingsRef.current = next;
+    setSettings(next);
+    settingsApi.save(next).catch(() => {
+      if (canPersistLocally) return;
+      if (settingsRef.current !== next) return;
+      settingsRef.current = previous;
+      setSettings(previous);
     });
+  }, [beginAppearanceTransition]);
+
+  const toggleDarkMode = useCallback(() => {
+    const current = settingsRef.current;
+    const currentIsDark = current.themeMode === 'system'
+      ? systemDark
+      : current.themeMode === 'dark' || current.darkMode;
+    updateSettings({
+      darkMode: !currentIsDark,
+      themeMode: currentIsDark ? 'light' : 'dark',
+    });
+  }, [systemDark, updateSettings]);
+
+  useEffect(() => () => {
+    window.clearTimeout(transitionTimer.current);
+    document.documentElement.classList.remove('theme-transitioning');
   }, []);
 
   const value = useMemo(
-    () => ({ settings, toggleDarkMode, updateSettings }),
-    [settings, toggleDarkMode, updateSettings]
+    () => ({
+      settings,
+      resolvedDarkMode,
+      toggleDarkMode,
+      updateSettings,
+    }),
+    [settings, resolvedDarkMode, toggleDarkMode, updateSettings]
   );
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;

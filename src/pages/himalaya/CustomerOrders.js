@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import { Button } from '@mui/material';
 import { Link, withRouter } from 'react-router-dom';
 import RouteRoundedIcon from '@mui/icons-material/RouteRounded';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import { Droplets, MapPin, Phone, RefreshCw } from 'lucide-react';
 import { toast } from 'react-toastify';
 import PageShell from '../../components/PageShell/PageShell';

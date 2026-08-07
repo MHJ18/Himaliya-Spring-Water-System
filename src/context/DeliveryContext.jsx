@@ -4,6 +4,7 @@ import React, {
 import { getAdminCustomerOrders } from '../services/api/customerPortalApi';
 import { getBottlePrices } from '../services/api/bottlePriceApi';
 import { getSessionReadyEventName, hasStoredSessionType } from '../services/cloud/supabaseClient';
+import { useSettings } from './SettingsContext';
 
 const DeliveryContext = createContext(null);
 
@@ -37,6 +38,7 @@ function reducer(state, action) {
 }
 
 export function DeliveryProvider({ children }) {
+  const { settings } = useSettings();
   const [state, dispatch] = useReducer(reducer, initialState);
   const requestRef = useRef(null);
 
@@ -66,7 +68,10 @@ export function DeliveryProvider({ children }) {
     };
     window.addEventListener(getSessionReadyEventName(), loadDeliveries);
     window.addEventListener('online', refreshWhenVisible);
-    const interval = window.setInterval(refreshWhenVisible, 20000);
+    const interval = window.setInterval(
+      refreshWhenVisible,
+      Math.max(5000, (Number(settings.riderLocationRefreshSeconds) || 15) * 1000),
+    );
     document.addEventListener('visibilitychange', refreshWhenVisible);
     return () => {
       window.removeEventListener(getSessionReadyEventName(), loadDeliveries);
@@ -74,7 +79,7 @@ export function DeliveryProvider({ children }) {
       window.clearInterval(interval);
       document.removeEventListener('visibilitychange', refreshWhenVisible);
     };
-  }, [loadDeliveries]);
+  }, [loadDeliveries, settings.riderLocationRefreshSeconds]);
 
   const updateOrder = useCallback((order) => {
     dispatch({ type: 'UPDATE_ORDER', payload: order });

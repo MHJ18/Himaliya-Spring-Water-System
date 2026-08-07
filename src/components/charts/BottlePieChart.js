@@ -1,12 +1,18 @@
 import React from 'react';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { useReducedMotion } from 'framer-motion';
+import { useReducedMotion } from 'motion/react';
 import useIsMobile from '../../hooks/useIsMobile';
-
-const COLORS = ['#2477ff', '#60b5f8', '#1d62d5', '#93d1fc'];
+import { alpha, useTheme } from '@mui/material/styles';
 
 export default function BottlePieChart({ data }) {
   const mobile = useIsMobile();
+  const theme = useTheme();
+  const colors = [
+    theme.palette.primary.main,
+    theme.palette.secondary.main,
+    theme.palette.success.main,
+    alpha(theme.palette.primary.main, 0.48),
+  ];
   const reduceMotion = useReducedMotion();
   if (!data?.length) {
     return <p style={{ padding: '2.5rem 1rem', margin: 0, color: 'var(--hs-page-muted)', textAlign: 'center' }}>No sales data yet</p>;
@@ -15,7 +21,7 @@ export default function BottlePieChart({ data }) {
     <ResponsiveContainer width="100%" height={mobile ? 230 : 280}>
       <PieChart>
         <Pie data={data} dataKey="value" nameKey="name" cx="50%" cy="45%" outerRadius={mobile ? 68 : 90} label={!mobile} isAnimationActive={!reduceMotion}>
-          {data.map((entry, i) => <Cell key={entry.name} fill={COLORS[i % COLORS.length]} />)}
+          {data.map((entry, i) => <Cell key={entry.name} fill={colors[i % colors.length]} />)}
         </Pie>
         <Tooltip />
         <Legend />

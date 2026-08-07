@@ -2,8 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import { Link, withRouter, Redirect } from 'react-router-dom';
 import { connect } from 'react-redux';
-import { motion } from 'framer-motion';
-import { ShakeX } from 'framer-motion-animations';
+import { motion } from 'motion/react';
 import {
   ArrowRight,
   AtSign,
@@ -105,12 +104,16 @@ function WaterLogin({ dispatch, isFetching = false, errorMessage = null, locatio
 
           <form className="water-login-form" method="post" onSubmit={handleSubmit} autoComplete="on" noValidate>
             {visibleError && (
-              <ShakeX key={visibleError} duration={0.4}>
+              <motion.div
+                key={visibleError}
+                animate={{ x: [0, -8, 8, -5, 5, 0] }}
+                transition={{ duration: 0.4, ease: 'easeOut' }}
+              >
                 <div className={`water-login-alert ${location.state && location.state.passwordChanged && !errorMessage ? 'is-success' : ''}`} role="alert" aria-live="assertive">
                   <span className="water-login-alert-icon" aria-hidden="true">!</span>
                   <span>{visibleError}</span>
                 </div>
-              </ShakeX>
+              </motion.div>
             )}
 
             <label className="water-login-label" htmlFor="email">Email address</label>

@@ -1,7 +1,26 @@
 // Coordinates utility for resolving Pakistani addresses to stable map coordinates.
 
+const DEFAULT_COORDINATES = { lat: 32.4945, lng: 74.5229 };
+const addressCoordinateCache = new Map();
+const pendingAddressLookups = new Map();
+const routeCoordinateCache = new Map();
+let addressLookupQueue = Promise.resolve();
+
 const CITIES = [
-  { keywords: ['karachi'], lat: 24.8607, lng: 67.0011 },
+  { keywords: ['sialkot'], lat: 32.4945, lng: 74.5229, id: 'sialkot' },
+  { keywords: ['karachi'], lat: 24.8607, lng: 67.0011, id: 'karachi' },
+  { keywords: ['lahore'], lat: 31.5204, lng: 74.3587, id: 'lahore' },
+  { keywords: ['islamabad'], lat: 33.6844, lng: 73.0479, id: 'islamabad' },
+  { keywords: ['rawalpindi'], lat: 33.5971, lng: 73.0479, id: 'rawalpindi' },
+  { keywords: ['faisalabad'], lat: 31.4187, lng: 73.0790, id: 'faisalabad' },
+  { keywords: ['multan'], lat: 30.1575, lng: 71.5249, id: 'multan' },
+  { keywords: ['peshawar'], lat: 34.0150, lng: 71.5249, id: 'peshawar' },
+  { keywords: ['quetta'], lat: 30.1798, lng: 66.9750, id: 'quetta' },
+  { keywords: ['gujranwala'], lat: 32.1877, lng: 74.1942, id: 'gujranwala' },
+  { keywords: ['hyderabad'], lat: 25.3960, lng: 68.3578, id: 'hyderabad' },
+];
+
+const KARACHI_AREAS = [
   { keywords: ['clifton'], lat: 24.8138, lng: 67.0299 },
   { keywords: ['dha', 'defence'], lat: 24.8048, lng: 67.0755 },
   { keywords: ['saddar'], lat: 24.8546, lng: 67.0209 },
@@ -15,16 +34,6 @@ const CITIES = [
   { keywords: ['scheme 33', 'scheme33'], lat: 24.9678, lng: 67.1211 },
   { keywords: ['orangi'], lat: 24.9461, lng: 66.9911 },
   { keywords: ['bahria'], lat: 25.0251, lng: 67.3078 },
-  { keywords: ['lahore'], lat: 31.5204, lng: 74.3587 },
-  { keywords: ['islamabad'], lat: 33.6844, lng: 73.0479 },
-  { keywords: ['rawalpindi'], lat: 33.5971, lng: 73.0479 },
-  { keywords: ['faisalabad'], lat: 31.4187, lng: 73.0790 },
-  { keywords: ['multan'], lat: 30.1575, lng: 71.5249 },
-  { keywords: ['peshawar'], lat: 34.0150, lng: 71.5249 },
-  { keywords: ['quetta'], lat: 30.1798, lng: 66.9750 },
-  { keywords: ['sialkot'], lat: 32.4945, lng: 74.5229 },
-  { keywords: ['gujranwala'], lat: 32.1877, lng: 74.1942 },
-  { keywords: ['hyderabad'], lat: 25.3960, lng: 68.3578 },
 ];
 
 function hashString(input = '') {
@@ -41,12 +50,19 @@ function stableOffset(seed, scale = 0.012) {
 
 export function getCustomerCoordinates(address = '') {
   const lower = address.toLowerCase();
-  for (const city of CITIES) {
-    if (city.keywords.some((keyword) => lower.includes(keyword))) {
-      return { lat: city.lat, lng: city.lng };
-    }
+  const city = CITIES.find((candidate) => (
+    candidate.keywords.some((keyword) => lower.includes(keyword))
+  ));
+
+  if (city && city.id === 'karachi') {
+    const area = KARACHI_AREAS.find((candidate) => (
+      candidate.keywords.some((keyword) => lower.includes(keyword))
+    ));
+    if (area) return { lat: area.lat, lng: area.lng };
   }
-  return { lat: 24.8607, lng: 67.0011 };
+
+  if (city) return { lat: city.lat, lng: city.lng };
+  return { ...DEFAULT_COORDINATES };
 }
 
 export function getStableCustomerCoordinates(customer = {}) {
@@ -56,4 +72,94 @@ export function getStableCustomerCoordinates(customer = {}) {
     lat: base.lat + offset.lat,
     lng: base.lng + offset.lng,
   };
+}
+
+function validCoordinate(value) {
+  return value !== null && value !== undefined && Number.isFinite(Number(value));
+}
+
+export function buildDeliveryDirectionsUrl({
+  destinationAddress,
+  destinationLat,
+  destinationLng,
+  riderLat,
+  riderLng,
+} = {}) {
+  const hasExactDestination = validCoordinate(destinationLat) && validCoordinate(destinationLng);
+  const destination = hasExactDestination
+    ? `${Number(destinationLat)},${Number(destinationLng)}`
+    : String(destinationAddress || '').trim();
+  if (!destination) return '';
+
+  const params = [`api=1`, `destination=${encodeURIComponent(destination)}`];
+  if (validCoordinate(riderLat) && validCoordinate(riderLng)) {
+    params.push(`origin=${encodeURIComponent(`${Number(riderLat)},${Number(riderLng)}`)}`);
+  }
+  params.push('travelmode=driving');
+  return `https://www.google.com/maps/dir/?${params.join('&')}`;
+}
+
+export async function resolveDeliveryAddressCoordinates(address, { signal } = {}) {
+  const normalizedAddress = String(address || '').trim();
+  if (!normalizedAddress) return null;
+  const cacheKey = normalizedAddress.toLowerCase();
+  if (addressCoordinateCache.has(cacheKey)) return addressCoordinateCache.get(cacheKey);
+  if (pendingAddressLookups.has(cacheKey)) return pendingAddressLookups.get(cacheKey);
+
+  const query = /pakistan/i.test(normalizedAddress)
+    ? normalizedAddress
+    : `${normalizedAddress}, Pakistan`;
+  const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=1&lang=en&countrycode=PK&lon=${DEFAULT_COORDINATES.lng}&lat=${DEFAULT_COORDINATES.lat}&zoom=9`;
+  const lookup = addressLookupQueue
+    .catch(() => undefined)
+    .then(async () => {
+      const response = await fetch(url, { signal });
+      if (!response.ok) throw new Error('Address lookup is unavailable.');
+      const payload = await response.json();
+      const coordinates = payload
+        && payload.features
+        && payload.features[0]
+        && payload.features[0].geometry
+        && payload.features[0].geometry.coordinates;
+      if (!Array.isArray(coordinates) || !validCoordinate(coordinates[0]) || !validCoordinate(coordinates[1])) return null;
+
+      const result = { lat: Number(coordinates[1]), lng: Number(coordinates[0]) };
+      addressCoordinateCache.set(cacheKey, result);
+      return result;
+    });
+  addressLookupQueue = lookup;
+  pendingAddressLookups.set(cacheKey, lookup);
+  try {
+    return await lookup;
+  } finally {
+    pendingAddressLookups.delete(cacheKey);
+  }
+}
+
+export async function getDrivingRouteCoordinates({
+  originLat,
+  originLng,
+  destinationLat,
+  destinationLng,
+  signal,
+} = {}) {
+  if (![originLat, originLng, destinationLat, destinationLng].every(validCoordinate)) return null;
+  const values = [originLng, originLat, destinationLng, destinationLat].map((value) => Number(value).toFixed(5));
+  const cacheKey = values.join(',');
+  if (routeCoordinateCache.has(cacheKey)) return routeCoordinateCache.get(cacheKey);
+
+  const response = await fetch(
+    `https://router.project-osrm.org/route/v1/driving/${values[0]},${values[1]};${values[2]},${values[3]}?overview=full&geometries=geojson`,
+    { signal },
+  );
+  if (!response.ok) throw new Error('Road routing is unavailable.');
+  const payload = await response.json();
+  const coordinates = payload
+    && payload.routes
+    && payload.routes[0]
+    && payload.routes[0].geometry
+    && payload.routes[0].geometry.coordinates;
+  if (!Array.isArray(coordinates) || coordinates.length < 2) return null;
+  routeCoordinateCache.set(cacheKey, coordinates);
+  return coordinates;
 }

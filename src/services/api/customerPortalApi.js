@@ -1,14 +1,26 @@
 import {
+  adminDeleteCustomerAccount,
+  clearPendingCustomerProfile,
+  consumeCustomerEmailConfirmation,
   dbRequest,
+  discardAuthSession,
+  ensureEmailConfirmationEnabled,
+  ensurePhoneVerificationEnabled,
+  getPendingCustomerProfile,
   getStoredSession,
+  getStoredSessionType,
   isSupabaseConfigured,
+  requestPhoneChange,
   signInWithPassword,
   signOut,
   signUpWithPassword,
   storeSession,
+  storePendingCustomerProfile,
+  verifyPhoneChangeOtp,
 } from '../cloud/supabaseClient';
 import { canonicalBottleType, resolveOrderPricing } from '../../utils/orderPricing';
-import { resolveInvoiceTotals } from '../../utils/invoiceTotals';
+import { resolveInvoiceDocument } from '../../utils/invoiceTotals';
+import { normalizePhone } from '../../utils/validation';
 import { BOTTLE_TYPE_LABELS } from '../../data/constants';
 
 const defaultCustomerPreferences = {
@@ -165,22 +177,47 @@ function toNotification(row) {
 }
 
 function toInvoice(row) {
-  const payload = row.payload || {};
-  const totals = resolveInvoiceTotals(row);
+  const document = resolveInvoiceDocument(row);
+  const payload = document.payload;
   return {
     id: row.id,
     invoiceNumber: row.invoice_number,
     invoiceDate: row.invoice_date,
-    totalAmount: totals.totalAmount,
-    totalQty: totals.totalQty,
+    totalAmount: document.totalAmount,
+    grossAmount: document.grossAmount,
+    amountPaid: document.amountPaid,
+    totalQty: document.totalQty,
     paymentStatus: row.payment_status || 'unpaid',
     validated: row.validated === true,
     payload,
     company: payload.company || {},
     customer: payload.customer || {},
     preparedBy: payload.preparedBy || {},
-    history: totals.history,
-    summary: payload.summary || {},
+    history: document.history,
+    summary: document.summary,
+  };
+}
+
+function toManualSale(row) {
+  const totalAmount = Math.max(0, Number(row.total_amount) || 0);
+  const amountPaid = Math.min(totalAmount, Math.max(0, Number(row.amount_paid) || 0));
+  const balanceDue = Math.max(
+    0,
+    row.balance_due === null || row.balance_due === undefined
+      ? totalAmount - amountPaid
+      : Number(row.balance_due) || 0,
+  );
+  return {
+    id: String(row.id || ''),
+    recordType: 'manual_sale',
+    bottleType: canonicalBottleType(row.bottle_type),
+    quantity: Math.max(0, Number(row.quantity) || 0),
+    pricePerBottle: Math.max(0, Number(row.price_per_bottle) || 0),
+    totalAmount,
+    amountPaid,
+    balanceDue,
+    paymentSchedule: row.payment_schedule === 'on_delivery' ? 'on_delivery' : 'monthly',
+    createdAt: row.created_at,
   };
 }
 
@@ -210,44 +247,225 @@ export async function signInCustomer(identifier, password) {
     } else {
       await signInCustomerWithPhone(value, password);
     }
-    return await getCustomerProfile();
+    const profile = await getCustomerProfile();
+    if (!profile) {
+      throw new Error(
+        'No linked customer profile was found. Register with the same email and use its confirmation link; a password session cannot claim customer history.'
+      );
+    }
+    return profile;
   } catch (error) {
-    await signOut().catch(() => {});
+    try {
+      await signOut();
+    } catch {
+      // Local session clearing occurs before remote revocation.
+    }
     throw error;
   }
 }
 
 export async function registerCustomer(form) {
   requireCloud();
+  await ensureEmailConfirmationEnabled();
   const email = form.email.trim().toLowerCase();
-  const result = await signUpWithPassword(email, form.password);
-  const session = result && (result.session || (
-    result.access_token && result.refresh_token ? result : null
-  ));
-  const user = result && result.user;
-  if (session) {
-    storeSession(session, 'customer');
-  } else if (user && Array.isArray(user.identities) && user.identities.length === 0) {
-    throw new Error('An account with this email already exists. Sign in instead or use Forgot password.');
-  } else if (user && !user.email_confirmed_at && !user.confirmed_at) {
-    throw new Error('Email not confirmed. Turn off Confirm Email in Supabase Authentication settings before signing up.');
-  } else if (!user) {
-    throw new Error('Account creation did not complete. Please try again.');
-  } else {
-    await signInWithPassword(email, form.password, 'customer');
-  }
-
-  const profile = await saveCustomerProfile({
+  const publicBase = String(process.env.PUBLIC_URL || '').replace(/\/$/, '');
+  const confirmationRedirect = typeof window === 'undefined'
+    ? undefined
+    : `${window.location.origin}${publicBase}/customer/login?confirmation=1`;
+  const pendingProfile = storePendingCustomerProfile({
     name: form.name,
     email,
     phone: form.phone,
     address: form.address,
   });
-  await signOut();
-  if (!profile.active) {
-    throw new Error('This customer account has been deactivated. Contact Himaliya Spring Water.');
+  let result;
+  try {
+    result = await signUpWithPassword(email, form.password, confirmationRedirect);
+  } catch (error) {
+    clearPendingCustomerProfile();
+    throw error;
   }
+  const session = result && result.session;
+  const user = result && result.user;
+  if (session) {
+    await discardAuthSession(session);
+    clearPendingCustomerProfile();
+    throw new Error(
+      'Secure email confirmation is required before customer history can be linked. Enable Confirm Email in Supabase Authentication settings. This rejected Auth user must be removed by an administrator before registration is retried.'
+    );
+  } else if (user && Array.isArray(user.identities) && user.identities.length === 0) {
+    try {
+      await signInWithPassword(email, form.password, 'customer');
+    } catch {
+      clearPendingCustomerProfile();
+      throw new Error(
+        'This email belonged to an earlier customer account. Use its previous password, or reset the password, to recreate your delivery profile.'
+      );
+    }
+  } else if (user && !user.email_confirmed_at && !user.confirmed_at) {
+    return { confirmationRequired: true, email };
+  } else if (!user) {
+    clearPendingCustomerProfile();
+    throw new Error('Account creation did not complete. Please try again.');
+  } else {
+    await signInWithPassword(email, form.password, 'customer');
+  }
+
+  let completion;
+  try {
+    completion = await beginCustomerProfileCompletion(pendingProfile);
+  } catch (error) {
+    try {
+      await signOut();
+    } catch {
+      // Local session clearing occurs before remote revocation.
+    }
+    clearPendingCustomerProfile();
+    throw error;
+  }
+  if (completion.phoneVerificationRequired) return completion;
+  const { profile } = completion;
+  await signOut();
   return profile;
+}
+
+export async function completeCustomerProfile(form) {
+  try {
+    const profile = await saveCustomerProfile(form);
+    if (!profile.active) {
+      throw new Error('This customer account has been deactivated. Contact Himaliya Spring Water.');
+    }
+    clearPendingCustomerProfile();
+    return profile;
+  } catch (error) {
+    // A partially completed claim must never leave the browser on a customer session.
+    try {
+      await signOut();
+    } catch {
+      // signOut clears the local session before attempting remote revocation.
+    }
+    throw error;
+  }
+}
+
+export async function getCustomerClaimRequirements(form) {
+  const result = await dbRequest('/rpc/get_customer_claim_requirements', {
+    method: 'POST',
+    body: JSON.stringify({
+      p_email: form.email.trim().toLowerCase(),
+      p_phone: normalizePhone(form.phone),
+    }),
+  });
+  const row = Array.isArray(result) ? result[0] : result;
+  return { phoneVerificationRequired: Boolean(row && row.phone_verification_required) };
+}
+
+export async function requestCustomerPhoneVerification(phone) {
+  const normalizedPhone = normalizePhone(phone);
+  await ensurePhoneVerificationEnabled();
+  await dbRequest('/rpc/begin_customer_phone_verification', {
+    method: 'POST',
+    body: JSON.stringify({ p_phone: normalizedPhone }),
+  });
+  try {
+    const user = await requestPhoneChange(normalizedPhone);
+    if (user.phone_confirmed_at && normalizePhone(user.phone) === normalizedPhone) {
+      throw new Error(
+        'Supabase confirmed the phone without an SMS challenge. Require phone confirmation in Auth settings before linking by phone.'
+      );
+    }
+    await dbRequest('/rpc/attest_customer_phone_challenge', {
+      method: 'POST',
+      body: JSON.stringify({ p_phone: normalizedPhone }),
+    });
+    return true;
+  } catch (error) {
+    await dbRequest('/rpc/cancel_customer_phone_verification', {
+      method: 'POST',
+      body: JSON.stringify({ p_phone: normalizedPhone }),
+    }).catch(() => false);
+    throw error;
+  }
+}
+
+export async function beginCustomerProfileCompletion(form) {
+  let requirements;
+  try {
+    requirements = await getCustomerClaimRequirements(form);
+  } catch (error) {
+    try {
+      await signOut();
+    } catch {
+      // Local session clearing occurs before remote revocation.
+    }
+    throw error;
+  }
+  if (!requirements.phoneVerificationRequired) {
+    return { profile: await completeCustomerProfile(form), phoneVerificationRequired: false };
+  }
+
+  try {
+    await requestCustomerPhoneVerification(form.phone);
+    return {
+      profile: null,
+      phoneVerificationRequired: true,
+      verificationSent: true,
+      phoneVerificationError: '',
+    };
+  } catch (error) {
+    return {
+      profile: null,
+      phoneVerificationRequired: true,
+      verificationSent: false,
+      phoneVerificationError: error.message || 'SMS verification could not be started.',
+    };
+  }
+}
+
+export async function verifyCustomerPhoneAndCompleteProfile(form, token) {
+  const normalizedPhone = normalizePhone(form.phone);
+  await verifyPhoneChangeOtp(normalizedPhone, String(token || '').trim());
+  try {
+    await dbRequest('/rpc/complete_customer_phone_verification', {
+      method: 'POST',
+      body: JSON.stringify({ p_phone: normalizedPhone }),
+    });
+    return await completeCustomerProfile(form);
+  } catch (error) {
+    try {
+      await signOut();
+    } catch {
+      // Local session clearing occurs before remote revocation.
+    }
+    throw error;
+  }
+}
+
+export async function finishCustomerEmailConfirmation(hash, search) {
+  let session;
+  try {
+    session = await consumeCustomerEmailConfirmation(hash, search);
+    if (session) {
+      await dbRequest('/rpc/attest_customer_email_confirmation', {
+        method: 'POST',
+        body: '{}',
+      });
+    }
+  } catch (error) {
+    if (getStoredSessionType() === 'customer') {
+      try {
+        await signOut();
+      } catch {
+        // The local customer session is already cleared by signOut.
+      }
+    }
+    throw error;
+  }
+  if (!session) return null;
+  const pendingProfile = getPendingCustomerProfile();
+  if (!pendingProfile) return { session, profile: null };
+  const completion = await beginCustomerProfileCompletion(pendingProfile);
+  return { session, pendingProfile, ...completion };
 }
 
 export async function getCustomerProfile() {
@@ -277,12 +495,13 @@ export async function saveCustomerProfile(form) {
     ...(form.preferences && typeof form.preferences === 'object' ? form.preferences : {}),
   };
   delete deviceIndependentPreferences.theme;
+  const normalizedPhone = normalizePhone(form.phone);
   const result = await dbRequest('/rpc/claim_customer_account', {
     method: 'POST',
     body: JSON.stringify({
       p_name: form.name.trim(),
       p_email: form.email.trim().toLowerCase(),
-      p_phone: form.phone.trim(),
+      p_phone: normalizedPhone,
       p_address: form.address.trim(),
       p_preferences: form.preferences && typeof form.preferences === 'object'
         ? { ...defaultCustomerPreferences, ...deviceIndependentPreferences }
@@ -385,7 +604,7 @@ export async function createCustomerOrder(profile, form) {
 
 export async function getCustomerNotifications() {
   requireCloud();
-  const rows = await dbRequest('/customer_notifications?audience=eq.customer&select=*&order=created_at.desc');
+  const rows = await dbRequest('/customer_notifications?audience=eq.customer&select=*&order=created_at.desc&limit=30');
   return rows.map(toNotification);
 }
 
@@ -400,8 +619,30 @@ export async function markCustomerNotificationsRead() {
 
 export async function getCustomerInvoices() {
   requireCloud();
-  const rows = await dbRequest('/customer_invoices?select=*&order=invoice_date.desc');
+  const rows = await dbRequest('/customer_invoices?payment_status=neq.void&select=*&order=invoice_date.desc');
   return rows.map(toInvoice);
+}
+
+export async function getCustomerManualSalesHistory() {
+  requireCloud();
+  let rows;
+  try {
+    rows = await dbRequest('/rpc/get_customer_manual_sales_history', {
+      method: 'POST',
+      body: JSON.stringify({}),
+    });
+  } catch (error) {
+    const missingHistoryRpc = error.code === 'PGRST202'
+      || error.code === '42883'
+      || /get_customer_manual_sales_history|schema cache/i.test(error.message || '');
+    if (missingHistoryRpc) {
+      throw new Error(
+        'Customer delivery history is not installed in Supabase. Apply the latest ledger migration, then try again.'
+      );
+    }
+    throw error;
+  }
+  return (Array.isArray(rows) ? rows : []).map(toManualSale);
 }
 
 export async function getCustomerPaidInvoices() {
@@ -480,14 +721,12 @@ export async function updateAdminCustomerProfile(profileId, form) {
 
 export async function deleteAdminCustomerProfile(profileId) {
   requireCloud();
-  const rows = await dbRequest(`/customers?id=eq.${encodeURIComponent(profileId)}&select=id,name,email`, {
-    method: 'DELETE',
-    prefer: 'return=representation',
-  });
-  if (!Array.isArray(rows) || rows.length !== 1) {
-    throw new Error('Customer profile could not be deleted or you do not have permission.');
-  }
-  return rows[0];
+  const result = await adminDeleteCustomerAccount(profileId);
+  return {
+    id: result.customerId || profileId,
+    name: result.name || 'Customer',
+    email: result.email || '',
+  };
 }
 
 export async function setAdminCustomerActive(customerId, active) {
@@ -631,7 +870,7 @@ export async function getAdminCustomerPortalStats() {
   const [profiles, orders, notifications, inventory] = await Promise.all([
     dbRequest('/customers?select=id,auth_user_id,bottles_held'),
     dbRequest('/customer_orders?select=status'),
-    dbRequest('/customer_notifications?audience=eq.admin&read=eq.false&select=id'),
+    dbRequest('/customer_notifications?audience=eq.admin&read=eq.false&select=id&limit=30'),
     dbRequest('/inventory_stock?select=quantity'),
   ]);
   return {
@@ -660,7 +899,12 @@ export async function getAdminNotifications({ forceRefresh = false } = {}) {
     return adminNotificationsRequest;
   }
 
-  const request = dbRequest('/customer_notifications?audience=eq.admin&select=*,customer_orders(quantity,bottle_type,items,customers(name))&order=created_at.desc')
+  const request = dbRequest('/rpc/sync_overdue_invoice_notifications', {
+    method: 'POST',
+    body: '{}',
+  })
+    .catch(() => 0)
+    .then(() => dbRequest('/customer_notifications?audience=eq.admin&select=*,customer_orders(quantity,bottle_type,items,customers(name))&order=created_at.desc&limit=30'))
     .then((rows) => {
       const items = rows.map(toNotification);
       adminNotificationsCache = { items, fetchedAt: Date.now(), userId: currentUserId };
@@ -683,12 +927,13 @@ export function prefetchAdminNotifications() {
 
 export async function getAdminNavigationBadges() {
   requireCloud();
-  const rows = await dbRequest('/customer_notifications?audience=eq.admin&read=eq.false&type=in.(order,tracking,delivery,account)&select=type');
+  const rows = await dbRequest('/customer_notifications?audience=eq.admin&read=eq.false&type=in.(order,tracking,delivery,account,invoice_overdue)&select=type&limit=30');
   const types = new Set((rows || []).map((row) => row.type));
   return {
     orders: types.has('order'),
     tracking: types.has('tracking') || types.has('delivery'),
     accounts: types.has('account'),
+    invoices: types.has('invoice_overdue'),
   };
 }
 

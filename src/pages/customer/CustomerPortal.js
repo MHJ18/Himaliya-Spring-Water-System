@@ -1,9 +1,9 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { withRouter } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion } from 'motion/react';
 import {
-  ArrowRight, BellRing, CalendarDays, CheckCheck, ChevronDown, Download, Droplets, LoaderCircle, LogOut, Menu, MessageCircle, Minus, Navigation, Plus, ReceiptText, UserRound, X,
+  ArrowRight, BellRing, CalendarDays, CheckCheck, CheckCircle2, ChevronDown, Clock3, Cookie, Download, Droplets, LoaderCircle, LogOut, MessagesSquare, Minus, Navigation, Plus, ReceiptText, ShieldCheck, UserRound, X,
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import {
@@ -13,6 +13,7 @@ import {
   getCustomerOrderControls,
   getCustomerOrders,
   getCustomerInvoices,
+  getCustomerManualSalesHistory,
   getCustomerProfile,
   markCustomerNotificationsRead,
 } from '../../services/api/customerPortalApi';
@@ -26,6 +27,7 @@ import './CustomerPortal.css';
 import useCustomerTheme from './useCustomerTheme';
 
 const DeliveryCelebration = React.lazy(() => import('../../components/DeliveryCelebration/DeliveryCelebration'));
+const COOKIE_CONSENT_KEY = 'himaliya.customer.cookie-consent';
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
 const customerBottleTypes = BOTTLE_TYPES;
@@ -86,13 +88,22 @@ function notifyDesktop(title, body) {
   }
 }
 
+function readCookieConsent() {
+  try {
+    return window.localStorage.getItem(COOKIE_CONSENT_KEY);
+  } catch {
+    return null;
+  }
+}
+
 function CustomerPortal({ history }) {
-  const { theme } = useCustomerTheme();
+  const { theme, dashboardStyle } = useCustomerTheme();
   const [loading, setLoading] = React.useState(true);
   const [profile, setProfile] = React.useState(null);
   const [orders, setOrders] = React.useState([]);
   const [notifications, setNotifications] = React.useState([]);
   const [invoices, setInvoices] = React.useState([]);
+  const [manualSales, setManualSales] = React.useState([]);
   const [orderForm, setOrderForm] = React.useState(defaultOrder);
   const [prices, setPrices] = React.useState({});
   const [priceWarning, setPriceWarning] = React.useState('');
@@ -105,10 +116,26 @@ function CustomerPortal({ history }) {
   const [notificationPermission, setNotificationPermission] = React.useState(
     canUseBrowserNotifications() ? window.Notification.permission : 'unsupported',
   );
+  const [historyFilter, setHistoryFilter] = React.useState('active');
+  const [cookieConsent, setCookieConsent] = React.useState(readCookieConsent);
   const seenInvoiceIds = React.useRef(new Set());
   const seenOrderStatuses = React.useRef(new Map());
   const activityRequestRunning = React.useRef(false);
   const accountRef = React.useRef(null);
+
+  const chooseCookieConsent = (choice) => {
+    try {
+      window.localStorage.setItem(COOKIE_CONSENT_KEY, choice);
+    } catch {
+      // The prompt can still close for this visit when storage is unavailable.
+    }
+    setCookieConsent(choice);
+  };
+
+  const openDashboardSection = (sectionId) => {
+    const section = document.getElementById(sectionId);
+    if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   const load = React.useCallback(async () => {
     setLoading(true);
@@ -120,10 +147,11 @@ function CustomerPortal({ history }) {
         return;
       }
       const nextPrices = await getOwnCustomerBottlePrices();
-      const [nextOrders, nextNotifications, nextInvoices, nextControls, nextUnreadMessages] = await Promise.all([
+      const [nextOrders, nextNotifications, nextInvoices, nextManualSales, nextControls, nextUnreadMessages] = await Promise.all([
         getCustomerOrders(nextPrices),
         getCustomerNotifications(),
         getCustomerInvoices(),
+        getCustomerManualSalesHistory(),
         getCustomerOrderControls(),
         getCustomerUnreadMessageCount().catch(() => 0),
       ]);
@@ -144,6 +172,7 @@ function CustomerPortal({ history }) {
       seenOrderStatuses.current = new Map(nextOrders.map((order) => [order.id, order.status]));
       setNotifications(nextNotifications);
       setInvoices(nextInvoices);
+      setManualSales(nextManualSales);
       seenInvoiceIds.current = new Set(nextInvoices.map((invoice) => invoice.id || invoice.invoiceNumber));
       setPrices(nextPrices || {});
       setOrderControls(nextControls);
@@ -177,10 +206,11 @@ function CustomerPortal({ history }) {
     try {
       await getCustomerProfile();
       const nextPrices = profile ? await getOwnCustomerBottlePrices() : {};
-      const [nextOrders, nextNotifications, nextInvoices, nextUnreadMessages] = await Promise.all([
+      const [nextOrders, nextNotifications, nextInvoices, nextManualSales, nextUnreadMessages] = await Promise.all([
         getCustomerOrders(nextPrices),
         getCustomerNotifications(),
         getCustomerInvoices(),
+        getCustomerManualSalesHistory(),
         getCustomerUnreadMessageCount().catch(() => 0),
       ]);
       const previousInvoiceIds = seenInvoiceIds.current;
@@ -205,6 +235,7 @@ function CustomerPortal({ history }) {
       setOrders(nextOrders);
       setNotifications(nextNotifications);
       setInvoices(nextInvoices);
+      setManualSales(nextManualSales);
       setPrices(nextPrices || {});
       setUnreadMessages(nextUnreadMessages);
     } catch (error) {
@@ -348,6 +379,26 @@ function CustomerPortal({ history }) {
   const invoiceStatusLabel = (status) => (status === 'paid' ? 'Paid' : 'Unpaid');
   const accepted = orders.filter((order) => order.status === 'accepted').length;
   const unread = notifications.filter((item) => !item.read).length;
+  const filteredOrders = [...orders]
+    .filter((order) => {
+      if (historyFilter === 'active') return ['pending', 'accepted'].includes(order.status);
+      if (historyFilter === 'completed') return ['delivered', 'canceled', 'rejected'].includes(order.status);
+      return true;
+    })
+    .sort((left, right) => (
+      new Date(right.createdAt || right.deliveryDate || 0)
+      - new Date(left.createdAt || left.deliveryDate || 0)
+    ));
+  const orderGroups = filteredOrders.reduce((groups, order) => {
+    const date = new Date(order.createdAt || order.deliveryDate || 0);
+    const label = Number.isNaN(date.getTime())
+      ? 'Earlier orders'
+      : date.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+    const group = groups.find((item) => item.label === label);
+    if (group) group.orders.push(order);
+    else groups.push({ label, orders: [order] });
+    return groups;
+  }, []);
   const selectedItems = customerBottleTypes
     .map((bottleType) => ({
       bottleType,
@@ -358,7 +409,7 @@ function CustomerPortal({ history }) {
   const selectedTotal = selectedItems.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
 
   return (
-    <main className={`customer-portal-page customer-theme--${theme}${theme === 'dark-gradient' ? ' customer-theme--dark' : ''}`}>
+    <main className={`customer-portal-page customer-theme--${theme}${theme === 'dark-gradient' ? ' customer-theme--dark' : ''} customer-accent--${dashboardStyle.accent} customer-header--${dashboardStyle.header} customer-cards--${dashboardStyle.cards}`}>
       {deliveredOrder && (
         <React.Suspense fallback={null}>
           <DeliveryCelebration
@@ -386,18 +437,6 @@ function CustomerPortal({ history }) {
               <span className="customer-notification-enable__copy"><strong>Enable alerts</strong><small>Order & invoice updates</small></span>
             </button>
           )}
-          <button
-            type="button"
-            className="customer-messages-launch"
-            onClick={() => history.push('/customer/messages')}
-            aria-label={unreadMessages ? `${unreadMessages} unread messages` : 'Open messages'}
-          >
-            <MessageCircle size={18} />
-            <span>Messages</span>
-            {unreadMessages > 0 && (
-              <em>{unreadMessages > 9 ? '9+' : unreadMessages}</em>
-            )}
-          </button>
           <div className="customer-account" ref={accountRef}>
             <button
               type="button"
@@ -407,7 +446,7 @@ function CustomerPortal({ history }) {
               aria-label={accountOpen ? 'Close account menu' : 'Open account menu'}
               onClick={() => setAccountOpen((open) => !open)}
             >
-              <span className="customer-account-mobile-icon" aria-hidden="true"><Menu size={20} /></span>
+              <span className="customer-account-avatar" aria-hidden="true"><UserRound size={17} /></span>
               <span className="customer-account-copy"><strong>{profile.name}</strong></span>
               <ChevronDown size={18} className={accountOpen ? 'is-open' : ''} />
             </button>
@@ -429,15 +468,21 @@ function CustomerPortal({ history }) {
       </header>
 
       <section className="customer-portal-stats">
-        <motion.article initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-          <span>Pending</span><strong>{pending}</strong><small>Orders waiting for admin</small>
-        </motion.article>
-        <motion.article initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
-          <span>Accepted</span><strong>{accepted}</strong><small>Delivery approved</small>
-        </motion.article>
-        <motion.article initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-          <span>Invoices</span><strong>{invoices.length}</strong><small>{paidInvoices} paid</small>
-        </motion.article>
+        <motion.button type="button" onClick={() => openDashboardSection('customer-order-history')} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
+          <span className="customer-stat-icon"><Clock3 size={18} aria-hidden="true" /></span>
+          <span className="customer-stat-copy"><small>Pending orders</small><strong>{pending}</strong><em>Waiting for review</em></span>
+          <span className="customer-stat-figure" aria-hidden="true"><i /><i /><i /></span>
+        </motion.button>
+        <motion.button type="button" onClick={() => openDashboardSection('customer-order-history')} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+          <span className="customer-stat-icon"><CheckCircle2 size={18} aria-hidden="true" /></span>
+          <span className="customer-stat-copy"><small>Accepted</small><strong>{accepted}</strong><em>{pending + accepted} active orders</em></span>
+          <span className="customer-stat-figure customer-stat-figure--accepted" aria-hidden="true"><i /><i /><i /></span>
+        </motion.button>
+        <motion.button type="button" onClick={() => openDashboardSection('customer-invoices')} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+          <span className="customer-stat-icon"><ReceiptText size={18} aria-hidden="true" /></span>
+          <span className="customer-stat-copy"><small>Invoices</small><strong>{invoices.length}</strong><em>{invoices.length ? `${Math.round((paidInvoices / invoices.length) * 100)}% paid` : 'No invoices yet'}</em></span>
+          <span className="customer-stat-figure customer-stat-figure--invoices" aria-hidden="true"><i /><i /><i /></span>
+        </motion.button>
       </section>
 
       <div className="customer-portal-grid">
@@ -537,60 +582,151 @@ function CustomerPortal({ history }) {
           </div>
         </section>
 
-        <section className="customer-portal-card customer-order-history-card">
-          <div className="customer-card-heading">
-            <span>Order history</span>
-            <h2>Past orders</h2>
+        <section id="customer-order-history" className="customer-portal-card customer-order-history-card">
+          <div className="customer-order-history-heading">
+            <div className="customer-card-heading">
+              <span>Order history</span>
+              <h2>Order timeline</h2>
+            </div>
           </div>
-          <div className="customer-order-list" role="region" aria-label="Order history">
-            {orders.map((order) => {
-              const pricing = resolveOrderPricing(order, prices);
-              return (
-                <article key={order.id} className={`customer-order-entry customer-order-entry--${order.status}`}>
-                  <div className="customer-order-entry__summary">
-                    <span className="customer-order-entry__icon"><Droplets aria-hidden="true" /></span>
-                    <div>
-                      <strong>{orderBottleSummary(order)}</strong>
-                      <small>Delivery {formatDate(order.deliveryDate)}</small>
-                    </div>
-                  </div>
-                  <div className="customer-order-entry__meta">
-                    <span className={`customer-status customer-status--${order.status}`}>{statusLabel(order.status)}</span>
-                    <strong className="customer-order-entry__price">PKR {pricing.totalAmount.toLocaleString()}</strong>
-                    {order.trackingToken && ['accepted', 'delivered'].includes(order.status) && (
-                      <button
-                        type="button"
-                        className="customer-order-route"
-                        onClick={() => history.push(`/track/${order.trackingToken}`)}
-                        aria-label={order.status === 'delivered' ? 'View delivery route details' : 'Track delivery route'}
+          <div className="customer-order-filters" role="tablist" aria-label="Filter order history">
+            {[
+              ['active', 'Active', orders.filter((order) => ['pending', 'accepted'].includes(order.status)).length],
+              ['completed', 'Completed', orders.filter((order) => ['delivered', 'canceled', 'rejected'].includes(order.status)).length],
+              ['all', 'All', orders.length],
+            ].map(([value, label, count]) => (
+              <button
+                key={value}
+                type="button"
+                role="tab"
+                aria-selected={historyFilter === value}
+                className={historyFilter === value ? 'is-active' : ''}
+                onClick={() => setHistoryFilter(value)}
+              >
+                {historyFilter === value && (
+                  <motion.span
+                    layoutId="customer-order-history-filter"
+                    className="customer-order-filter__selection"
+                    transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+                    aria-hidden="true"
+                  />
+                )}
+                <span>{label}</span>
+                <small>{count}</small>
+              </button>
+            ))}
+          </div>
+          <div className="customer-order-list" role="region" aria-label={`${historyFilter} order history`}>
+            {orderGroups.map((group) => (
+              <section className="customer-order-month" key={group.label}>
+                <div className="customer-order-month__heading">
+                  <strong>{group.label}</strong>
+                  <span>{group.orders.length} {group.orders.length === 1 ? 'order' : 'orders'}</span>
+                </div>
+                <div className="customer-order-month__list">
+                  {group.orders.map((order, index) => {
+                    const pricing = resolveOrderPricing(order, prices);
+                    return (
+                      <motion.article
+                        key={order.id}
+                        layout
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.2, delay: Math.min(index * 0.025, 0.12) }}
+                        className={`customer-order-entry customer-order-entry--${order.status}`}
                       >
-                        <Navigation size={16} aria-hidden="true" />
-                        <span>{order.status === 'delivered' ? 'View route' : 'Track'}</span>
-                      </button>
-                    )}
-                    {order.status === 'pending' && orderControls.allowCancellation && (
-                      <button
-                        type="button"
-                        className="customer-order-cancel"
-                        disabled={cancelingOrder === order.id}
-                        aria-busy={cancelingOrder === order.id}
-                        onClick={() => cancelOrder(order.id)}
-                      >
-                        {cancelingOrder === order.id
-                          ? <LoaderCircle size={14} className="is-spinning" aria-hidden="true" />
-                          : <X size={14} aria-hidden="true" />}
-                        <span>{cancelingOrder === order.id ? 'Canceling...' : 'Cancel'}</span>
-                      </button>
-                    )}
-                  </div>
-                </article>
-              );
-            })}
-            {!orders.length && <p className="customer-empty">No orders yet. Your first order will show here.</p>}
+                        <div className="customer-order-entry__summary">
+                          <span className="customer-order-entry__icon"><Droplets aria-hidden="true" /></span>
+                          <div>
+                            <strong>{orderBottleSummary(order)}</strong>
+                            <small>Delivery {formatDate(order.deliveryDate)}</small>
+                          </div>
+                        </div>
+                        <div className="customer-order-entry__meta">
+                          <span className={`customer-status customer-status--${order.status}`}>{statusLabel(order.status)}</span>
+                          <strong className="customer-order-entry__price">PKR {pricing.totalAmount.toLocaleString()}</strong>
+                          {order.trackingToken && ['accepted', 'delivered'].includes(order.status) && (
+                            <button
+                              type="button"
+                              className="customer-order-route"
+                              onClick={() => history.push(`/track/${order.trackingToken}`)}
+                              aria-label={order.status === 'delivered' ? 'View delivery route details' : 'Track delivery route'}
+                            >
+                              <Navigation size={16} aria-hidden="true" />
+                              <span>{order.status === 'delivered' ? 'View route' : 'Track'}</span>
+                            </button>
+                          )}
+                          {order.status === 'pending' && orderControls.allowCancellation && (
+                            <button
+                              type="button"
+                              className="customer-order-cancel"
+                              disabled={cancelingOrder === order.id}
+                              aria-busy={cancelingOrder === order.id}
+                              onClick={() => cancelOrder(order.id)}
+                            >
+                              {cancelingOrder === order.id
+                                ? <LoaderCircle size={14} className="is-spinning" aria-hidden="true" />
+                                : <X size={14} aria-hidden="true" />}
+                              <span>{cancelingOrder === order.id ? 'Canceling...' : 'Cancel'}</span>
+                            </button>
+                          )}
+                        </div>
+                      </motion.article>
+                    );
+                  })}
+                </div>
+              </section>
+            ))}
+            {!filteredOrders.length && (
+              <p className="customer-empty">
+                {orders.length
+                  ? `No ${historyFilter} orders to show.`
+                  : 'No orders yet. Your first order will show here.'}
+              </p>
+            )}
           </div>
         </section>
 
-        <section className="customer-portal-card customer-invoices-card">
+        <section id="customer-manual-deliveries" className="customer-portal-card customer-manual-sales-card">
+          <div className="customer-card-heading">
+            <span>Manual deliveries</span>
+            <h2>Recorded by Himaliya</h2>
+          </div>
+          <p className="customer-manual-sales-intro">
+            Deliveries entered by the team before or outside portal ordering appear here separately.
+          </p>
+          <div className="customer-manual-sales-list" role="region" aria-label="Manual delivery history">
+            {manualSales.map((sale, index) => {
+              const paid = sale.balanceDue <= 0.005;
+              const partiallyPaid = !paid && sale.amountPaid > 0;
+              return (
+                <motion.article
+                  key={sale.id}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: .18, delay: Math.min(index * .025, .12) }}
+                >
+                  <span className="customer-manual-sale-icon" aria-hidden="true"><Droplets size={17} /></span>
+                  <div className="customer-manual-sale-copy">
+                    <strong>{sale.quantity} × {bottleLabel(sale.bottleType)}</strong>
+                    <small>{formatDate(sale.createdAt)} · {sale.paymentSchedule === 'on_delivery' ? 'Pay on delivery' : 'Monthly account'}</small>
+                  </div>
+                  <div className="customer-manual-sale-total">
+                    <strong>PKR {sale.totalAmount.toLocaleString()}</strong>
+                    <span className={`customer-manual-sale-status${paid ? ' is-paid' : partiallyPaid ? ' is-partial' : ''}`}>
+                      {paid ? 'Paid' : partiallyPaid ? `PKR ${sale.balanceDue.toLocaleString()} due` : 'Unpaid'}
+                    </span>
+                  </div>
+                </motion.article>
+              );
+            })}
+            {!manualSales.length && (
+              <p className="customer-empty">No manually recorded deliveries are linked to this account.</p>
+            )}
+          </div>
+        </section>
+
+        <section id="customer-invoices" className="customer-portal-card customer-invoices-card">
           <div className="customer-card-heading">
             <span>Your invoices</span>
             <h2>Invoice details</h2>
@@ -635,6 +771,40 @@ function CustomerPortal({ history }) {
         </section>
 
       </div>
+      <motion.button
+        type="button"
+        className="customer-floating-chat"
+        onClick={() => history.push('/customer/messages')}
+        aria-label={unreadMessages ? `Open messages, ${unreadMessages} unread` : 'Open messages'}
+        initial={{ opacity: 0, scale: .85 }}
+        animate={{ opacity: 1, scale: 1 }}
+        whileHover={{ y: -2 }}
+      >
+        <MessagesSquare size={20} aria-hidden="true" />
+        {unreadMessages > 0 && <em>{unreadMessages > 9 ? '9+' : unreadMessages}</em>}
+      </motion.button>
+
+      {!cookieConsent && (
+        <motion.aside
+          className="customer-cookie-consent"
+          role="dialog"
+          aria-modal="false"
+          aria-labelledby="customer-cookie-title"
+          initial={{ opacity: 0, y: 24, scale: .98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: .28 }}
+        >
+          <span className="customer-cookie-consent__icon"><Cookie size={20} aria-hidden="true" /></span>
+          <div>
+            <strong id="customer-cookie-title">Your privacy, your choice</strong>
+            <p>Essential storage keeps you signed in. Allow optional cookies for saved dashboard preferences, or decline them.</p>
+          </div>
+          <div className="customer-cookie-consent__actions">
+            <button type="button" className="is-secondary" onClick={() => chooseCookieConsent('declined')}>Decline</button>
+            <button type="button" className="is-primary" onClick={() => chooseCookieConsent('allowed')}><ShieldCheck size={15} /> Allow</button>
+          </div>
+        </motion.aside>
+      )}
     </main>
   );
 }
