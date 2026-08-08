@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
 import { withRouter } from 'react-router-dom';
-import { motion } from 'motion/react';
+import { motion, useReducedMotion } from 'motion/react';
 import {
   BellRing,
   CreditCard,
@@ -87,6 +87,7 @@ function NotificationsCenter({ history }) {
   const [items, setItems] = useState(initialItems || []);
   const [loading, setLoading] = useState(initialItems === null);
   const [marking, setMarking] = useState('');
+  const reduceMotion = useReducedMotion();
 
   useEffect(() => {
     let active = true;
@@ -100,6 +101,8 @@ function NotificationsCenter({ history }) {
   const unread = items.filter((item) => !item.read).length;
   const alertItems = items.filter((item) => ALERT_TYPES.has(item.type));
   const updateItems = items.filter((item) => !ALERT_TYPES.has(item.type));
+  const updateUnread = updateItems.filter((item) => !item.read).length;
+  const alertUnread = alertItems.filter((item) => !item.read).length;
   const markRead = async (item) => {
     if (item.read || marking) return true;
     setMarking(item.id);
@@ -202,94 +205,126 @@ function NotificationsCenter({ history }) {
               No notifications yet. New customer orders will appear here.
             </p>
           )}
-          {!loading && items.length > 0 && (
-            <div className="notification-windows">
-              {[
-                {
-                  key: 'updates',
-                  title: 'Notifications',
-                  description: 'Orders, deliveries, payments, messages, and accounts',
-                  entries: updateItems,
-                  icon: BellRing,
-                },
-                {
-                  key: 'alerts',
-                  title: 'Alerts',
-                  description: 'Items that may need attention',
-                  entries: alertItems,
-                  icon: TriangleAlert,
-                },
-              ].map((window) => {
-                const WindowIcon = window.icon;
-                const windowUnread = window.entries.filter((item) => !item.read).length;
-                return (
-                  <section className={`notification-window notification-window--${window.key}`} key={window.key} aria-labelledby={`notification-window-${window.key}`}>
-                    <header className="notification-window__header">
-                      <span className="notification-window__icon"><WindowIcon size={18} aria-hidden="true" /></span>
-                      <div>
-                        <h3 id={`notification-window-${window.key}`}>{window.title}</h3>
-                        <p>{window.description}</p>
+          {!loading && updateItems.length > 0 && (
+            <section className="notification-window notification-window--updates" aria-labelledby="notification-window-updates">
+              <header className="notification-window__header">
+                <span className="notification-window__icon"><BellRing size={18} aria-hidden="true" /></span>
+                <div>
+                  <h3 id="notification-window-updates">Notifications</h3>
+                  <p>Orders, deliveries, payments, messages, and accounts</p>
+                </div>
+                <span className="notification-window__count">
+                  {updateUnread > 0 ? `${updateUnread} new` : updateItems.length}
+                </span>
+              </header>
+              <div className="notification-window__body">
+                {['Today', 'Yesterday', 'Earlier'].map((group) => {
+                  const groupedItems = updateItems.filter((item) => groupLabel(item.createdAt) === group);
+                  if (!groupedItems.length) return null;
+                  return (
+                    <section className="notification-group" key={group} aria-labelledby={`updates-${group.toLowerCase()}`}>
+                      <h4 id={`updates-${group.toLowerCase()}`} className="notification-group__title">{group}</h4>
+                      <div className="notification-group__card">
+                        {groupedItems.map((item, index) => {
+                          const Icon = notificationIcon(item.type);
+                          return (
+                            <motion.article
+                              key={item.id}
+                              className={`notification-item notification-item--${item.type} ${item.read ? 'is-read' : ''}`}
+                              role="button"
+                              tabIndex={0}
+                              aria-label={`${item.read ? 'Read' : 'Unread'} notification: ${item.title}`}
+                              onClick={() => openNotification(item)}
+                              onKeyDown={(event) => {
+                                if (event.key === 'Enter' || event.key === ' ') {
+                                  event.preventDefault();
+                                  openNotification(item);
+                                }
+                              }}
+                              initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              whileHover={reduceMotion ? undefined : { x: 2 }}
+                              transition={{ duration: 0.22, delay: reduceMotion ? 0 : Math.min(index * 0.035, 0.28), ease: [0.22, 1, 0.36, 1] }}
+                            >
+                              <span className={`notification-icon notification-icon--${item.type}`}>
+                                <Icon size={18} strokeWidth={2.2} aria-hidden="true" />
+                              </span>
+                              <div className="notification-item__copy">
+                                <div className="notification-item__title-row">
+                                  <h3>{item.title}</h3>
+                                  <span className={`notification-type-badge notification-type-badge--${item.type}`}>
+                                    {notificationTypeLabel(item.type)}
+                                  </span>
+                                </div>
+                                <p>{item.detail}</p>
+                                <time>{timeLabel(item.createdAt)}</time>
+                              </div>
+                              {!item.read && <span className="notification-unread" aria-label="Unread" />}
+                            </motion.article>
+                          );
+                        })}
                       </div>
-                      <span className="notification-window__count">
-                        {windowUnread > 0 ? `${windowUnread} new` : window.entries.length}
-                      </span>
-                    </header>
-                    <div className="notification-window__body">
-                      {!window.entries.length && (
-                        <p className="notification-window__empty">
-                          {window.key === 'alerts' ? 'No active alerts.' : 'No notifications in this section.'}
-                        </p>
-                      )}
-                      {['Today', 'Yesterday', 'Earlier'].map((group) => {
-                        const groupedItems = window.entries.filter((item) => groupLabel(item.createdAt) === group);
-                        if (!groupedItems.length) return null;
-                        return (
-                          <section className="notification-group" key={group} aria-labelledby={`${window.key}-${group.toLowerCase()}`}>
-                            <h4 id={`${window.key}-${group.toLowerCase()}`} className="notification-group__title">{group}</h4>
-                            <div className="notification-group__card">
-                              {groupedItems.map((item) => {
-                                const Icon = notificationIcon(item.type);
-                                return (
-                                  <article
-                                    key={item.id}
-                                    className={`notification-item notification-item--${item.type} ${item.read ? 'is-read' : ''}`}
-                                    role="button"
-                                    tabIndex={0}
-                                    aria-label={`${item.read ? 'Read' : 'Unread'} notification: ${item.title}`}
-                                    onClick={() => openNotification(item)}
-                                    onKeyDown={(event) => {
-                                      if (event.key === 'Enter' || event.key === ' ') {
-                                        event.preventDefault();
-                                        openNotification(item);
-                                      }
-                                    }}
-                                  >
-                                    <span className={`notification-icon notification-icon--${item.type}`}>
-                                      <Icon size={18} strokeWidth={2.2} aria-hidden="true" />
-                                    </span>
-                                    <div className="notification-item__copy">
-                                      <div className="notification-item__title-row">
-                                        <h3>{item.title}</h3>
-                                        <span className={`notification-type-badge notification-type-badge--${item.type}`}>
-                                          {notificationTypeLabel(item.type)}
-                                        </span>
-                                      </div>
-                                      <p>{item.detail}</p>
-                                      <time>{timeLabel(item.createdAt)}</time>
-                                    </div>
-                                    {!item.read && <span className="notification-unread" aria-label="Unread" />}
-                                  </article>
-                                );
-                              })}
-                            </div>
-                          </section>
-                        );
-                      })}
-                    </div>
-                  </section>
-                );
-              })}
-            </div>
+                    </section>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+
+          {/* Alerts sit under the activity feed: they are standing problems to
+              resolve, not the latest news, so they must not push real
+              notifications below the fold. */}
+          {!loading && alertItems.length > 0 && (
+            <section className="notification-window notification-window--alerts" aria-labelledby="notification-window-alerts">
+              <header className="notification-window__header">
+                <span className="notification-window__icon"><TriangleAlert size={18} aria-hidden="true" /></span>
+                <div>
+                  <h3 id="notification-window-alerts">Alerts</h3>
+                  <p>Overdue invoices and low stock that still need action</p>
+                </div>
+                <span className="notification-window__count">
+                  {alertUnread > 0 ? `${alertUnread} new` : alertItems.length}
+                </span>
+              </header>
+              <div className="notification-window__body">
+                <div className="notification-alerts">
+                  {alertItems.map((item, index) => {
+                    const Icon = notificationIcon(item.type);
+                    return (
+                      <motion.article
+                        key={item.id}
+                        className={`notification-alert notification-alert--${item.type}${item.read ? ' is-read' : ''}`}
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`${item.read ? 'Read' : 'Unread'} alert: ${item.title}`}
+                        onClick={() => openNotification(item)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault();
+                            openNotification(item);
+                          }
+                        }}
+                        initial={reduceMotion ? false : { opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        whileHover={reduceMotion ? undefined : { y: -2 }}
+                        transition={{ duration: 0.24, delay: reduceMotion ? 0 : Math.min(index * 0.05, 0.3), ease: [0.22, 1, 0.36, 1] }}
+                      >
+                        <span className="notification-alert__icon"><Icon size={18} strokeWidth={2.2} aria-hidden="true" /></span>
+                        <div className="notification-alert__copy">
+                          <div className="notification-alert__title-row">
+                            <h3>{item.title}</h3>
+                            <span className="notification-alert__badge">{notificationTypeLabel(item.type)}</span>
+                          </div>
+                          <p>{item.detail}</p>
+                          <time>{timeLabel(item.createdAt)}</time>
+                        </div>
+                        {!item.read && <span className="notification-unread" aria-label="Unread" />}
+                      </motion.article>
+                    );
+                  })}
+                </div>
+              </div>
+            </section>
           )}
         </div>
       </motion.section>

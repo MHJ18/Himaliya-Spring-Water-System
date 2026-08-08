@@ -336,34 +336,270 @@
   }
 }
 
-/* Lighter message window with compact, pill-shaped conversations. */
+/* ── Conversation surface ───────────────────────────────────────────────
+   Rounded on three corners with a squared tail on the side the message came
+   from, so direction reads from shape rather than colour alone. */
 .customer-messages-card {
-  border-radius: 1.25rem;
-  box-shadow: 0 24px 64px rgba(0, 11, 24, .28);
+  border-radius: 1.35rem;
+  box-shadow: 0 28px 70px rgba(0, 11, 24, .3);
+  overflow: hidden;
 }
 .customer-messages-header {
-  padding: .8rem .95rem;
-  background: linear-gradient(90deg, rgba(72, 205, 231, .08), transparent);
+  padding: .85rem 1rem;
+  background: linear-gradient(90deg, rgba(72, 205, 231, .1), transparent);
 }
-.customer-messages-mark { width: 2.45rem; height: 2.45rem; border-radius: .75rem; }
-.customer-messages-header strong { font-size: .82rem; }
-.customer-messages-header span { font-size: .68rem; }
-.customer-messages-thread { gap: .45rem; padding: .85rem; }
+.customer-messages-mark { width: 2.45rem; height: 2.45rem; border-radius: .8rem; }
+.customer-messages-header strong { font-size: .9rem; }
+.customer-messages-header span { font-size: .78rem; }
+.customer-messages-thread { gap: .5rem; padding: 1rem .95rem; }
+
 .customer-messages-bubble {
-  max-width: min(76%, 26rem);
-  padding: .5rem .75rem .38rem;
-  border-radius: 1.25rem;
-  box-shadow: none;
+  max-width: min(74%, 27rem);
+  padding: .6rem .85rem .45rem;
+  border-radius: 1.15rem 1.15rem 1.15rem .3rem;
+  box-shadow: 0 2px 10px rgba(0, 11, 24, .16);
+  transition: transform 180ms cubic-bezier(.22, 1, .36, 1), box-shadow 180ms ease;
 }
-.customer-messages-bubble-row.is-mine .customer-messages-bubble { border-radius: 1.25rem; box-shadow: 0 6px 16px rgba(30, 157, 190, .12); }
-.customer-messages-bubble p { font-size: .76rem; line-height: 1.4; }
-.customer-messages-sender { margin-bottom: .12rem; font-size: .52rem; }
-.customer-messages-bubble time { margin-top: .2rem; font-size: .58rem; }
-.customer-messages-compose { gap: .55rem; padding: .7rem .8rem .8rem; background: rgba(4, 18, 31, .22); }
-.customer-theme--light .customer-messages-compose { background: rgba(232, 244, 248, .72); }
-.customer-messages-compose textarea { min-height: 2.55rem; padding: .63rem .85rem; font-size: .76rem; border-radius: 999px; }
-.customer-messages-compose button { width: 2.55rem; height: 2.55rem; border-radius: 50%; }
+.customer-messages-bubble:hover {
+  box-shadow: 0 6px 18px rgba(0, 11, 24, .22);
+  transform: translateY(-1px);
+}
+.customer-messages-bubble-row.is-mine .customer-messages-bubble {
+  border-radius: 1.15rem 1.15rem .3rem 1.15rem;
+  box-shadow: 0 6px 18px rgba(30, 157, 190, .26);
+}
+.customer-messages-bubble-row.is-mine .customer-messages-bubble:hover {
+  box-shadow: 0 10px 26px rgba(30, 157, 190, .34);
+}
+.customer-messages-bubble p { font-size: .85rem; line-height: 1.5; }
+.customer-messages-sender { margin-bottom: .18rem; font-size: .75rem; font-weight: 800; letter-spacing: .02em; }
+.customer-messages-bubble time { margin-top: .28rem; font-size: .72rem; opacity: .78; }
+
+/* ── Composer ───────────────────────────────────────────────────────────
+   The field carries the focus ring; the send button lifts on hover and
+   settles on press. */
+.customer-messages-compose {
+  gap: .6rem;
+  padding: .8rem .9rem .9rem;
+  background: rgba(4, 18, 31, .3);
+  border-top: 1px solid rgba(125, 223, 255, .12);
+}
+.customer-theme--light .customer-messages-compose {
+  background: rgba(240, 248, 251, .86);
+  border-top-color: rgba(18, 104, 132, .12);
+}
+.customer-messages-compose textarea {
+  min-height: 2.75rem;
+  padding: .7rem 1rem;
+  font-size: 16px;
+  border-radius: 1.4rem;
+  border: 1px solid rgba(125, 223, 255, .16);
+  outline: 0;
+  transition: border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+}
+.customer-messages-compose textarea:focus {
+  border-color: rgba(125, 223, 255, .55);
+  box-shadow: 0 0 0 4px rgba(85, 200, 255, .16);
+}
+.customer-theme--light .customer-messages-compose textarea {
+  border-color: rgba(18, 104, 132, .16);
+}
+.customer-theme--light .customer-messages-compose textarea:focus {
+  border-color: rgba(8, 142, 180, .55);
+  box-shadow: 0 0 0 4px rgba(8, 142, 180, .14);
+}
+.customer-messages-compose button {
+  width: 2.75rem;
+  height: 2.75rem;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  box-shadow: 0 8px 20px rgba(30, 157, 190, .3);
+  transition: transform 180ms cubic-bezier(.22, 1, .36, 1), box-shadow 180ms ease, filter 180ms ease;
+}
+.customer-messages-compose button:hover:not(:disabled) {
+  box-shadow: 0 12px 26px rgba(30, 157, 190, .4);
+  filter: brightness(1.05);
+  transform: translateY(-2px);
+}
+.customer-messages-compose button:active:not(:disabled) { transform: translateY(0) scale(.96); }
+.customer-messages-compose button:disabled { cursor: not-allowed; opacity: .5; box-shadow: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .customer-messages-bubble,
+  .customer-messages-compose button { transition: none; }
+  .customer-messages-bubble:hover,
+  .customer-messages-compose button:hover:not(:disabled) { transform: none; }
+}
 
 @media (max-width: 640px) {
   .customer-messages-bubble { max-width: 86%; }
+}
+
+/* ── Mobile: WhatsApp-style conversation ─────────────────────────────
+   On phones the page becomes the conversation: the card fills the viewport,
+   the thread is the only scrolling region, and the composer is pinned to the
+   bottom above the keyboard. 100dvh (not vh) is what keeps the composer
+   visible when the mobile URL bar collapses. */
+
+@media (max-width: 640px) {
+  /* One full-height column: page -> shell -> card, each passing its height
+     down, so the thread is the only thing that scrolls. */
+  .customer-messages-page {
+    display: flex;
+    height: 100dvh;
+    min-height: 0;
+    flex-direction: column;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .customer-messages-shell {
+    display: flex;
+    width: 100%;
+    min-height: 0;
+    flex: 1;
+    flex-direction: column;
+    max-width: none;
+  }
+
+  .customer-messages-topbar {
+    flex: 0 0 auto;
+    gap: .6rem;
+    padding: calc(.5rem + env(safe-area-inset-top, 0px)) .7rem .5rem;
+    margin-bottom: 0;
+  }
+
+  .customer-messages-topbar .customer-messages-brand small { display: none; }
+
+  .customer-messages-card {
+    display: grid;
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    flex: 1;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  /* Sticky conversation header, like the contact bar in WhatsApp. */
+  .customer-messages-header {
+    position: sticky;
+    z-index: 3;
+    top: 0;
+    padding: .6rem .8rem calc(.6rem + env(safe-area-inset-top, 0px));
+    padding-top: calc(.6rem + env(safe-area-inset-top, 0px));
+    background: var(--customer-surface, #0b2231);
+    border-bottom: 1px solid rgba(125, 223, 255, .14);
+  }
+
+  .customer-theme--light .customer-messages-header {
+    background: #ffffff;
+    border-bottom-color: rgba(18, 104, 132, .12);
+  }
+
+  /* The wallpaper-style thread: the only scrolling area on the screen. */
+  .customer-messages-thread {
+    min-height: 0;
+    padding: .75rem .65rem 1rem;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    background:
+      radial-gradient(circle at 18% 8%, rgba(63, 201, 227, .07), transparent 20rem),
+      var(--customer-bg, #071722);
+  }
+
+  .customer-theme--light .customer-messages-thread {
+    background:
+      radial-gradient(circle at 18% 8%, rgba(63, 201, 227, .09), transparent 20rem),
+      #eceff1;
+  }
+
+  .customer-messages-bubble-row {
+    margin-bottom: .3rem;
+  }
+
+  /* Incoming: white/grey, tail on the left. */
+  .customer-messages-bubble {
+    max-width: 82%;
+    padding: .5rem .7rem .34rem;
+    border-radius: .85rem .85rem .85rem .2rem;
+    box-shadow: 0 1px 1px rgba(6, 30, 42, .16);
+  }
+
+  .customer-theme--light .customer-messages-bubble {
+    background: #ffffff;
+    border-color: transparent;
+  }
+
+  /* Outgoing: the familiar green, tail on the right. */
+  .customer-messages-bubble-row.is-mine .customer-messages-bubble {
+    color: #06231a;
+    background: #d9fdd3;
+    border-color: transparent;
+    border-radius: .85rem .85rem .2rem .85rem;
+    box-shadow: 0 1px 1px rgba(6, 30, 42, .16);
+  }
+
+  .customer-theme--dark .customer-messages-bubble-row.is-mine .customer-messages-bubble {
+    color: #e8fff4;
+    background: #12604a;
+  }
+
+  .customer-theme--dark .customer-messages-bubble {
+    background: #16303f;
+    border-color: transparent;
+  }
+
+  .customer-messages-bubble-row.is-mine .customer-messages-bubble time {
+    color: rgba(6, 35, 26, .55);
+  }
+
+  .customer-theme--dark .customer-messages-bubble-row.is-mine .customer-messages-bubble time {
+    color: rgba(232, 255, 244, .6);
+  }
+
+  .customer-messages-bubble time {
+    display: block;
+    margin-top: .1rem;
+    font-size: .58rem;
+    text-align: right;
+  }
+
+  /* Composer pinned to the bottom, clear of the home indicator. */
+  .customer-messages-compose {
+    position: sticky;
+    z-index: 3;
+    bottom: 0;
+    gap: .5rem;
+    padding: .55rem .6rem calc(.55rem + env(safe-area-inset-bottom, 0px));
+    background: var(--customer-surface, #0b2231);
+    border-top: 1px solid rgba(125, 223, 255, .14);
+  }
+
+  .customer-theme--light .customer-messages-compose {
+    background: #ffffff;
+    border-top-color: rgba(18, 104, 132, .12);
+  }
+
+  .customer-messages-compose textarea {
+    min-height: 2.6rem;
+    max-height: 7rem;
+    padding: .6rem .9rem;
+    /* 16px so focusing the field never zooms the conversation. */
+    font-size: 16px;
+    border-radius: 1.35rem;
+  }
+
+  .customer-messages-compose button {
+    width: 2.75rem;
+    height: 2.75rem;
+    flex: 0 0 2.75rem;
+    align-self: flex-end;
+    border-radius: 50%;
+  }
 }

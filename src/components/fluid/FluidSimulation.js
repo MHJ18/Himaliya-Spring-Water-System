@@ -43,8 +43,9 @@ const FLUID_PROFILES = {
 
 const DYE_COLORS = {
   hero: [
-    [0.31, 0.76, 0.8],
-    [0.08, 0.48, 0.52],
+    [0.29, 0.83, 0.94],
+    [0.1, 0.46, 0.86],
+    [0.36, 0.9, 0.74],
   ],
   refill: [
     [0.04, 0.43, 0.47],
@@ -55,6 +56,83 @@ const DYE_COLORS = {
     [0.16, 0.58, 0.64],
   ],
 };
+
+const TAU = Math.PI * 2;
+
+// Virtual currents that stand in for the pointer. Each traces a two-term
+// Lissajous path whose frequencies share no simple ratio, so the motion never
+// visibly repeats, and the solver is handed the path's own derivative as the
+// stroke velocity — the same signal a moving cursor used to produce. Driving
+// the existing splat path (rather than bolting on a separate animation) is what
+// keeps the fluid's character identical to the interactive version.
+const AUTONOMOUS_CURRENTS = [
+  {
+    center: [0.34, 0.54],
+    amplitude: [0.27, 0.21],
+    primary: [0.047, 0.071],
+    secondary: [0.019, 0.031],
+    phase: [0, 1.7],
+    phaseSecondary: [2.4, 0.7],
+    colorIndex: 0,
+    strength: 1,
+  },
+  {
+    center: [0.68, 0.46],
+    amplitude: [0.24, 0.24],
+    primary: [0.037, 0.053],
+    secondary: [0.023, 0.013],
+    phase: [2.1, 4.3],
+    phaseSecondary: [0.9, 3.6],
+    colorIndex: 1,
+    strength: 0.86,
+  },
+  {
+    center: [0.54, 0.68],
+    amplitude: [0.31, 0.15],
+    primary: [0.029, 0.061],
+    secondary: [0.011, 0.025],
+    phase: [4.8, 2.2],
+    phaseSecondary: [1.5, 5.1],
+    colorIndex: 2,
+    strength: 0.72,
+  },
+];
+
+// Path speed is ~0.1 screen-widths per second, so it needs a sizeable scale to
+// read as a stroke; the dye rate is per-second and gets multiplied by the frame
+// delta, which keeps density identical across the 24-60fps tiers.
+const CURRENT_VELOCITY_SCALE = 180;
+const CURRENT_DYE_RATE = 6.4;
+const DROP_INTERVAL_SECONDS = 2.9;
+
+// 0.72/0.28 keeps the primary sweep readable while the slower second term stops
+// the path from ever closing on itself.
+function sampleCurrent(current, time) {
+  const [centerX, centerY] = current.center;
+  const [amplitudeX, amplitudeY] = current.amplitude;
+  const [primaryX, primaryY] = current.primary;
+  const [secondaryX, secondaryY] = current.secondary;
+  const [phaseX, phaseY] = current.phase;
+  const [phaseSecondaryX, phaseSecondaryY] = current.phaseSecondary;
+
+  const anglePrimaryX = TAU * primaryX * time + phaseX;
+  const angleSecondaryX = TAU * secondaryX * time + phaseSecondaryX;
+  const anglePrimaryY = TAU * primaryY * time + phaseY;
+  const angleSecondaryY = TAU * secondaryY * time + phaseSecondaryY;
+
+  return {
+    point: [
+      centerX + amplitudeX * (0.72 * Math.sin(anglePrimaryX) + 0.28 * Math.sin(angleSecondaryX)),
+      centerY + amplitudeY * (0.72 * Math.sin(anglePrimaryY) + 0.28 * Math.sin(angleSecondaryY)),
+    ],
+    delta: [
+      amplitudeX * TAU
+        * (0.72 * primaryX * Math.cos(anglePrimaryX) + 0.28 * secondaryX * Math.cos(angleSecondaryX)),
+      amplitudeY * TAU
+        * (0.72 * primaryY * Math.cos(anglePrimaryY) + 0.28 * secondaryY * Math.cos(angleSecondaryY)),
+    ],
+  };
+}
 
 function useSystemReducedMotion(forcedValue) {
   const [systemPreference, setSystemPreference] = React.useState(() => (
@@ -142,6 +220,7 @@ function FrameTicker({ fps, running }) {
 }
 
 function FluidSolver({
+  autonomous,
   mode,
   onReady,
   quality,
@@ -348,17 +427,42 @@ function FluidSolver({
     queuedSplats.forEach(applySplat);
 
     const delta = Math.min(Math.max(frameDelta, 0.001), 0.033);
+    const colors = DYE_COLORS[mode] || DYE_COLORS.hero;
+    const elapsed = state.clock.elapsedTime;
+
+    // The currents run every frame so the dye is continuously renewed instead
+    // of decaying to a flat field between ambient pulses.
+    if (autonomous) {
+      AUTONOMOUS_CURRENTS.forEach((current) => {
+        const { point, delta: pathDelta } = sampleCurrent(current, elapsed);
+        const gain = CURRENT_DYE_RATE * delta * current.strength;
+        applySplat({
+          point,
+          velocity: [
+            pathDelta[0] * CURRENT_VELOCITY_SCALE * current.strength,
+            pathDelta[1] * CURRENT_VELOCITY_SCALE * current.strength,
+          ],
+          color: colors[current.colorIndex % colors.length].map((value) => value * gain),
+          radius: profile.radius * 1.5,
+        });
+      });
+    }
+
     ambientTimeRef.current += delta;
-    if (ambientTimeRef.current > 3.4) {
+    const dropInterval = autonomous ? DROP_INTERVAL_SECONDS : 3.4;
+    if (ambientTimeRef.current > dropInterval) {
       ambientTimeRef.current = 0;
-      const colors = DYE_COLORS[mode] || DYE_COLORS.hero;
-      const phase = state.clock.elapsedTime * 0.21;
+      const phase = elapsed * 0.21;
+      // A slow bloom with almost no directional push, so it reads as a drop
+      // landing rather than another stroke.
       applySplat({
         point: [0.56 + Math.sin(phase) * 0.28, 0.48 + Math.cos(phase * 0.74) * 0.18],
-        velocity: [Math.cos(phase) * 14, Math.sin(phase * 0.8) * 11],
-        color: colors[Math.floor(state.clock.elapsedTime / 3.4) % colors.length]
-          .map((value) => value * 0.78),
-        radius: profile.radius * 1.18,
+        velocity: autonomous
+          ? [Math.cos(phase * 1.7) * 6, Math.sin(phase * 1.3) * 6]
+          : [Math.cos(phase) * 14, Math.sin(phase * 0.8) * 11],
+        color: colors[Math.floor(elapsed / dropInterval) % colors.length]
+          .map((value) => value * (autonomous ? 0.5 : 0.78)),
+        radius: profile.radius * (autonomous ? 3.2 : 1.18),
       });
     }
 
@@ -483,6 +587,7 @@ class CanvasErrorBoundary extends React.Component {
 }
 
 function FluidCanvas({
+  autonomous,
   mode,
   onError,
   onReady,
@@ -509,6 +614,7 @@ function FluidCanvas({
         <CapabilityGate onUnsupported={onError}>
           <FrameTicker fps={quality.fps} running={running} />
           <FluidSolver
+            autonomous={autonomous}
             mode={mode}
             onReady={onReady}
             quality={quality}
@@ -521,8 +627,13 @@ function FluidCanvas({
   );
 }
 
+/**
+ * @param {boolean} autonomous  Drive the fluid from its own currents and ignore
+ *   pointer and scroll input entirely. The hero uses this; the lab does not.
+ */
 export default function FluidSimulation({
   active = true,
+  autonomous = false,
   className = '',
   eager = false,
   interactionRef,
@@ -585,7 +696,7 @@ export default function FluidSimulation({
   }, []);
 
   React.useEffect(() => {
-    if (isStatic || !active) return undefined;
+    if (isStatic || !active || autonomous) return undefined;
     const target = (interactionRef && interactionRef.current) || hostRef.current;
     if (!target) return undefined;
     const pointers = new Map();
@@ -649,10 +760,10 @@ export default function FluidSimulation({
       target.removeEventListener('pointercancel', handlePointerEnd);
       target.removeEventListener('pointerleave', handlePointerEnd);
     };
-  }, [active, interactionRef, isStatic, mode]);
+  }, [active, autonomous, interactionRef, isStatic, mode]);
 
   React.useEffect(() => {
-    if (isStatic || !active) return undefined;
+    if (isStatic || !active || autonomous) return undefined;
     let previousScroll = window.scrollY;
     let frameId = 0;
     const handleScroll = () => {
@@ -678,7 +789,7 @@ export default function FluidSimulation({
       if (frameId) window.cancelAnimationFrame(frameId);
       window.removeEventListener('scroll', handleScroll);
     };
-  }, [active, inView, isStatic, mode]);
+  }, [active, autonomous, inView, isStatic, mode]);
 
   const handleError = React.useCallback(() => {
     setContextFailed(true);
@@ -701,6 +812,7 @@ export default function FluidSimulation({
       <div className="fluid-simulation__fallback" />
       {idleReady && !isStatic && (
         <FluidCanvas
+          autonomous={autonomous}
           mode={mode}
           onError={handleError}
           onReady={() => setCanvasReady(true)}

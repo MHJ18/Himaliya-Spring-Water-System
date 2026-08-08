@@ -82,6 +82,19 @@ function WaterLogin({ dispatch, isFetching = false, errorMessage = null, locatio
           <div className="admin-login-footnote"><ShieldCheck size={17} /><span>Private workspace · Owner-managed team access</span></div>
         </motion.section>
 
+        {/* Below 900px the copy panel is hidden, which took the page title with
+            it. This heading is the mobile stand-in; .water-login-mobile-heading
+            was already styled for it but had never been rendered. */}
+        <motion.section
+          className="water-login-mobile-heading"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, delay: 0.05 }}
+        >
+          <h2>Run every delivery from one clear control room.</h2>
+          <p>Orders, rider dispatch and the sales ledger in a single workspace.</p>
+        </motion.section>
+
         <motion.section
           className="water-login-card admin-login-card"
           initial={{ opacity: 0, y: 24 }}

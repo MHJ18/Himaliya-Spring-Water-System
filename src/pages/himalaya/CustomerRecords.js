@@ -43,6 +43,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import {
   CheckCircleOutlineRounded,
   DownloadRounded,
@@ -418,18 +419,28 @@ export default function CustomerRecords({ history, location }) {
                         primaryTypographyProps={{ fontWeight: 800, noWrap: true }}
                         secondaryTypographyProps={{ component: 'span', display: 'block', noWrap: true }}
                       />
+                      {/* Filled, not outlined: an outlined chip is transparent,
+                          so it vanished into the tinted background of a
+                          selected or hovered row. */}
                       <Chip
                         size="small"
                         color={customer.source === 'portal' ? 'info' : customer.source === 'both' ? 'secondary' : 'default'}
-                        variant="outlined"
                         label={customer.source === 'portal' ? 'App' : customer.source === 'both' ? 'Admin + App' : 'Admin'}
-                        sx={{
+                        sx={(theme) => ({
                           ml: 1,
                           flex: '0 0 auto',
                           height: 24,
-                          fontSize: '.68rem',
+                          fontSize: '.72rem',
                           fontWeight: 800,
-                        }}
+                          border: '1px solid',
+                          borderColor: alpha(theme.palette.divider, 0.9),
+                          ...(customer.source !== 'portal' && customer.source !== 'both' && {
+                            color: theme.palette.text.primary,
+                            bgcolor: theme.palette.mode === 'dark'
+                              ? alpha(theme.palette.common.white, 0.14)
+                              : alpha(theme.palette.common.black, 0.07),
+                          }),
+                        })}
                       />
                     </ListItemButton>
                   </ListItem>

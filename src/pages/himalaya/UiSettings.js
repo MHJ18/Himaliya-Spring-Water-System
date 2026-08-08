@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import {
   Box,
   Card,
@@ -6,6 +7,7 @@ import {
   CardHeader,
   Collapse,
   FormControl,
+  FormHelperText,
   Grid,
   InputLabel,
   LinearProgress,
@@ -25,6 +27,7 @@ import DashboardCustomizeRoundedIcon from '@mui/icons-material/DashboardCustomiz
 import DarkModeRoundedIcon from '@mui/icons-material/DarkModeRounded';
 import ExpandMoreRoundedIcon from '@mui/icons-material/ExpandMoreRounded';
 import FormatSizeRoundedIcon from '@mui/icons-material/FormatSizeRounded';
+import TextFieldsRoundedIcon from '@mui/icons-material/TextFieldsRounded';
 import LightModeRoundedIcon from '@mui/icons-material/LightModeRounded';
 import MapRoundedIcon from '@mui/icons-material/MapRounded';
 import MotionPhotosOffRoundedIcon from '@mui/icons-material/MotionPhotosOffRounded';
@@ -41,7 +44,11 @@ import { LayoutGroup, motion, useReducedMotion } from 'motion/react';
 import PageShell from '../../components/PageShell/PageShell';
 import { useSettings } from '../../context/SettingsContext';
 import {
+  ADMIN_BACKGROUND_PALETTES,
+  ADMIN_FONT_OPTIONS,
   ADMIN_THEME_PRESETS,
+  DEFAULT_ADMIN_BACKGROUND,
+  DEFAULT_ADMIN_FONT,
   DEFAULT_ADMIN_THEME_PRESET,
   DEFAULT_SETTINGS,
 } from '../../data/constants';
@@ -64,8 +71,8 @@ function InterfaceCard({
         avatar={(
           <Box sx={(theme) => ({
             display: 'grid',
-            width: 42,
-            height: 42,
+            width: 36,
+            height: 36,
             placeItems: 'center',
             color: 'primary.main',
             bgcolor: alpha(theme.palette.primary.main, 0.11),
@@ -122,12 +129,12 @@ function InterfaceToggle({
   return (
     <Box sx={(theme) => ({
       display: 'flex',
-      minHeight: 70,
+      minHeight: 58,
       alignItems: 'center',
       justifyContent: 'space-between',
-      gap: 1.5,
-      my: 0.75,
-      p: 1.25,
+      gap: 1.25,
+      my: 0.6,
+      p: 1,
       bgcolor: checked ? alpha(theme.palette.primary.main, 0.09) : 'action.hover',
       border: '1px solid',
       borderColor: checked ? alpha(theme.palette.primary.main, 0.28) : 'divider',
@@ -137,14 +144,14 @@ function InterfaceToggle({
       <Stack direction="row" alignItems="center" spacing={1.25} sx={{ minWidth: 0 }}>
         <Box sx={{
           display: 'grid',
-          width: 40,
-          height: 40,
-          flex: '0 0 40px',
+          width: 34,
+          height: 34,
+          flex: '0 0 34px',
           placeItems: 'center',
           color: checked ? 'primary.main' : 'text.secondary',
           bgcolor: 'action.selected',
           borderRadius: 1.75,
-          '& svg': { fontSize: 21 },
+          '& svg': { fontSize: 18 },
         }}
         >
           {icon}
@@ -214,6 +221,63 @@ function ThemePicker({ value, onChange }) {
     </LayoutGroup>
   );
 }
+
+// Each card previews the real gradient it applies, so the swatch is a sample
+// rather than a decorative chip.
+function BackgroundPicker({ value, onChange }) {
+  const reduceMotion = useReducedMotion();
+  const selectedValue = ADMIN_BACKGROUND_PALETTES.some((palette) => palette.id === value)
+    ? value
+    : DEFAULT_ADMIN_BACKGROUND;
+
+  return (
+    <LayoutGroup id="interface-background-palettes">
+      <div className="settings-theme-grid" role="radiogroup" aria-label="Page background">
+        {ADMIN_BACKGROUND_PALETTES.map((palette) => {
+          const selected = palette.id === selectedValue;
+          return (
+            <motion.button
+              key={palette.id}
+              type="button"
+              role="radio"
+              aria-checked={selected}
+              className={`settings-theme-card${selected ? ' is-selected' : ''}`}
+              style={{
+                '--settings-theme-accent': palette.swatches[0],
+                '--settings-theme-ring': alpha(palette.swatches[0], 0.17),
+              }}
+              onClick={() => onChange(palette.id)}
+              whileHover={reduceMotion ? undefined : { y: -2 }}
+              whileTap={reduceMotion ? undefined : { scale: 0.985 }}
+            >
+              {selected && (
+                <motion.span
+                  className="settings-theme-card__selection"
+                  layoutId="interface-background-selection"
+                />
+              )}
+              <span className="settings-theme-card__content">
+                <span
+                  className="settings-background-card__preview"
+                  aria-hidden="true"
+                  style={palette.light ? { background: palette.light } : undefined}
+                />
+                <strong>{palette.name}</strong>
+                <small>{palette.description}</small>
+              </span>
+            </motion.button>
+          );
+        })}
+      </div>
+    </LayoutGroup>
+  );
+}
+
+BackgroundPicker.propTypes = {
+  value: PropTypes.string,
+  onChange: PropTypes.func.isRequired,
+};
+BackgroundPicker.defaultProps = { value: DEFAULT_ADMIN_BACKGROUND };
 
 const SIDEBAR_PALETTES = [
   { id: 'midnight', name: 'Midnight', description: 'Deep black with soft white text', values: { sidebarColor: '#111214', sidebarTextColor: '#e7e9ed' } },
@@ -303,8 +367,9 @@ function DashboardChoice({
 
 export default function UiSettings() {
   const { settings, updateSettings } = useSettings();
-  const mobile = useMediaQuery((theme) => theme.breakpoints.down('md'), { noSsr: true });
-  const [openMobileCard, setOpenMobileCard] = React.useState(null);
+  const mobile = useMediaQuery((theme) => theme.breakpoints.down('sm'), { noSsr: true });
+  // Keep one card open so the page never renders as empty headers.
+  const [openMobileCard, setOpenMobileCard] = React.useState('theme');
   const update = (partial) => updateSettings(partial);
   const cardProps = (id) => ({
     id,
@@ -399,6 +464,17 @@ export default function UiSettings() {
             <ThemePicker
               value={settings.colorTheme}
               onChange={(colorTheme) => update({ colorTheme })}
+            />
+
+            <Typography variant="overline" color="text.secondary" sx={{ display: 'block', mt: 2.5 }}>
+              Background
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1.25 }}>
+              Changes the page backdrop only, so it combines with any accent palette above.
+            </Typography>
+            <BackgroundPicker
+              value={settings.backgroundPalette}
+              onChange={(backgroundPalette) => update({ backgroundPalette })}
             />
           </InterfaceCard>
         </Grid>
@@ -512,6 +588,27 @@ export default function UiSettings() {
                     <MenuItem value="default">Default</MenuItem>
                     <MenuItem value="large">Large</MenuItem>
                   </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth>
+                  <InputLabel id="ui-font-family-label">Font family</InputLabel>
+                  <Select
+                    labelId="ui-font-family-label"
+                    label="Font family"
+                    value={settings.fontFamily || DEFAULT_ADMIN_FONT}
+                    onChange={(event) => update({ fontFamily: event.target.value })}
+                    startAdornment={<TextFieldsRoundedIcon sx={{ mr: 1, color: 'text.secondary' }} />}
+                  >
+                    {ADMIN_FONT_OPTIONS.map((option) => (
+                      <MenuItem key={option.id} value={option.id} sx={{ fontFamily: option.stack }}>
+                        {option.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                  <FormHelperText>
+                    {(ADMIN_FONT_OPTIONS.find((option) => option.id === (settings.fontFamily || DEFAULT_ADMIN_FONT)) || {}).description}
+                  </FormHelperText>
                 </FormControl>
               </Grid>
               <Grid item xs={12} sm={6}>

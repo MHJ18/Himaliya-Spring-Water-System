@@ -36,7 +36,6 @@ import {
 } from '../../services/api/customerPortalApi';
 import { BOTTLE_TYPE_LABELS } from '../../data/constants';
 import { useSettings } from '../../context/SettingsContext';
-import { getStableCustomerCoordinates } from '../../utils/coordinates';
 import {
   DELIVERY_STAGE,
   deliveryStage,
@@ -192,22 +191,15 @@ function RiderTracking({ location }) {
     if (selectedOrder && deliveryStage(selectedOrder) === DELIVERY_STAGE.delivered) {
       mapOrders = [selectedOrder];
     }
-    return mapOrders.map((order) => {
-      const address = orderAddress(order);
-      const coords = getStableCustomerCoordinates({
-        id: (order.profile && order.profile.id) || order.id,
-        address,
-        name: order.profile && order.profile.name,
-      });
-      return {
-        id: order.id,
-        label: (order.profile && order.profile.name) || 'Customer',
-        address: address || 'Profile address missing',
-        lat: coords.lat,
-        lng: coords.lng,
-        selected: order.id === selectedId,
-      };
-    });
+    // Pass the address only. RiderMap geocodes it to a real position and
+    // falls back to an approximate pin itself; a generated coordinate here
+    // would look exact to the map and suppress that lookup.
+    return mapOrders.map((order) => ({
+      id: order.id,
+      label: (order.profile && order.profile.name) || 'Customer',
+      address: orderAddress(order) || 'Profile address missing',
+      selected: order.id === selectedId,
+    }));
   }, [orders, selectedId, selectedOrder]);
 
   const selectedOrderRef = React.useRef(selectedOrder);

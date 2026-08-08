@@ -55,6 +55,57 @@ const deliverySteps = [
   },
 ];
 
+// Each card draws its own subject: a filled-in sales sheet, a ledger of
+// customers, bottles cycling out and back, and a revenue trend.
+const salesEntryVisual = (
+  <svg viewBox="0 0 150 64" fill="none">
+    <rect x="4" y="4" width="76" height="56" rx="8" stroke="currentColor" strokeOpacity=".4" strokeWidth="1.5" />
+    <path d="M18 20h48M18 32h48M18 44h28" stroke="currentColor" strokeOpacity=".7" strokeWidth="3" strokeLinecap="round" />
+    <circle cx="116" cy="32" r="20" stroke="currentColor" strokeOpacity=".32" strokeWidth="1.5" />
+    <path d="m106 32 7 7 14-15" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+const ledgerVisual = (
+  <svg viewBox="0 0 150 64" fill="none">
+    {[4, 26, 48].map((top, row) => (
+      <g key={top}>
+        <circle cx="11" cy={top + 6} r="7" stroke="currentColor" strokeOpacity=".55" strokeWidth="1.5" />
+        <path
+          d={`M26 ${top + 3}h${[52, 40, 46][row]}M26 ${top + 10}h${[30, 22, 26][row]}`}
+          stroke="currentColor"
+          strokeOpacity=".55"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+        />
+        <rect x={150 - [34, 28, 31][row]} y={top} width={[34, 28, 31][row]} height="13" rx="6.5" fill="currentColor" fillOpacity={row === 0 ? '.3' : '.16'} />
+      </g>
+    ))}
+  </svg>
+);
+
+const gallonVisual = (
+  <svg viewBox="0 0 150 64" fill="none">
+    <path d="M20 6h14v5l6 9v34a4 4 0 0 1-4 4H18a4 4 0 0 1-4-4V20l6-9V6Z" stroke="currentColor" strokeOpacity=".6" strokeWidth="1.5" />
+    <path d="M14 30h26v24a4 4 0 0 1-4 4H18a4 4 0 0 1-4-4V30Z" fill="currentColor" fillOpacity=".3" />
+    <path d="M116 6h14v5l6 9v34a4 4 0 0 1-4 4h-18a4 4 0 0 1-4-4V20l6-9V6Z" stroke="currentColor" strokeOpacity=".38" strokeWidth="1.5" />
+    <path d="M62 22a14 14 0 0 1 26-4" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+    <path d="m89 8 .5 10-9.5-2" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M88 42a14 14 0 0 1-26 4" stroke="currentColor" strokeOpacity=".55" strokeWidth="3" strokeLinecap="round" />
+    <path d="m61 56-.5-10 9.5 2" stroke="currentColor" strokeOpacity=".55" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+const analyticsVisual = (
+  <svg viewBox="0 0 150 64" fill="none">
+    <path d="M4 58h142" stroke="currentColor" strokeOpacity=".28" strokeWidth="1.5" />
+    <path d="M8 50 38 36 64 42 92 18 118 25 144 6V58H8Z" fill="currentColor" fillOpacity=".14" />
+    <path d="M8 50 38 36 64 42 92 18 118 25 144 6" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+    <circle cx="92" cy="18" r="4.5" fill="currentColor" />
+    <circle cx="144" cy="6" r="4.5" fill="currentColor" />
+  </svg>
+);
+
 const bentoFeatures = [
   {
     title: 'Daily sales entry',
@@ -62,6 +113,7 @@ const bentoFeatures = [
     icon: ClipboardPenLine,
     metrics: ['Fast entry', 'Cash + credit'],
     size: 'wide',
+    visual: salesEntryVisual,
   },
   {
     title: 'Customer ledger',
@@ -69,6 +121,7 @@ const bentoFeatures = [
     icon: UsersRound,
     metrics: ['Deposits', 'Balances'],
     size: 'standard',
+    visual: ledgerVisual,
   },
   {
     title: '19L gallon tracking',
@@ -76,6 +129,7 @@ const bentoFeatures = [
     icon: RefreshCw,
     metrics: ['Full out', 'Empty in', 'Due back'],
     size: 'standard',
+    visual: gallonVisual,
   },
   {
     title: 'Monthly analytics',
@@ -83,6 +137,7 @@ const bentoFeatures = [
     icon: ChartNoAxesCombined,
     metrics: ['Revenue', 'Bottle flow'],
     size: 'wide',
+    visual: analyticsVisual,
   },
 ];
 
@@ -195,8 +250,8 @@ function Landing() {
           <React.Suspense fallback={null}>
             <FluidSimulation
               active
+              autonomous
               eager
-              interactionRef={heroRef}
               mode="hero"
               reduceMotion={reduceMotion}
             />
@@ -240,7 +295,7 @@ function Landing() {
         >
           <span>Live water field</span>
           <i />
-          <small>Move your pointer through it</small>
+          <small>Spring ripples, running on their own</small>
         </motion.div>
         <a className="landing-scroll-cue" href="#refill-film"><span>See the 19L refill</span><i aria-hidden="true" /></a>
       </section>
@@ -364,7 +419,7 @@ function Landing() {
           </motion.div>
 
           <div className="bento-grid">
-            {bentoFeatures.map(({ icon: Icon, title, detail, metrics, size }, index) => (
+            {bentoFeatures.map(({ icon: Icon, title, detail, metrics, size, visual }, index) => (
               <motion.article
                 key={title}
                 className={`bento-card bento-card--${size}`}
@@ -381,7 +436,7 @@ function Landing() {
                 <h3>{title}</h3>
                 <p>{detail}</p>
                 <div className="bento-card__visual" aria-hidden="true">
-                  <i /><i /><i /><i />
+                  {visual}
                 </div>
                 <div className="bento-card__metrics">
                   {metrics.map((metric) => <span key={metric}>{metric}</span>)}
@@ -399,6 +454,9 @@ function Landing() {
           viewport={viewportOnce}
           transition={{ duration: 0.5, ease: enterEase }}
         >
+          <div className="landing-cta__bubbles" aria-hidden="true">
+            <i /><i /><i /><i /><i /><i />
+          </div>
           <div>
             <span>Ready when you are</span>
             <h2 id="landing-cta-title">Order water or manage today&apos;s route with confidence.</h2>

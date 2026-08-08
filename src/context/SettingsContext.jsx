@@ -1,15 +1,21 @@
 import React, {
   createContext, useContext, useState, useEffect, useCallback, useMemo, useRef,
 } from 'react';
-import { DEFAULT_SETTINGS, getAdminThemePreset } from '../data/constants';
+import {
+  DEFAULT_SETTINGS,
+  getAdminBackgroundPalette,
+  getAdminFontStack,
+  getAdminThemePreset,
+} from '../data/constants';
 import { settingsApi } from '../services/api/settingsApi';
 import { getSessionReadyEventName, hasStoredSessionType } from '../services/cloud/supabaseClient';
+import { setRegionalFormat } from '../utils/formatters';
 
 const SettingsContext = createContext(null);
 const LOCAL_INTERFACE_SETTINGS_KEY = 'hs_interface_settings';
 const LOCAL_INTERFACE_KEYS = [
   'themeMode', 'darkMode', 'colorTheme', 'compactMode', 'reduceMotion',
-  'highContrast', 'fontScale', 'surfaceStyle', 'dashboardLayout', 'language',
+  'highContrast', 'fontScale', 'fontFamily', 'backgroundPalette', 'surfaceStyle', 'dashboardLayout', 'language',
   'headerColor', 'headerTextColor', 'sidebarColor', 'sidebarTextColor',
   'sidebarBrandTitle', 'sidebarBrandSubtitle', 'authAccentColor', 'authPanelColor',
   'authLayout', 'showLoginStats', 'showBreadcrumbs', 'stickyHeader',
@@ -99,6 +105,17 @@ export function SettingsProvider({ children }) {
     ? systemDark
     : settings.themeMode === 'dark' || settings.darkMode;
 
+  // formatCurrency/formatDate are called outside React too, so the regional
+  // choice is pushed into the formatter module instead of read from context.
+  // This runs during render, not in an effect: the provider renders before its
+  // children, so their very next render already formats with the new currency.
+  // In an effect it would land after them, leaving stale totals on screen until
+  // something unrelated forced another render.
+  setRegionalFormat({
+    regionLocale: settings.regionLocale,
+    currencyCode: settings.currencyCode,
+  });
+
   useEffect(() => {
     const themePreset = getAdminThemePreset(settings.colorTheme);
     const root = document.documentElement;
@@ -119,10 +136,29 @@ export function SettingsProvider({ children }) {
     root.lang = settings.language === 'ur' ? 'ur' : 'en';
     root.dir = settings.language === 'ur' ? 'rtl' : 'ltr';
     const baseFontSize = settings.fontScale === 'large'
-      ? 17
-      : settings.fontScale === 'small' ? 15 : 16;
+      ? 16
+      : settings.fontScale === 'small' ? 14 : 15;
     root.style.fontSize = `${baseFontSize - (settings.compactMode ? 1 : 0)}px`;
     root.style.colorScheme = resolvedDarkMode ? 'dark' : 'light';
+    root.style.setProperty('--hs-font-family', getAdminFontStack(settings.fontFamily));
+    // The palette overrides only the page background, so it composes with
+    // whichever accent preset is active.
+    const backgroundPalette = getAdminBackgroundPalette(settings.backgroundPalette);
+    root.dataset.bgPalette = backgroundPalette.id;
+    root.dataset.bgEffect = backgroundPalette.effect || 'none';
+    document.body.dataset.bgPalette = backgroundPalette.id;
+    document.body.dataset.bgEffect = backgroundPalette.effect || 'none';
+    const paletteBackground = resolvedDarkMode ? backgroundPalette.dark : backgroundPalette.light;
+    // Drive --hs-page-bg directly rather than a separate variable: the admin
+    // Layout paints var(--hs-page-bg) on its own root, so anything set only on
+    // <body> was covered by the app shell and never became visible.
+    if (paletteBackground) {
+      root.style.setProperty('--hs-page-bg', paletteBackground);
+      document.body.style.setProperty('--hs-page-bg', paletteBackground);
+    } else {
+      root.style.removeProperty('--hs-page-bg');
+      document.body.style.removeProperty('--hs-page-bg');
+    }
     root.style.setProperty('--hs-primary', themePreset.primary);
     root.style.setProperty('--hs-primary-light', themePreset.primaryLight);
     root.style.setProperty('--hs-primary-dark', themePreset.primaryDark);
@@ -148,6 +184,8 @@ export function SettingsProvider({ children }) {
     settings.colorTheme,
     settings.compactMode,
     settings.fontScale,
+    settings.fontFamily,
+    settings.backgroundPalette,
     settings.highContrast,
     settings.headerColor,
     settings.headerTextColor,
@@ -167,7 +205,7 @@ export function SettingsProvider({ children }) {
     const changes = typeof partial === 'function' ? partial(previous) : partial;
     if (!changes || typeof changes !== 'object') return;
     const appearanceChanged = [
-      'themeMode', 'darkMode', 'colorTheme', 'fontScale', 'surfaceStyle',
+      'themeMode', 'darkMode', 'colorTheme', 'fontScale', 'fontFamily', 'backgroundPalette', 'surfaceStyle',
       'highContrast', 'dashboardLayout', 'headerColor', 'headerTextColor',
       'sidebarColor', 'sidebarTextColor', 'sidebarBrandTitle',
       'sidebarBrandSubtitle', 'authAccentColor', 'authPanelColor', 'authLayout',

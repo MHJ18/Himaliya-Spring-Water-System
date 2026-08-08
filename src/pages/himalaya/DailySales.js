@@ -8,7 +8,6 @@ import {
   CardContent,
   CardHeader,
   Chip,
-  Divider,
   Grid,
   IconButton,
   InputAdornment,
@@ -17,6 +16,9 @@ import {
   Typography,
 } from '@mui/material';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
+import LocationOnRoundedIcon from '@mui/icons-material/LocationOnRounded';
+import PhoneRoundedIcon from '@mui/icons-material/PhoneRounded';
+import { alpha } from '@mui/material/styles';
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
 import SwapHorizRoundedIcon from '@mui/icons-material/SwapHorizRounded';
 import { toast } from 'react-toastify';
@@ -72,12 +74,34 @@ export default function DailySales() {
     return () => { active = false; };
   }, [selectedId]);
 
+  // Rank results so the closest match is first and can be marked. Exact
+  // name/phone beats "starts with", which beats a loose contains.
+  const scoreMatch = (candidate, value) => {
+    const q = value.trim().toLowerCase();
+    const digits = value.replace(/\D/g, '');
+    const name = String(candidate.name || '').toLowerCase();
+    const phoneDigits = String(candidate.phone || '').replace(/\D/g, '');
+    const email = String(candidate.email || '').toLowerCase();
+    if (name === q) return 100;
+    if (digits.length >= 4 && phoneDigits === digits) return 95;
+    if (email === q) return 90;
+    if (name.startsWith(q)) return 70;
+    if (digits.length >= 3 && phoneDigits.startsWith(digits)) return 65;
+    if (email.startsWith(q)) return 60;
+    if (name.includes(q)) return 40;
+    return 10;
+  };
+
   const resolveMatches = (query) => {
     const value = query.trim();
     if (!value) return [];
     const hasEnoughPhoneDigits = value.replace(/\D/g, '').length >= 3;
     const exactPhoneMatch = hasEnoughPhoneDigits ? findByPhone(normalizePhone(value)) : null;
-    return exactPhoneMatch ? [exactPhoneMatch] : searchCustomers(value);
+    if (exactPhoneMatch) return [exactPhoneMatch];
+    return [...searchCustomers(value)]
+      .map((item) => ({ item, score: scoreMatch(item, value) }))
+      .sort((a, b) => b.score - a.score)
+      .map((entry) => entry.item);
   };
 
   const search = (query, selectSingle = false) => {
@@ -201,7 +225,24 @@ export default function DailySales() {
               <Button
                 type="submit"
                 variant="contained"
-                sx={{ minHeight: 48, minWidth: { sm: 150 }, width: { xs: '100%', sm: 'auto' } }}
+                startIcon={<SearchRoundedIcon />}
+                sx={(theme) => ({
+                  minHeight: 44,
+                  minWidth: { sm: 140 },
+                  width: { xs: '100%', sm: 'auto' },
+                  fontWeight: 800,
+                  letterSpacing: '.01em',
+                  borderRadius: 2,
+                  boxShadow: `0 8px 20px ${alpha(theme.palette.primary.main, 0.3)}`,
+                  transition: 'box-shadow 180ms ease, transform 180ms ease, filter 180ms ease',
+                  '&:hover': {
+                    boxShadow: `0 12px 28px ${alpha(theme.palette.primary.main, 0.4)}`,
+                    filter: 'brightness(1.05)',
+                    transform: 'translateY(-1px)',
+                  },
+                  '&:active': { transform: 'translateY(0) scale(.985)' },
+                  '@media (prefers-reduced-motion: reduce)': { transition: 'none', '&:hover': { transform: 'none' } },
+                })}
               >
                 Search
               </Button>
@@ -231,24 +272,27 @@ export default function DailySales() {
               aria-label="Matching customers"
             >
               {matches.map((match, index) => (
-                <Grid item component="li" xs={12} sm={6} xl={4} key={match.id}>
+                <Grid item component="li" xs={12} sm={6} xl={4} key={match.id} sx={{ maxWidth: { sm: 340 } }}>
                   <Box
                     component="button"
                     type="button"
                     onClick={() => setSelectedId(match.id)}
-                    aria-label={`Select ${match.name}`}
-                    sx={{
+                    aria-label={`Select ${match.name}${index === 0 ? ' (best match)' : ''}`}
+                    sx={(theme) => ({
+                      position: 'relative',
                       width: '100%',
+                      maxWidth: 340,
                       height: '100%',
-                      p: { xs: 1.5, sm: 1.75 },
+                      p: { xs: 1.35, sm: 1.5 },
                       color: 'text.primary',
                       font: 'inherit',
                       textAlign: 'left',
                       cursor: 'pointer',
-                      border: 1,
-                      borderColor: 'divider',
+                      border: index === 0 ? 2 : 1,
+                      borderColor: index === 0 ? 'primary.main' : 'divider',
                       borderRadius: 2.5,
-                      bgcolor: 'background.paper',
+                      bgcolor: index === 0 ? alpha(theme.palette.primary.main, 0.08) : 'background.paper',
+                      boxShadow: index === 0 ? `0 10px 26px ${alpha(theme.palette.primary.main, 0.2)}` : 'none',
                       transition: 'border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease',
                       '&:hover': {
                         borderColor: 'primary.main',
@@ -261,28 +305,34 @@ export default function DailySales() {
                         borderColor: 'primary.main',
                       },
                       '@media (prefers-reduced-motion: reduce)': { transition: 'none' },
-                    }}
+                    })}
                   >
-                    <Stack direction="row" spacing={1.25} alignItems="flex-start">
+                    {index === 0 && matches.length > 1 && (
+                      <Chip
+                        size="small"
+                        color="primary"
+                        label="Best match"
+                        sx={{
+                          position: 'absolute',
+                          top: -9,
+                          right: 10,
+                          height: 18,
+                          fontSize: '.68rem',
+                          fontWeight: 800,
+                        }}
+                      />
+                    )}
+                    {/* Name and one contact line is all that is needed to pick
+                        the right person; the full record opens once selected. */}
+                    <Stack direction="row" spacing={1.25} alignItems="center">
                       <Avatar src={match.photo || getCustomerAvatar(index)} alt="" />
                       <Box sx={{ minWidth: 0, flex: 1 }}>
                         <Typography variant="body2" fontWeight={800} noWrap>{match.name}</Typography>
-                        <Typography variant="caption" color="text.secondary" display="block" noWrap>{match.phone || match.email || 'No contact details'}</Typography>
-                        <Typography
-                          variant="caption"
-                          color="text.secondary"
-                          display="block"
-                          sx={{ mt: 0.25, overflowWrap: 'anywhere' }}
-                        >
-                          {match.address || 'No delivery address'}
+                        <Typography variant="caption" color="text.secondary" display="block" noWrap>
+                          {match.phone || match.email || 'No contact details'}
                         </Typography>
                       </Box>
                     </Stack>
-                    <Chip
-                      size="small"
-                      label={`${(match.purchaseHistory || []).length} deliveries`}
-                      sx={{ mt: 1.5, pointerEvents: 'none' }}
-                    />
                   </Box>
                 </Grid>
               ))}
@@ -294,52 +344,79 @@ export default function DailySales() {
       {customer && (
         <Grid container spacing={{ xs: 2, md: 2.5 }} alignItems="flex-start">
           <Grid item xs={12} lg={4}>
-            <Card sx={{ overflow: 'hidden' }}>
+            <Card
+              sx={{
+                overflow: 'hidden',
+                borderRadius: 3,
+                boxShadow: '0 12px 34px rgba(16, 47, 66, .08)',
+              }}
+            >
               <Box
                 sx={{
-                  p: { xs: 2, sm: 2.5 },
-                  color: 'common.white',
-                  background: 'linear-gradient(135deg, var(--hs-primary) 0%, var(--hs-secondary) 100%)',
+                  p: { xs: 2, sm: 2.25 },
+                  borderBottom: '1px solid',
+                  borderColor: 'divider',
+                  background: 'linear-gradient(135deg, color-mix(in srgb, var(--hs-primary) 10%, transparent), transparent 70%)',
                 }}
               >
-                <Stack direction="row" spacing={1.5} alignItems="center">
+                <Stack direction="row" spacing={1.4} alignItems="center">
                   <Avatar
                     src={customer.photo || undefined}
                     alt=""
-                    sx={{ width: 54, height: 54, border: '2px solid rgba(255,255,255,.5)' }}
+                    sx={{
+                      width: 48,
+                      height: 48,
+                      border: '2px solid',
+                      borderColor: 'background.paper',
+                      boxShadow: '0 6px 16px rgba(16, 47, 66, .18)',
+                    }}
                   />
                   <Box sx={{ minWidth: 0, flex: 1 }}>
-                    <Typography variant="h6" noWrap sx={{ color: 'inherit' }}>{customer.name}</Typography>
-                    <Typography variant="body2" sx={{ color: 'rgba(255,255,255,.78)' }}>Selected customer</Typography>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      fontWeight={850}
+                      sx={{ display: 'block', letterSpacing: '.06em', textTransform: 'uppercase' }}
+                    >
+                      Selected customer
+                    </Typography>
+                    <Typography variant="subtitle1" fontWeight={870} noWrap sx={{ lineHeight: 1.22 }}>
+                      {customer.name}
+                    </Typography>
                   </Box>
                 </Stack>
-                <Stack direction="row" useFlexGap flexWrap="wrap" gap={0.75} sx={{ mt: 1.5 }}>
+                <Stack direction="row" useFlexGap flexWrap="wrap" gap={0.7} sx={{ mt: 1.4 }}>
                   <Chip
                     size="small"
+                    variant="outlined"
+                    color={customer.paymentSchedule === 'on_delivery' ? 'success' : 'primary'}
                     label={customer.paymentSchedule === 'on_delivery' ? 'Pays on delivery' : 'Monthly account'}
-                    sx={{ color: 'inherit', bgcolor: 'rgba(255,255,255,.15)', border: '1px solid rgba(255,255,255,.25)' }}
                   />
                   <Chip
                     size="small"
+                    variant="outlined"
+                    color={customer.active === false ? 'default' : 'success'}
                     label={customer.active === false ? 'Inactive' : 'Active'}
-                    sx={{ color: 'inherit', bgcolor: 'rgba(255,255,255,.15)', border: '1px solid rgba(255,255,255,.25)' }}
                   />
                 </Stack>
               </Box>
-              <CardContent>
-                <Stack component="dl" spacing={1.5} divider={<Divider flexItem />} sx={{ m: 0 }}>
-                  <Box component="div">
-                    <Typography component="dt" variant="caption" color="text.secondary" fontWeight={800}>Phone</Typography>
-                    <Typography component="dd" variant="body2" sx={{ m: 0, mt: 0.25, overflowWrap: 'anywhere' }}>{customer.phone || 'No phone number'}</Typography>
-                  </Box>
-                  <Box component="div">
-                    <Typography component="dt" variant="caption" color="text.secondary" fontWeight={800}>Delivery address</Typography>
-                    <Typography component="dd" variant="body2" sx={{ m: 0, mt: 0.25, overflowWrap: 'anywhere' }}>{customer.address || 'No delivery address'}</Typography>
-                  </Box>
-                  <Box component="div">
-                    <Typography component="dt" variant="caption" color="text.secondary" fontWeight={800}>Previous deliveries</Typography>
-                    <Typography component="dd" variant="body2" sx={{ m: 0, mt: 0.25 }}>{(customer.purchaseHistory || []).length}</Typography>
-                  </Box>
+              {/* Only what is needed to confirm the right account is selected:
+                  who to call and where it goes. Anything else belongs on the
+                  customer record, not in the middle of a sale entry. */}
+              <CardContent sx={{ py: 1.75 }}>
+                <Stack spacing={1.25}>
+                  <Stack direction="row" spacing={1.1} alignItems="center">
+                    <PhoneRoundedIcon fontSize="small" sx={{ color: 'text.disabled' }} />
+                    <Typography variant="body2" sx={{ minWidth: 0, overflowWrap: 'anywhere' }}>
+                      {customer.phone || 'No phone number'}
+                    </Typography>
+                  </Stack>
+                  <Stack direction="row" spacing={1.1} alignItems="flex-start">
+                    <LocationOnRoundedIcon fontSize="small" sx={{ mt: 0.2, color: 'text.disabled' }} />
+                    <Typography variant="body2" color="text.secondary" sx={{ minWidth: 0, overflowWrap: 'anywhere' }}>
+                      {customer.address || 'No delivery address'}
+                    </Typography>
+                  </Stack>
                 </Stack>
               </CardContent>
             </Card>
@@ -359,32 +436,49 @@ export default function DailySales() {
                 action={(
                   <Button
                     type="button"
-                    variant="outlined"
                     startIcon={<SwapHorizRoundedIcon />}
+                    aria-label={`Change customer, currently ${customer.name}`}
                     onClick={() => {
                       setSelectedId(null);
                       setSearchTerm('');
                       setMatches([]);
                       setSearched(false);
                     }}
-                    sx={{
-                      minHeight: 40,
+                    sx={(theme) => ({
+                      minHeight: 38,
                       mt: 0.5,
-                      px: 1.75,
+                      px: 1.6,
                       color: 'var(--hs-primary)',
-                      borderColor: 'color-mix(in srgb, var(--hs-primary) 38%, transparent)',
                       borderRadius: 999,
                       fontWeight: 850,
                       whiteSpace: 'nowrap',
-                      background: 'color-mix(in srgb, var(--hs-primary) 7%, transparent)',
-                      '&:hover': {
-                        color: '#fff',
-                        borderColor: 'transparent',
-                        background: 'linear-gradient(135deg, var(--hs-primary), var(--hs-secondary))',
+                      // Transparent border plus a two-layer background paints a
+                      // gradient ring; sliding the ring layer on hover/focus
+                      // gives the border a travelling highlight without
+                      // animating any layout property.
+                      border: '1px solid transparent',
+                      backgroundImage: `linear-gradient(${theme.palette.background.paper}, ${theme.palette.background.paper}), linear-gradient(90deg, color-mix(in srgb, var(--hs-primary) 45%, transparent), var(--hs-secondary), color-mix(in srgb, var(--hs-primary) 45%, transparent))`,
+                      backgroundOrigin: 'border-box',
+                      backgroundClip: 'padding-box, border-box',
+                      backgroundSize: '100% 100%, 220% 100%',
+                      backgroundPosition: '0 0, 0 0',
+                      transition: 'color 180ms ease, box-shadow 180ms ease, transform 180ms ease',
+                      '@keyframes hsChangeSweep': {
+                        to: { backgroundPosition: '0 0, 220% 0' },
                       },
-                    }}
+                      '&:hover, &:focus-visible': {
+                        color: 'var(--hs-secondary)',
+                        transform: 'translateY(-1px)',
+                        boxShadow: '0 8px 20px color-mix(in srgb, var(--hs-primary) 22%, transparent)',
+                        animation: 'hsChangeSweep 1.4s linear infinite',
+                      },
+                      '@media (prefers-reduced-motion: reduce)': {
+                        transition: 'none',
+                        '&:hover, &:focus-visible': { transform: 'none', animation: 'none' },
+                      },
+                    })}
                   >
-                    Change customer
+                    Change
                   </Button>
                 )}
                 sx={{

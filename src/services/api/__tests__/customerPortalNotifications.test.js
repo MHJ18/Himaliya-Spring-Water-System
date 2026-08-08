@@ -4,7 +4,6 @@ jest.mock('../../cloud/supabaseClient', () => ({
   consumeCustomerEmailConfirmation: jest.fn(),
   dbRequest: jest.fn(),
   discardAuthSession: jest.fn(),
-  ensureEmailConfirmationEnabled: jest.fn(),
   ensurePhoneVerificationEnabled: jest.fn(),
   getPendingCustomerProfile: jest.fn(),
   getStoredSession: jest.fn(() => ({ user: { id: 'admin-user-1' } })),
@@ -24,7 +23,6 @@ const {
   consumeCustomerEmailConfirmation,
   dbRequest,
   discardAuthSession,
-  ensureEmailConfirmationEnabled,
   ensurePhoneVerificationEnabled,
   getPendingCustomerProfile,
   getStoredSessionType,
@@ -32,6 +30,7 @@ const {
   signInWithPassword,
   signOut,
   signUpWithPassword,
+  storeSession,
   storePendingCustomerProfile,
   verifyPhoneChangeOtp,
 } = require('../../cloud/supabaseClient');
@@ -53,13 +52,12 @@ describe('notification API retention limits', () => {
     signInWithPassword.mockReset();
     signOut.mockReset();
     signUpWithPassword.mockReset();
+    storeSession.mockReset();
     storePendingCustomerProfile.mockReset();
     storePendingCustomerProfile.mockImplementation((profile) => profile);
     clearPendingCustomerProfile.mockReset();
     consumeCustomerEmailConfirmation.mockReset();
     discardAuthSession.mockReset();
-    ensureEmailConfirmationEnabled.mockReset();
-    ensureEmailConfirmationEnabled.mockResolvedValue(true);
     ensurePhoneVerificationEnabled.mockReset();
     ensurePhoneVerificationEnabled.mockResolvedValue(true);
     getPendingCustomerProfile.mockReset();
@@ -151,47 +149,50 @@ describe('notification API retention limits', () => {
     expect(signOut).not.toHaveBeenCalled();
   });
 
-  it('refuses to claim customer history when signup auto-confirms the email', async () => {
-    const unsafeSession = {
+  it('signs the customer in and completes the profile when signup auto-confirms the email', async () => {
+    // Confirm Email is disabled in Supabase Auth settings for this project,
+    // so /signup returns an active session immediately instead of requiring
+    // a confirmation-link click. Registration must succeed in that case
+    // rather than reject the session as unsafe.
+    const autoConfirmedSession = {
       access_token: 'auto-confirmed-access',
       refresh_token: 'auto-confirmed-refresh',
-      user: { id: 'unsafe-auth-user', email: 'ayesha@example.com' },
+      user: { id: 'auto-confirmed-auth-user', email: 'ayesha@example.com' },
     };
     signUpWithPassword.mockResolvedValue({
-      user: unsafeSession.user,
-      session: unsafeSession,
+      user: autoConfirmedSession.user,
+      session: autoConfirmedSession,
+    });
+    dbRequest.mockImplementation(async (path) => {
+      if (path === '/rpc/get_customer_claim_requirements') {
+        return [{ phone_verification_required: false }];
+      }
+      if (path === '/rpc/claim_customer_account') {
+        return [{
+          id: 'new-customer-1',
+          auth_user_id: 'auto-confirmed-auth-user',
+          name: 'Ayesha Khan',
+          email: 'ayesha@example.com',
+          phone: '+923000000000',
+          address: 'Sialkot',
+          active: true,
+        }];
+      }
+      return [];
     });
 
-    await expect(registerCustomer({
+    const profile = await registerCustomer({
       name: 'Ayesha Khan',
       email: 'ayesha@example.com',
       phone: '+92 300 0000000',
       address: 'Sialkot',
-      password: 'attacker-controlled-password',
-    })).rejects.toThrow('Enable Confirm Email');
+      password: 'a-strong-password',
+    });
 
-    expect(discardAuthSession).toHaveBeenCalledWith(unsafeSession);
-    expect(clearPendingCustomerProfile).toHaveBeenCalledTimes(1);
-    expect(dbRequest).not.toHaveBeenCalled();
-    expect(signOut).not.toHaveBeenCalled();
-  });
-
-  it('does not create an Auth user when secure confirmation settings cannot be verified', async () => {
-    ensureEmailConfirmationEnabled.mockRejectedValue(
-      new Error('Customer registration is paused because secure email confirmation could not be verified.')
-    );
-
-    await expect(registerCustomer({
-      name: 'Ayesha Khan',
-      email: 'ayesha@example.com',
-      phone: '+92 300 0000000',
-      address: 'Sialkot',
-      password: 'strong-password',
-    })).rejects.toThrow('registration is paused');
-
-    expect(signUpWithPassword).not.toHaveBeenCalled();
-    expect(storePendingCustomerProfile).not.toHaveBeenCalled();
-    expect(dbRequest).not.toHaveBeenCalled();
+    expect(storeSession).toHaveBeenCalledWith(autoConfirmedSession, 'customer');
+    expect(profile.id).toBe('new-customer-1');
+    expect(discardAuthSession).not.toHaveBeenCalled();
+    expect(signOut).toHaveBeenCalledTimes(1);
   });
 
   it('clears the customer session if a profile claim fails', async () => {

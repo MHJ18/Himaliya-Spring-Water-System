@@ -220,9 +220,10 @@ export default function SalesForm({
             </Stack>
           </Box>
 
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25} alignItems="stretch">
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.25} alignItems={{ xs: 'stretch', sm: 'flex-start' }}>
             <TextField
               label="Amount received"
+              placeholder="e.g. 1500"
               type="number"
               value={monthlyAmount}
               onChange={(event) => { setMonthlyAmount(event.target.value); setMonthlyError(''); }}
@@ -285,6 +286,7 @@ export default function SalesForm({
         <Grid item xs={6} md={2}>
           <TextField
             label="Quantity"
+            placeholder="e.g. 2"
             type="number"
             value={form.quantity}
             onChange={(event) => setField('quantity', event.target.value)}
@@ -298,6 +300,7 @@ export default function SalesForm({
         <Grid item xs={6} md={3}>
           <TextField
             label="Unit price"
+            placeholder="Price per bottle"
             type="number"
             value={form.pricePerBottle}
             onChange={(event) => setField('pricePerBottle', event.target.value)}
@@ -346,6 +349,7 @@ export default function SalesForm({
               {payDaily ? (
                 <TextField
                   label="Amount paid for this delivery"
+                  placeholder="Cash received now"
                   type="number"
                   value={form.amountPaid}
                   onChange={(event) => setField('amountPaid', event.target.value)}

@@ -8,9 +8,10 @@
   --customer-text: #f6fcff;
   --customer-muted: #bed5de;
   position: relative;
-  align-items: flex-start;
-  overflow-x: hidden;
-  overflow-y: auto;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  overflow: clip;
   color-scheme: dark;
   font-family: 'Source Sans 3', 'Segoe UI', system-ui, sans-serif;
   background:
@@ -50,11 +51,15 @@
     0 0 0 10rem rgba(114, 232, 245, 0.016);
 }
 
+/* Centre the card against the copy and keep them visually related: the
+   previous start-alignment plus a 7.5rem gap left them reading as two
+   unrelated blocks. */
 .customer-login-page .water-login-shell {
-  grid-template-columns: minmax(0, 1fr) minmax(26rem, 31rem);
-  align-items: start;
-  gap: clamp(3rem, 7vw, 7.5rem);
-  max-width: 1220px;
+  grid-template-columns: minmax(0, 1fr) minmax(24rem, 27rem);
+  align-items: center;
+  justify-content: center;
+  gap: clamp(2rem, 3.5vw, 3.25rem);
+  max-width: 1120px;
 }
 
 .customer-login-page.auth-layout-compact .water-login-shell {
@@ -74,8 +79,9 @@
 
 .customer-login-page .water-login-copy {
   position: relative;
-  max-width: 650px;
-  padding: clamp(3rem, 9vh, 6.5rem) 0 2rem;
+  max-width: 34rem;
+  margin-left: auto;
+  padding: 0;
 }
 
 .customer-login-page .water-login-badge {
@@ -84,7 +90,7 @@
   padding: 0 14px;
   margin-bottom: 24px;
   color: #9af2fb;
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: 850;
   letter-spacing: 0.16em;
   background: rgba(114, 232, 245, 0.07);
@@ -92,24 +98,24 @@
 }
 
 .customer-login-page .water-login-copy h1 {
-  max-width: 670px;
-  margin-bottom: 24px;
+  max-width: 600px;
+  margin-bottom: 18px;
   color: var(--customer-text) !important;
   font-family: 'Barlow Semi Condensed', 'Arial Narrow', sans-serif;
-  font-size: clamp(3.4rem, 6.2vw, 5.9rem);
+  font-size: clamp(2.15rem, 4vw, 3.35rem);
   font-weight: 800;
-  line-height: 0.9;
-  letter-spacing: -0.045em;
+  line-height: 0.98;
+  letter-spacing: -0.035em;
   text-transform: uppercase;
   text-shadow: 0 10px 42px rgba(0, 0, 0, 0.38);
   -webkit-text-fill-color: var(--customer-text) !important;
 }
 
 .customer-login-page .water-login-copy > p {
-  max-width: 560px;
+  max-width: 520px;
   color: #d7e8ee !important;
-  font-size: 1.05rem;
-  line-height: 1.65;
+  font-size: 0.92rem;
+  line-height: 1.6;
   -webkit-text-fill-color: #d7e8ee !important;
 }
 
@@ -121,9 +127,9 @@
 }
 
 .customer-login-page .water-login-stats span {
-  min-height: 112px;
+  min-height: 88px;
   justify-content: center;
-  padding: 18px 20px;
+  padding: 14px 16px;
   color: var(--customer-muted) !important;
   background: rgba(244, 252, 255, 0.035);
   border: 0;
@@ -144,7 +150,7 @@
 .customer-login-page .water-login-stats strong {
   color: var(--customer-text) !important;
   font-family: 'Barlow Semi Condensed', 'Arial Narrow', sans-serif;
-  font-size: 1.75rem;
+  font-size: 1.3rem;
   text-transform: uppercase;
   -webkit-text-fill-color: var(--customer-text) !important;
 }
@@ -165,14 +171,33 @@
   color: #72919d;
 }
 
+/* The connector doubles as the progress bar: a track plus a fill that
+   travels left to right, so the rail reads as moving rather than static. */
 .customer-login-route > span:not(:last-child)::after {
   position: absolute;
   top: 50%;
   right: 12px;
   left: 70px;
-  height: 1px;
+  height: 2px;
   content: '';
-  background: rgba(136, 213, 230, 0.15);
+  overflow: hidden;
+  background:
+    linear-gradient(90deg, var(--customer-cyan), rgba(114, 232, 245, 0)) left / 45% 100% no-repeat,
+    rgba(136, 213, 230, 0.15);
+  border-radius: 999px;
+  animation: customer-route-travel 2.6s ease-in-out infinite;
+}
+
+.customer-login-route > span.is-complete:not(:last-child)::after {
+  background:
+    linear-gradient(90deg, var(--customer-cyan), var(--customer-cyan)) left / 100% 100% no-repeat,
+    rgba(136, 213, 230, 0.15);
+  animation: none;
+}
+
+@keyframes customer-route-travel {
+  0% { background-position: -55% 0, 0 0; }
+  60%, 100% { background-position: 130% 0, 0 0; }
 }
 
 .customer-login-route i {
@@ -204,21 +229,30 @@
   box-shadow: 0 0 0 5px rgba(114, 232, 245, 0.07);
 }
 
+.customer-login-route .is-current i {
+  animation: customer-route-pulse 2.6s ease-in-out infinite;
+}
+
+@keyframes customer-route-pulse {
+  0%, 100% { box-shadow: 0 0 0 4px rgba(114, 232, 245, 0.06); }
+  50% { box-shadow: 0 0 0 9px rgba(114, 232, 245, 0.14); }
+}
+
 .customer-login-route .is-complete b,
 .customer-login-route .is-current b {
   color: #bceff5;
 }
 
 .customer-login-page .customer-login-card {
-  max-width: 31rem;
-  padding: clamp(1.65rem, 3vw, 2.1rem);
+  max-width: 26rem;
+  padding: clamp(1.25rem, 2.2vw, 1.6rem);
   overflow: visible;
   color: var(--customer-text);
   background:
     linear-gradient(145deg, rgba(242, 252, 255, 0.075), rgba(75, 182, 220, 0.025)),
     rgba(6, 20, 33, 0.94);
   border: 1px solid rgba(146, 225, 241, 0.2);
-  border-radius: 30px;
+  border-radius: 24px;
   box-shadow:
     0 34px 100px rgba(0, 0, 0, 0.45),
     inset 0 1px 0 rgba(255, 255, 255, 0.055);
@@ -237,27 +271,27 @@
 }
 
 .customer-login-page .water-login-logo-mark {
-  width: 50px;
-  height: 50px;
+  width: 44px;
+  height: 44px;
   color: #04202c;
   background: linear-gradient(145deg, #d8fbff, var(--customer-cyan));
-  border-radius: 16px;
+  border-radius: 14px;
   box-shadow: 0 12px 32px rgba(49, 198, 228, 0.22);
 }
 
 .customer-login-page .water-login-logo h2 {
   color: var(--customer-text) !important;
   font-family: 'Barlow Semi Condensed', 'Arial Narrow', sans-serif;
-  font-size: 1.7rem;
+  font-size: 1.28rem;
   font-weight: 800;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.015em;
   text-transform: uppercase;
   -webkit-text-fill-color: var(--customer-text) !important;
 }
 
 .customer-login-page .water-login-logo p {
   color: var(--customer-muted) !important;
-  font-size: 0.85rem;
+  font-size: 0.76rem;
   -webkit-text-fill-color: var(--customer-muted) !important;
 }
 
@@ -279,26 +313,51 @@
   font-size: .76rem;
 }
 
+/* The product's signature action: a gradient pill with the arrow riding in a
+   dark circular puck that tips on hover, matching the primary buttons in the
+   portal and on the landing page. */
 .customer-auth-switch button {
   display: inline-flex;
   min-height: 40px;
   align-items: center;
-  gap: 6px;
-  padding: 0 13px;
-  color: #bff7fd;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 3px 3px 3px 14px;
+  color: #04141f;
   font-size: .73rem;
   font-weight: 850;
-  background: rgba(114, 232, 245, .09);
-  border: 1px solid rgba(114, 232, 245, .16);
-  border-radius: 10px;
+  background: linear-gradient(135deg, #c8f9ff, var(--customer-cyan) 55%, var(--customer-blue));
+  border: 1px solid rgba(255, 255, 255, .44);
+  border-radius: 999px;
   cursor: pointer;
-  transition: color 180ms ease, background-color 180ms ease, border-color 180ms ease;
+  box-shadow: 0 10px 24px rgba(40, 181, 217, .22);
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.customer-auth-switch button svg {
+  width: 34px;
+  height: 34px;
+  padding: 9px;
+  color: #eafcff;
+  background: rgba(4, 20, 31, .92);
+  border-radius: 50%;
+  transition: transform 180ms ease;
 }
 
 .customer-auth-switch button:hover {
-  color: #04141f;
-  background: var(--customer-cyan);
-  border-color: var(--customer-cyan);
+  box-shadow: 0 14px 30px rgba(40, 181, 217, .32);
+  transform: translateY(-1px);
+}
+
+.customer-auth-switch button:hover svg {
+  transform: rotate(-22deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .customer-auth-switch button,
+  .customer-auth-switch button svg { transition: none; }
+  .customer-auth-switch button:hover { transform: none; }
+  .customer-auth-switch button:hover svg { transform: none; }
 }
 
 .customer-auth-switch button:focus-visible {
@@ -345,11 +404,11 @@ html[dir='rtl'] .customer-login-page .customer-auth-switch svg {
 }
 
 .customer-login-page .water-login-label + .water-login-input-wrap {
-  margin-bottom: 15px;
+  margin-bottom: 14px;
 }
 
 .customer-login-page .water-login-input-wrap {
-  min-height: 54px;
+  min-height: 44px;
   overflow: hidden;
   color-scheme: dark;
   background: var(--customer-surface-strong);
@@ -373,13 +432,62 @@ html[dir='rtl'] .customer-login-page .customer-auth-switch svg {
 }
 
 .customer-password-hint {
-  margin: -8px 2px 12px;
-  color: #fca5a5;
-  font-size: .76rem;
+  margin: 2px 2px 12px;
+  color: #9db8c4;
+  font-size: .74rem;
   line-height: 1.45;
 }
 
 .customer-password-hint.is-valid { color: #86efac; }
+
+.customer-password-checklist {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px 10px;
+  margin: -6px 2px 4px;
+  padding: 0;
+  list-style: none;
+}
+
+.customer-password-checklist li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: #9db8c4;
+  font-size: .72rem;
+  line-height: 1.3;
+  transition: color .18s ease;
+}
+
+.customer-password-checklist li.is-met {
+  color: #86efac;
+}
+
+.customer-password-checklist__icon {
+  display: grid;
+  flex: 0 0 auto;
+  width: 15px;
+  height: 15px;
+  place-items: center;
+  color: transparent;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(157, 184, 196, 0.35);
+  border-radius: 50%;
+  transition: color .18s ease, background-color .18s ease, border-color .18s ease;
+}
+
+.customer-password-checklist li.is-met .customer-password-checklist__icon {
+  color: #06281a;
+  background: #86efac;
+  border-color: #86efac;
+}
+
+@media (max-width: 420px) {
+  .customer-password-checklist {
+    grid-template-columns: 1fr;
+  }
+}
 
 .customer-login-page .water-login-input-icon {
   width: 50px;
@@ -387,7 +495,7 @@ html[dir='rtl'] .customer-login-page .customer-auth-switch svg {
 }
 
 .customer-login-page .water-login-input {
-  min-height: 54px;
+  min-height: 44px;
   color: var(--customer-text);
   caret-color: var(--customer-cyan);
 }
@@ -415,8 +523,8 @@ html[dir='rtl'] .customer-login-page .customer-auth-switch svg {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 58px;
-  padding: 5px 6px 5px 22px;
+  min-height: 46px;
+  padding: 4px 5px 4px 18px;
   margin-top: 4px;
   color: #04141f;
   background: linear-gradient(135deg, #c8f9ff, var(--customer-cyan) 52%, var(--customer-blue));
@@ -429,9 +537,9 @@ html[dir='rtl'] .customer-login-page .customer-auth-switch svg {
 }
 
 .customer-login-page .water-login-submit svg {
-  width: 46px;
-  height: 46px;
-  padding: 13px;
+  width: 38px;
+  height: 38px;
+  padding: 11px;
   color: var(--customer-text);
   background: rgba(4, 20, 31, 0.92);
   border-radius: 50%;
@@ -487,8 +595,14 @@ html[dir='rtl'] .customer-login-page .customer-auth-switch svg {
 
 @media (max-width: 900px) {
   .customer-login-page {
-    align-items: flex-start;
-    overflow-y: auto;
+    /* Still centred at narrow widths. `margin: auto` on the flex child is the
+       safe-centring trick: it centres when there is room but never clips the
+       top of a shell taller than the viewport, which align-items alone does. */
+    align-items: center;
+  }
+
+  .customer-login-page .water-login-shell {
+    margin-block: auto;
   }
 
   .customer-login-page .water-login-shell {
@@ -522,6 +636,36 @@ html[dir='rtl'] .customer-login-page .customer-auth-switch svg {
   .customer-login-page .water-login-mobile-heading {
     display: none;
   }
+
+  .customer-login-page .water-login-label {
+    font-size: 0.82rem;
+  }
+
+  /* Real <input> elements stay at 16px up to the tablet breakpoint so
+     Safari/Chrome never auto-zoom the whole page when a field is focused
+     (that zoom is what makes placeholders and labels look oversized). */
+  .customer-login-page .water-login-input {
+    font-size: 16px;
+  }
+
+  .customer-login-page .water-login-submit {
+    min-height: 46px;
+    font-size: 0.875rem;
+  }
+
+  .customer-login-page .water-login-note,
+  .customer-login-page .water-login-back,
+  .customer-login-page .water-login-forgot {
+    font-size: 0.78rem;
+  }
+
+  .customer-auth-switch > span {
+    font-size: 0.75rem;
+  }
+
+  .customer-auth-switch button {
+    font-size: 0.75rem;
+  }
 }
 
 @media (max-width: 520px) {
@@ -539,6 +683,10 @@ html[dir='rtl'] .customer-login-page .customer-auth-switch svg {
     border-radius: 14px;
   }
 
+  .customer-login-page .water-login-mobile-brand h1 {
+    font-size: 0.98rem;
+  }
+
   .customer-login-page .customer-login-card {
     padding: 22px 18px;
     border-radius: 24px;
@@ -548,9 +696,21 @@ html[dir='rtl'] .customer-login-page .customer-auth-switch svg {
     margin-top: 0;
   }
 
+  .customer-login-page .water-login-label {
+    font-size: 0.78rem;
+  }
+
+  /* Inputs and the submit button stay at 16px on phones to avoid
+     auto-zoom on focus. */
   .customer-login-page .water-login-input,
   .customer-login-page .water-login-submit {
     font-size: 16px;
+  }
+
+  .customer-login-page .water-login-submit svg {
+    width: 40px;
+    height: 40px;
+    padding: 11px;
   }
 
   .customer-login-page .customer-login-links {
@@ -570,25 +730,61 @@ html[dir='rtl'] .customer-login-page .customer-auth-switch svg {
   }
 }
 
-/* Compact sign-in and sign-up hierarchy. */
-.customer-login-page { font-size: 13px; }
-.customer-login-page .water-login-copy h1 {
-  max-width: 580px;
-  font-size: clamp(2.05rem, 4.2vw, 3.45rem);
-  line-height: .96;
-}
-.customer-login-page .water-login-copy > p { font-size: .82rem; line-height: 1.55; }
-.customer-login-page .water-login-stats strong { font-size: 1.22rem; }
-.customer-login-page .water-login-stats span { min-height: 88px; font-size: .68rem; }
-.customer-login-page .water-login-logo h2 { font-size: 1.12rem; }
-.customer-login-page .water-login-logo p { font-size: .7rem; }
-.customer-login-page .water-login-label { font-size: .7rem; }
-.customer-login-page .water-login-input { font-size: .82rem; }
-.customer-login-page .water-login-submit { min-height: 50px; font-size: .76rem; }
-.customer-login-page .water-login-submit svg { width: 40px; height: 40px; padding: 11px; }
 
-@media (max-width: 520px) {
-  .customer-login-page .water-login-mobile-brand h1 { font-size: .92rem; }
-  .customer-login-page .water-login-input,
-  .customer-login-page .water-login-submit { font-size: 16px; }
+/* Placeholders sit a step below the entered value so typed text reads as the
+   primary content of the field. */
+.customer-login-page .water-login-input::placeholder,
+.customer-login-page .water-login-input::-webkit-input-placeholder {
+  color: rgba(190, 213, 222, 0.62);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  opacity: 1;
+}
+
+/* 3. Continuous indeterminate bar: a fixed-width sliver translating across the
+   track on a linear loop. The previous background-position animation on a
+   percentage-sized gradient stuttered at the wrap point. */
+.customer-login-route > span:not(:last-child)::after {
+  background: rgba(136, 213, 230, 0.15);
+  animation: none;
+}
+
+.customer-login-route > span:not(:last-child) {
+  --route-track: rgba(136, 213, 230, 0.15);
+}
+
+.customer-login-route > span.is-current:not(:last-child)::after {
+  overflow: hidden;
+  background: var(--route-track);
+}
+
+.customer-login-route > span.is-current:not(:last-child) > u {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  left: 70px;
+  height: 2px;
+  overflow: hidden;
+  border-radius: 999px;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.customer-login-route > span.is-current:not(:last-child) > u::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 40%;
+  content: '';
+  background: linear-gradient(90deg, rgba(114, 232, 245, 0), var(--customer-cyan), rgba(114, 232, 245, 0));
+  border-radius: 999px;
+  animation: customer-route-slide 1.8s linear infinite;
+}
+
+@keyframes customer-route-slide {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(250%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .customer-login-route > span.is-current:not(:last-child) > u::before { animation: none; }
 }

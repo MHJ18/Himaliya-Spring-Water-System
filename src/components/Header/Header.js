@@ -35,6 +35,7 @@ import {
   getAdminNotifications,
 } from '../../services/api/customerPortalApi';
 import { getAdminUnreadMessageCount } from '../../services/api/messagingApi';
+import { raiseAdminAlerts } from '../../services/notifications/adminAlerts';
 import s from './Header.module.scss';
 import { useSettings } from '../../context/SettingsContext';
 
@@ -50,11 +51,22 @@ function Header({
   const { settings, updateSettings } = useSettings();
   const urdu = settings.language === 'ur';
 
+  // settingsRef keeps the poller reading current preferences without making
+  // loadUnreadNotifications depend on settings, which would tear down and
+  // rebuild the 20s interval on every unrelated settings change.
+  const settingsRef = React.useRef(settings);
+  settingsRef.current = settings;
+
   const loadUnreadNotifications = React.useCallback((forceRefresh = false) => {
     if (document.hidden || notificationRequestRunning.current) return Promise.resolve();
     notificationRequestRunning.current = true;
     return Promise.all([
-      getAdminNotifications({ forceRefresh }).then((items) => setUnreadNotifications(items.filter((item) => !item.read).length)),
+      getAdminNotifications({ forceRefresh }).then((items) => {
+        setUnreadNotifications(items.filter((item) => !item.read).length);
+        // This poll is the only place the admin app learns about new activity,
+        // so it is also where a device notification has to be raised.
+        raiseAdminAlerts(items, settingsRef.current);
+      }),
       getAdminUnreadMessageCount().then(setUnreadMessages).catch(() => setUnreadMessages(0)),
     ])
       .catch(() => {})
@@ -166,7 +178,7 @@ function Header({
         >
           <TranslateRoundedIcon fontSize="small" />
           <span>{urdu ? 'اردو' : 'EN'}</span>
-          <KeyboardArrowDownRoundedIcon className={s.languageChevron} />
+          <KeyboardArrowDownRoundedIcon fontSize="small" />
         </button>
         <Menu
           anchorEl={languageAnchor}

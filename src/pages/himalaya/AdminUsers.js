@@ -34,13 +34,18 @@ import {
   CheckCircleRounded,
   ContentCopyRounded,
   DeleteOutlineRounded,
+  Groups2Rounded,
   KeyRounded,
   LockOutlined,
   PasswordRounded,
   PersonAddAltRounded,
+  PersonOffOutlined,
   PersonOutlineRounded,
+  PhoneAndroidRounded,
   PhoneRounded,
+  SearchRounded,
   ShieldOutlined,
+  SupervisorAccountRounded,
 } from '@mui/icons-material';
 import { toast } from 'react-toastify';
 import PageShell from '../../components/PageShell/PageShell';
@@ -124,11 +129,12 @@ function buildAllCustomerUsers(profiles, manualCustomers) {
   return rows.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
 }
 
-function EmptyRow({ columns, children }) {
+function EmptyRow({ columns, icon: Icon, children }) {
   return (
     <TableRow>
       <TableCell colSpan={columns} align="center" sx={{ py: 6, color: 'text.secondary' }}>
-        {children}
+        {Icon && <Icon sx={{ fontSize: 40, mb: 1, color: 'text.disabled' }} />}
+        <Typography variant="body2" color="text.secondary">{children}</Typography>
       </TableCell>
     </TableRow>
   );
@@ -153,6 +159,7 @@ export default function AdminUsers() {
   const [resetOwnerPassword, setResetOwnerPassword] = useState('');
   const [resettingPassword, setResettingPassword] = useState(false);
   const [updatingCustomerStatus, setUpdatingCustomerStatus] = useState('');
+  const [customerQuery, setCustomerQuery] = useState('');
 
   const loadUsers = async () => {
     setLoading(true);
@@ -177,6 +184,23 @@ export default function AdminUsers() {
     () => buildAllCustomerUsers(profiles, manualCustomers),
     [profiles, manualCustomers],
   );
+
+  const customerStats = useMemo(() => ({
+    total: customers.length,
+    active: customers.filter((customer) => customer.active).length,
+    appSignups: customers.filter((customer) => customer.userType === 'app').length,
+    addedByAdmin: customers.filter((customer) => customer.userType === 'admin').length,
+  }), [customers]);
+
+  const filteredCustomers = useMemo(() => {
+    const query = customerQuery.trim().toLowerCase();
+    if (!query) return customers;
+    return customers.filter((customer) => [
+      customer.name,
+      customer.email,
+      customer.phone,
+    ].some((value) => String(value || '').toLowerCase().includes(query)));
+  }, [customers, customerQuery]);
 
   const updateForm = (field, value) => {
     setFormError('');
@@ -351,6 +375,7 @@ export default function AdminUsers() {
                   {formError && <Alert severity="error">{formError}</Alert>}
                   <TextField
                     label="Full name"
+                    placeholder="e.g. Bilal Ahmed"
                     value={form.name}
                     onChange={(event) => updateForm('name', event.target.value)}
                     autoComplete="name"
@@ -359,6 +384,7 @@ export default function AdminUsers() {
                   />
                   <TextField
                     label="Email address"
+                    placeholder="name@himaliya.com"
                     type="email"
                     value={form.email}
                     onChange={(event) => updateForm('email', event.target.value)}
@@ -368,6 +394,7 @@ export default function AdminUsers() {
                   />
                   <TextField
                     label="Temporary password"
+                    placeholder="At least 8 characters"
                     type="password"
                     value={form.password}
                     onChange={(event) => updateForm('password', event.target.value)}
@@ -378,6 +405,7 @@ export default function AdminUsers() {
                   />
                   <TextField
                     label="Phone number"
+                    placeholder="+92 3XX XXXXXXX"
                     value={form.phone}
                     onChange={(event) => updateForm('phone', event.target.value)}
                     autoComplete="tel"
@@ -483,12 +511,75 @@ export default function AdminUsers() {
         </Grid>
       </Grid>
 
-      <Card sx={{ ...cardSx, mt: 3, height: 'auto' }}>
+      <Card sx={{ ...cardSx, mt: 3, height: 'auto', overflow: 'visible' }}>
         <Box sx={{ p: { xs: 2.25, sm: 3 }, pb: 1.5 }}>
-          <Typography variant="h6">All customer accounts</Typography>
-          <Typography variant="body2" color="text.secondary">
-            Signed-up app users and admin-created customers are shown together.
-          </Typography>
+          <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', md: 'center' }} spacing={1.5}>
+            <Box>
+              <Typography variant="h6">All customer accounts</Typography>
+              <Typography variant="body2" color="text.secondary">
+                Signed-up app users and admin-created customers are shown together.
+              </Typography>
+            </Box>
+            <TextField
+              size="small"
+              value={customerQuery}
+              onChange={(event) => setCustomerQuery(event.target.value)}
+              placeholder="Search name, email or phone"
+              aria-label="Search customer accounts"
+              sx={{ width: { xs: '100%', md: 280 } }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start"><SearchRounded fontSize="small" /></InputAdornment>
+                ),
+              }}
+            />
+          </Stack>
+
+          <Grid container spacing={1.5} sx={{ mt: 0.25 }}>
+            {[
+              { key: 'total', label: 'Total customers', value: customerStats.total, icon: Groups2Rounded, color: '#078daf' },
+              { key: 'active', label: 'Active', value: customerStats.active, icon: CheckCircleRounded, color: '#0b9b72' },
+              { key: 'appSignups', label: 'Customer app signups', value: customerStats.appSignups, icon: PhoneAndroidRounded, color: '#1875d1' },
+              { key: 'addedByAdmin', label: 'Added by admin', value: customerStats.addedByAdmin, icon: SupervisorAccountRounded, color: '#8359d7' },
+            ].map((stat) => {
+              const Icon = stat.icon;
+              return (
+                <Grid item xs={6} sm={3} key={stat.key}>
+                  <Stack
+                    direction="row"
+                    spacing={1.1}
+                    alignItems="center"
+                    sx={{
+                      p: 1.1,
+                      height: '100%',
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      borderRadius: 2,
+                      bgcolor: 'background.default',
+                    }}
+                  >
+                    <Box sx={{
+                      display: 'grid',
+                      flexShrink: 0,
+                      width: 34,
+                      height: 34,
+                      placeItems: 'center',
+                      color: stat.color,
+                      bgcolor: `${stat.color}14`,
+                      borderRadius: 1.5,
+                    }}
+                    >
+                      <Icon fontSize="small" />
+                    </Box>
+                    <Box sx={{ minWidth: 0 }}>
+                      <Typography variant="body1" fontWeight={850} lineHeight={1.15}>{stat.value}</Typography>
+                      <Typography variant="caption" color="text.secondary" noWrap>{stat.label}</Typography>
+                    </Box>
+                  </Stack>
+                </Grid>
+              );
+            })}
+          </Grid>
         </Box>
         <TableContainer
           role="region"
@@ -507,7 +598,7 @@ export default function AdminUsers() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {customers.map((customer) => (
+              {filteredCustomers.map((customer) => (
                 <TableRow key={`${customer.userType}-${customer.id}`} hover>
                   <TableCell>
                     <Stack direction="row" spacing={1.25} alignItems="center">
@@ -584,7 +675,15 @@ export default function AdminUsers() {
                   </TableCell>
                 </TableRow>
               ))}
-              {!customers.length && <EmptyRow columns={5}>{loading ? 'Loading customer accounts…' : 'No customer accounts yet.'}</EmptyRow>}
+              {!filteredCustomers.length && (
+                <EmptyRow columns={5} icon={PersonOffOutlined}>
+                  {loading
+                    ? 'Loading customer accounts…'
+                    : customers.length
+                      ? 'No customer accounts match your search.'
+                      : 'No customer accounts yet.'}
+                </EmptyRow>
+              )}
             </TableBody>
           </Table>
         </TableContainer>

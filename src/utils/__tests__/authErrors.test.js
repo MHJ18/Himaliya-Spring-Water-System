@@ -15,7 +15,13 @@ describe('mapLoginError', () => {
 
   it('does not expose a raw Supabase schema error to the user', () => {
     expect(mapLoginError({ status: 500, message: 'Database error querying schema' })).toBe(
-      'Sign-in is temporarily unavailable while the account database is repaired.'
+      'Sign-in is temporarily unavailable. Please try again in a moment, and double-check the email address is spelled correctly.'
+    );
+  });
+
+  it('does not expose a raw Supabase user-lookup crash to the user', () => {
+    expect(mapLoginError({ status: 500, message: 'Database error finding user' })).toBe(
+      'Sign-in is temporarily unavailable. Please try again in a moment, and double-check the email address is spelled correctly.'
     );
   });
 });

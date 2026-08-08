@@ -6,6 +6,7 @@ import { toast } from 'react-toastify';
 import {
   ArrowRight,
   AtSign,
+  Check,
   Droplets,
   LockKeyhole,
   MapPin,
@@ -119,6 +120,12 @@ function CustomerLogin({ location, history }) {
   };
 
   const passwordValid = form.password.length >= 8;
+  const passwordChecks = [
+    { key: 'length', label: 'At least 8 characters', met: form.password.length >= 8 },
+    { key: 'case', label: 'Upper and lower case letters', met: /[a-z]/.test(form.password) && /[A-Z]/.test(form.password) },
+    { key: 'number', label: 'At least one number', met: /\d/.test(form.password) },
+    { key: 'symbol', label: 'At least one symbol (e.g. ! ? #)', met: /[^A-Za-z0-9]/.test(form.password) },
+  ];
   const verificationCodeValid = /^\d{6,10}$/.test(verificationCode.trim());
   const formErrors = mode === 'signup'
     ? {
@@ -282,7 +289,9 @@ function CustomerLogin({ location, history }) {
           </div>
           <div className="customer-login-route" aria-hidden="true">
             <span className="is-complete"><i>01</i><b>Request</b></span>
-            <span className="is-current"><i>02</i><b>Deliver</b></span>
+            {/* <u> is the indeterminate bar track; its ::before is the sliver
+                that runs across it on a continuous linear loop. */}
+            <span className="is-current"><i>02</i><b>Deliver</b><u /></span>
             <span><i>03</i><b>Track</b></span>
           </div>
         </motion.section>
@@ -333,8 +342,6 @@ function CustomerLogin({ location, history }) {
             <motion.div
               id="customer-auth-panel"
               className="customer-login-form-shell"
-              layout
-              transition={{ layout: { duration: 0.32, ease: [0.22, 1, 0.36, 1] } }}
             >
               <AnimatePresence initial={false}>
                 {mode === 'signup' && (
@@ -481,9 +488,19 @@ function CustomerLogin({ location, history }) {
                 </React.Fragment>
               )}
               {mode === 'signup' && !profileCompletionRequired && (
-                <p className={`customer-password-hint${passwordValid ? ' is-valid' : ''}`}>
-                  Use at least 8 characters. Fields marked * are required.
-                </p>
+                <React.Fragment>
+                  <ul className="customer-password-checklist" aria-label="Password requirements">
+                    {passwordChecks.map((check) => (
+                      <li key={check.key} className={check.met ? 'is-met' : ''}>
+                        <span className="customer-password-checklist__icon" aria-hidden="true">
+                          <Check size={12} strokeWidth={3} />
+                        </span>
+                        {check.label}
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="customer-password-hint">Fields marked * are required.</p>
+                </React.Fragment>
               )}
             </motion.div>
 

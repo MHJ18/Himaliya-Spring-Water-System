@@ -8,13 +8,11 @@ import {
   getStableCustomerCoordinates,
   resolveDeliveryAddressCoordinates,
 } from '../../utils/coordinates';
-import { MAP_STYLE_URLS } from '../../utils/mapStyles';
+import { getMapStyle } from '../../utils/mapStyles';
 import './RiderMap.css';
 
 const DEFAULT_CENTER = [74.5229, 32.4945];
 const DEFAULT_ZOOM = 13;
-const LIGHT_STYLE = MAP_STYLE_URLS.light;
-const DARK_STYLE = MAP_STYLE_URLS.dark;
 const ROUTE_SOURCE_ID = 'rider-map-approximate-route';
 const ROUTE_CASING_LAYER_ID = 'rider-map-approximate-route-casing';
 const ROUTE_LAYER_ID = 'rider-map-approximate-route-line';
@@ -275,7 +273,7 @@ export default function RiderMap({
   const mapElement = React.useRef(null);
   const mapInstance = React.useRef(null);
   const markers = React.useRef([]);
-  const currentStyle = React.useRef(LIGHT_STYLE);
+  const currentStyleMode = React.useRef('light');
   const [darkMap, setDarkMap] = React.useState(Boolean(preferDark));
   const [mapReady, setMapReady] = React.useState(false);
   const [styleRevision, setStyleRevision] = React.useState(0);
@@ -315,32 +313,40 @@ export default function RiderMap({
     return [];
   }, [destinationAddress, destinationId, destinationLat, destinationLng, stops]);
 
-  React.useEffect(() => {
-    const controller = new AbortController();
-    const unresolved = baseMappedStops.filter((stop) => stop.approximate && stop.address);
-    if (!unresolved.length) {
-      setGeocodedStops({});
-      return () => controller.abort();
-    }
+  // Selecting a stop or receiving a GPS update rebuilds the stop objects but
+  // not the set of addresses still needing a lookup. Keying the effect on the
+  // addresses themselves stops an in-flight geocode from being aborted and
+  // restarted on every one of those re-renders, which previously meant slow
+  // lookups never finished and the pins stayed on the approximate fallback.
+  const pendingAddressKey = React.useMemo(() => Array.from(new Set(
+    baseMappedStops
+      .filter((stop) => stop.approximate && stop.address)
+      .map((stop) => String(stop.address)),
+  )).sort().join('|'), [baseMappedStops]);
 
-    Promise.all(unresolved.map(async (stop) => {
+  React.useEffect(() => {
+    if (!pendingAddressKey) return undefined;
+    const controller = new AbortController();
+
+    Promise.all(pendingAddressKey.split('|').map(async (address) => {
       try {
-        const coords = await resolveDeliveryAddressCoordinates(stop.address, { signal: controller.signal });
-        return [String(stop.id || stop.address || stop.label), coords];
+        const coords = await resolveDeliveryAddressCoordinates(address, { signal: controller.signal });
+        return [address, coords];
       } catch (error) {
-        return [String(stop.id || stop.address || stop.label), null];
+        return [address, null];
       }
     })).then((results) => {
       if (controller.signal.aborted) return;
-      setGeocodedStops(Object.fromEntries(results.filter((entry) => entry[1])));
+      const resolved = results.filter((entry) => entry[1]);
+      if (!resolved.length) return;
+      setGeocodedStops((current) => ({ ...current, ...Object.fromEntries(resolved) }));
     });
 
     return () => controller.abort();
-  }, [baseMappedStops]);
+  }, [pendingAddressKey]);
 
   const mappedStops = React.useMemo(() => baseMappedStops.map((stop) => {
-    const key = String(stop.id || stop.address || stop.label);
-    const geocoded = geocodedStops[key];
+    const geocoded = stop.address ? geocodedStops[String(stop.address)] : null;
     return geocoded ? { ...stop, coords: geocoded, geocoded: true } : stop;
   }), [baseMappedStops, geocodedStops]);
 
@@ -403,7 +409,7 @@ export default function RiderMap({
     try {
       map = new maplibregl.Map({
         container: mapElement.current,
-        style: LIGHT_STYLE,
+        style: getMapStyle('light'),
         center: DEFAULT_CENTER,
         zoom: DEFAULT_ZOOM,
         minZoom: 3,
@@ -438,8 +444,12 @@ export default function RiderMap({
         canvas.setAttribute('aria-label', 'Interactive delivery location map');
       };
       const handleStyleLoad = () => setMapError(false);
-      const handleError = () => {
-        if (!map.isStyleLoaded()) setMapError(true);
+      // A single tile can fail transiently at the edge of coverage without the
+      // map being unusable, so only a style that never loads is treated as a
+      // real failure.
+      const handleError = (event) => {
+        if (map.isStyleLoaded() || (event && event.sourceId)) return;
+        setMapError(true);
       };
 
       map.on('load', handleLoad);
@@ -481,18 +491,18 @@ export default function RiderMap({
 
   React.useEffect(() => {
     const map = mapInstance.current;
-    const nextStyle = darkMap ? DARK_STYLE : LIGHT_STYLE;
-    if (!map || currentStyle.current === nextStyle) return undefined;
+    const nextMode = darkMap ? 'dark' : 'light';
+    if (!map || currentStyleMode.current === nextMode) return undefined;
 
     const handleStyleLoad = () => {
       setMapError(false);
       setStyleRevision((revision) => revision + 1);
     };
 
-    currentStyle.current = nextStyle;
+    currentStyleMode.current = nextMode;
     setMapError(false);
     map.once('style.load', handleStyleLoad);
-    map.setStyle(nextStyle);
+    map.setStyle(getMapStyle(nextMode));
 
     return () => map.off('style.load', handleStyleLoad);
   }, [darkMap]);

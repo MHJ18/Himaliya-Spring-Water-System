@@ -17,7 +17,7 @@
   overflow: hidden;
   padding: 0.68rem 0.68rem 0.68rem 0.85rem;
   color: #f7fdff;
-  font-family: "Plus Jakarta Sans", "Segoe UI", Arial, sans-serif;
+  font-family: var(--hs-font-family, "Plus Jakarta Sans", "Segoe UI", Arial, sans-serif);
   background:
     radial-gradient(circle at 100% 0%, rgba(139, 232, 255, 0.22), transparent 11rem),
     linear-gradient(135deg, #092f48 0%, #075f79 56%, #078fa7 100%);

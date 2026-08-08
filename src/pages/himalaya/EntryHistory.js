@@ -28,6 +28,7 @@ import Groups2RoundedIcon from '@mui/icons-material/Groups2Rounded';
 import PageShell from '../../components/PageShell/PageShell';
 import LoadingState from '../../components/LoadingState/LoadingState';
 import { useAnalytics } from '../../context/AnalyticsContext';
+import { useSettings } from '../../context/SettingsContext';
 import { filterTransactionsByPeriod } from '../../utils/analytics';
 import { exportEntryHistoryToCsv } from '../../utils/exportCsv';
 import { formatCurrency, formatDate } from '../../utils/formatters';
@@ -54,11 +55,16 @@ function bottleLabel(type) {
 
 export default function EntryHistory() {
   const { allTransactions, loading } = useAnalytics();
+  const { settings } = useSettings();
   const [query, setQuery] = React.useState('');
   const [period, setPeriod] = React.useState('all');
   const [bottleType, setBottleType] = React.useState('all');
   const [page, setPage] = React.useState(0);
-  const [rowsPerPage, setRowsPerPage] = React.useState(10);
+  // Seeded from the configured default; the picker below still overrides it
+  // for the current visit.
+  const [rowsPerPage, setRowsPerPage] = React.useState(
+    () => Number(settings.defaultPageSize) || 10
+  );
 
   const filtered = React.useMemo(() => {
     const periodRows = period === 'all'
@@ -276,7 +282,7 @@ export default function EntryHistory() {
                   setRowsPerPage(Number(event.target.value));
                   setPage(0);
                 }}
-                rowsPerPageOptions={[10, 25, 50]}
+                rowsPerPageOptions={[...new Set([Number(settings.defaultPageSize) || 10, 10, 25, 50])].sort((a, b) => a - b)}
                 sx={{
                   overflow: 'hidden',
                   '& .MuiTablePagination-toolbar': {

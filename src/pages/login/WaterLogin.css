@@ -3,7 +3,7 @@
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  padding: clamp(24px, 4vw, 52px) clamp(16px, 4vw, 32px);
+  padding: clamp(20px, 3vw, 36px) clamp(16px, 3vw, 26px);
   color: #f4fbff;
   font-family: 'Plus Jakarta Sans', 'Segoe UI', system-ui, sans-serif;
   font-size: 16px;
@@ -45,29 +45,29 @@
 
 .water-login-copy h1 {
   max-width: 640px;
-  margin: 0 0 20px;
+  margin: 0 0 16px;
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
-  font-size: clamp(2rem, 4.5vw, 3.25rem);
+  font-size: clamp(1.7rem, 3.1vw, 2.45rem);
   font-weight: 800;
-  letter-spacing: 0;
-  line-height: 1.12;
+  letter-spacing: -0.015em;
+  line-height: 1.14;
   text-shadow: 0 3px 24px rgba(0, 0, 0, 0.5);
 }
 
 .water-login-copy p {
-  max-width: 560px;
+  max-width: 520px;
   margin: 0;
   color: #edf6fc;
-  font-size: 1.0625rem;
+  font-size: 0.92rem;
   font-weight: 500;
-  line-height: 1.7;
+  line-height: 1.6;
 }
 
 .water-login-badge {
   display: inline-flex;
-  padding: 8px 14px;
-  margin-bottom: 20px;
+  padding: 7px 12px;
+  margin-bottom: 14px;
   color: #8deaff;
   font-size: 0.75rem;
   font-weight: 700;
@@ -81,26 +81,26 @@
 .water-login-stats {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  margin-top: 32px;
+  gap: 10px;
+  margin-top: 26px;
 }
 
 .water-login-stats span {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 16px;
+  gap: 3px;
+  padding: 13px;
   color: #edf6fc;
-  font-size: 0.875rem;
+  font-size: 0.76rem;
   font-weight: 500;
   background: rgba(255, 255, 255, 0.055);
   border: 1px solid rgba(141, 234, 255, 0.12);
-  border-radius: 16px;
+  border-radius: 14px;
 }
 
 .water-login-stats strong {
   color: #ffffff;
-  font-size: 1.5rem;
+  font-size: 1.2rem;
   font-weight: 800;
   line-height: 1.1;
 }
@@ -108,9 +108,9 @@
 .water-login-card {
   position: relative;
   width: 100%;
-  max-width: 420px;
+  max-width: 400px;
   margin: 0 auto;
-  padding: clamp(24px, 4vw, 32px);
+  padding: clamp(18px, 2.4vw, 24px);
   overflow: hidden;
   background: rgba(7, 20, 34, 0.92);
   border: 1px solid rgba(141, 234, 255, 0.16);
@@ -131,22 +131,22 @@
 .water-login-logo {
   position: relative;
   display: flex;
-  gap: 14px;
+  gap: 12px;
   align-items: center;
-  margin-bottom: 28px;
+  margin-bottom: 22px;
 }
 
 .water-login-logo-mark {
   display: grid;
   flex-shrink: 0;
-  width: 52px;
-  height: 52px;
+  width: 46px;
+  height: 46px;
   place-items: center;
   color: #07111f;
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 800;
   background: linear-gradient(135deg, #eaffff, #38ccff);
-  border-radius: 16px;
+  border-radius: 14px;
   box-shadow: 0 12px 32px rgba(56, 204, 255, 0.28);
 }
 
@@ -154,15 +154,15 @@
   margin: 0;
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
-  font-size: 1.35rem;
+  font-size: 1.12rem;
   font-weight: 800;
   line-height: 1.2;
 }
 
 .water-login-logo p {
-  margin: 4px 0 0;
+  margin: 3px 0 0;
   color: #edf6fc;
-  font-size: 0.9375rem;
+  font-size: 0.8rem;
   font-weight: 500;
 }
 
@@ -174,20 +174,20 @@
 
 .water-login-label {
   display: block;
-  margin: 0 0 8px;
+  margin: 0 0 6px;
   color: #f3fbff;
-  font-size: 0.9375rem;
+  font-size: 0.8125rem;
   font-weight: 600;
 }
 
 .water-login-label + .water-login-input-wrap {
-  margin-bottom: 18px;
+  margin-bottom: 16px;
 }
 
 .water-login-input-wrap {
   display: flex;
   align-items: center;
-  min-height: 52px;
+  min-height: 44px;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(141, 234, 255, 0.14);
   border-radius: 14px;
@@ -206,7 +206,7 @@
 .water-login-input-icon {
   display: grid;
   flex-shrink: 0;
-  width: 48px;
+  width: 42px;
   place-items: center;
   color: #75e7ff;
   font-size: 1rem;
@@ -215,11 +215,14 @@
 
 .water-login-input {
   width: 100%;
-  min-height: 52px;
-  padding: 0 16px 0 0;
+  min-height: 44px;
+  padding: 0 14px 0 0;
   color: #eaf8ff;
   font-family: inherit;
-  font-size: 1rem;
+  /* Pinned to 16px rather than 1rem: the root font-size is user-adjustable
+     (15px on the "small" setting), and anything under 16px makes iOS Safari
+     zoom the page in when the field is focused. */
+  font-size: 16px;
   background-color: transparent;
   border: 0;
   outline: none;
@@ -248,12 +251,12 @@
 
 .water-login-alert {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   align-items: flex-start;
-  margin-bottom: 20px;
-  padding: 14px 16px;
+  margin-bottom: 18px;
+  padding: 12px 14px;
   color: #fff4f5;
-  font-size: 0.9375rem;
+  font-size: 0.84rem;
   font-weight: 600;
   line-height: 1.45;
   background: rgba(172, 30, 55, 0.92);
@@ -275,12 +278,12 @@
 
 .water-login-submit {
   width: 100%;
-  min-height: 52px;
+  min-height: 44px;
   margin-top: 8px;
-  padding: 0 20px;
+  padding: 0 18px;
   color: #061422;
   font-family: inherit;
-  font-size: 1rem;
+  font-size: 0.875rem;
   font-weight: 700;
   cursor: pointer;
   background: linear-gradient(135deg, #7ff2ff, #3198ff);
@@ -300,18 +303,18 @@
 }
 
 .water-login-note {
-  margin: 16px 0 0;
+  margin: 14px 0 0;
   color: #edf6fc;
-  font-size: 0.875rem;
+  font-size: 0.78rem;
   font-weight: 500;
   text-align: center;
 }
 
 .water-login-back {
   display: inline-flex;
-  margin-top: 20px;
+  margin-top: 18px;
   color: #9beeff;
-  font-size: 0.9375rem;
+  font-size: 0.82rem;
   font-weight: 600;
   text-decoration: none;
 }
@@ -396,8 +399,32 @@
     margin: 0;
     color: #fff !important;
     -webkit-text-fill-color: #fff !important;
-    font-size: 1.35rem;
+    font-size: 1.3rem;
     font-weight: 800;
+  }
+
+  .water-login-label {
+    font-size: 0.85rem;
+  }
+
+  /* Real <input> elements stay at 16px up to the tablet breakpoint so
+     Safari/Chrome never auto-zoom the whole page when a field is focused
+     (that zoom is what makes the form look suddenly oversized). */
+  .water-login-input {
+    font-size: 16px;
+  }
+
+  .water-login-submit {
+    font-size: 0.95rem;
+  }
+
+  .water-login-note,
+  .water-login-back {
+    font-size: 0.82rem;
+  }
+
+  .water-login-alert {
+    font-size: 0.85rem;
   }
 }
 
@@ -426,33 +453,12 @@
     font-size: 0.78rem;
   }
 
+  /* Inputs and buttons stay at 16px on phones so Safari/Chrome don't
+     auto-zoom the page when a field receives focus. */
   .water-login-input,
   .water-login-submit {
     font-size: 16px;
   }
-}
 
-/* Compact authentication type scale. Keep mobile inputs at 16px to avoid browser zoom. */
-.water-login-page { font-size: 13px; }
-.water-login-copy h1 { font-size: clamp(1.75rem, 3.2vw, 2.45rem); line-height: 1.08; }
-.water-login-copy p { font-size: .82rem; line-height: 1.55; }
-.water-login-stats span { font-size: .7rem; }
-.water-login-stats strong { font-size: 1.08rem; }
-.water-login-logo h2 { font-size: 1rem; }
-.water-login-logo p { font-size: .72rem; }
-.water-login-label { font-size: .74rem; }
-.water-login-input { font-size: .84rem; }
-.water-login-submit { font-size: .78rem; }
-.water-login-alert { font-size: .74rem; }
-.water-login-note,
-.water-login-back { font-size: .72rem; }
-.password-access-card h1 { font-size: 1.2rem; }
-
-@media (max-width: 480px) {
-  .water-login-mobile-heading h2 { font-size: 1rem; }
-  .water-login-mobile-heading p { font-size: .72rem; }
-  .water-login-input { font-size: 16px; }
-}
-@media (min-width: 1024px) {
-  .water-login-page { font-size: 15px; }
+  .password-access-card h1 { font-size: 1.15rem; }
 }

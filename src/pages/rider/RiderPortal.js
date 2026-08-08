@@ -32,7 +32,6 @@ import {
 import { toast } from 'react-toastify';
 import LoadingState from '../../components/LoadingState/LoadingState';
 import { BOTTLE_TYPE_LABELS } from '../../data/constants';
-import { getStableCustomerCoordinates } from '../../utils/coordinates';
 import { compressImageFile } from '../../utils/imageCompression';
 import {
   getRiderOrders,
@@ -369,6 +368,7 @@ function RiderPortal({ history: routerHistory }) {
   const [mapOpen, setMapOpen] = React.useState(false);
   const [locationState, setLocationState] = React.useState('idle');
   const profileEditingRef = React.useRef(false);
+  const accountRef = React.useRef(null);
   const requestRunning = React.useRef(false);
   const selectedRef = React.useRef(null);
   const locationSavingRef = React.useRef(false);
@@ -437,6 +437,23 @@ function RiderPortal({ history: routerHistory }) {
     });
   }, [profile]);
   React.useEffect(() => () => document.body.classList.remove('rider-dark-active'), []);
+  React.useEffect(() => {
+    if (!profileMenu) return undefined;
+    const closeOnOutsideClick = (event) => {
+      if (accountRef.current && !accountRef.current.contains(event.target)) setProfileMenu(false);
+    };
+    const closeOnEscape = (event) => {
+      if (event.key === 'Escape') setProfileMenu(false);
+    };
+    document.addEventListener('mousedown', closeOnOutsideClick);
+    document.addEventListener('touchstart', closeOnOutsideClick);
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.removeEventListener('mousedown', closeOnOutsideClick);
+      document.removeEventListener('touchstart', closeOnOutsideClick);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [profileMenu]);
 
   const theme = profile && profile.preferences && profile.preferences.theme === 'dark' ? 'dark' : 'light';
   React.useEffect(() => { document.body.classList.toggle('rider-dark-active', theme === 'dark'); }, [theme]);
@@ -469,22 +486,17 @@ function RiderPortal({ history: routerHistory }) {
     ));
   }, [orders, tab]);
   const selectedStopNumber = activeStops.findIndex((stop) => stop.key === (selectedStop && selectedStop.key)) + 1;
-  const mapStops = activeStops.map((stop) => {
-    const order = stop.primaryOrder;
-    const coords = getStableCustomerCoordinates({
-      id: order.customerId,
-      address: order.deliveryAddress,
-      name: order.customer && order.customer.name,
-    });
-    return {
-      id: stop.key,
-      label: (stop.customer && stop.customer.name) || 'Customer',
-      address: stop.deliveryAddress,
-      lat: coords.lat,
-      lng: coords.lng,
-      selected: stop.key === (selectedStop && selectedStop.key),
-    };
-  });
+  // Only the saved address is passed through. RiderMap geocodes it to a real
+  // position and falls back to an approximate pin itself; supplying a
+  // generated coordinate here would look exact to the map and suppress the
+  // lookup, pinning every customer to a hashed spot near the city centre.
+  const selectedStopKey = selectedStop && selectedStop.key;
+  const mapStops = React.useMemo(() => activeStops.map((stop) => ({
+    id: stop.key,
+    label: (stop.customer && stop.customer.name) || 'Customer',
+    address: stop.deliveryAddress,
+    selected: stop.key === selectedStopKey,
+  })), [activeStops, selectedStopKey]);
 
   const saveOrder = async (update, successMessage) => {
     if (!selectedStop || updating) return null;
@@ -685,12 +697,13 @@ function RiderPortal({ history: routerHistory }) {
             <RefreshCw className={refreshing ? 'is-spinning' : ''} />
             <span>Refresh</span>
           </button>
-          <div className="rider-account">
+          <div className="rider-account" ref={accountRef}>
             <button
               type="button"
               className="rider-profile-button"
               onClick={() => setProfileMenu((value) => !value)}
               aria-label="Open rider profile menu"
+              aria-haspopup="menu"
               aria-expanded={profileMenu}
             >
               <RiderAvatar profile={profile} />
@@ -1002,56 +1015,115 @@ function RiderPortal({ history: routerHistory }) {
       )}
 
       {tab === 'profile' && (
-        <section className="rider-profile-page">
-          <header>
-            <span><UserRound /></span>
-            <div><small>My account</small><h1>Profile and settings</h1><p>Change your photo, phone number, or screen color.</p></div>
+        <section className="rider-settings">
+          <header className="rider-settings__head">
+            <h1>Settings</h1>
+            <p>Manage your rider account, contact details and appearance.</p>
           </header>
-          <form className="rider-profile-layout" onSubmit={saveProfile}>
-            <section className="rider-profile-card rider-profile-card--identity">
-              <div className="rider-profile-photo">
-                <div className="rider-profile-photo__frame">
-                  <RiderAvatar profile={{ ...profile, photo: profileForm.photo, name: profileForm.name }} />
-                </div>
-                <div className="rider-profile-photo__meta">
-                  <strong>{profileForm.name || (profile && profile.name) || 'Rider'}</strong>
-                  <small>{profile && profile.email}</small>
-                </div>
-                <label className="rider-profile-photo__upload">
-                  <Camera /> Change photo
-                  <input type="file" accept="image/jpeg,image/png,image/webp" onChange={choosePhoto} />
-                </label>
-                {profileForm.photo && (
-                  <button type="button" className="rider-profile-photo__remove" onClick={() => { setProfileForm((current) => ({ ...current, photo: '' })); setProfileEditing(true); }}>
-                    Remove photo
-                  </button>
-                )}
-              </div>
-            </section>
-            <section className="rider-profile-card rider-profile-card--details">
-              <header className="rider-profile-card__header">
-                <span><UserRound size={18} /></span>
-                <div><small>Personal info</small><strong>Account details</strong></div>
+
+          <form className="rider-settings__stack" onSubmit={saveProfile}>
+            <section className="rider-card">
+              <header className="rider-card__head">
+                <h2>Profile</h2>
+                <p>This is how dispatch and customers see you on a delivery.</p>
               </header>
-              <div className="rider-profile-fields">
-                <label>Full name <span>*</span><input value={profileForm.name} onChange={(event) => { setProfileForm((current) => ({ ...current, name: event.target.value })); setProfileEditing(true); }} required /></label>
-                <label>Email address<input value={profile ? profile.email : ''} disabled /></label>
-                <label>Phone number<input value={profileForm.phone} inputMode="tel" onChange={(event) => { setProfileForm((current) => ({ ...current, phone: event.target.value })); setProfileEditing(true); }} /></label>
+              <div className="rider-card__body">
+                <div className="rider-identity">
+                  <span className="rider-identity__avatar">
+                    <RiderAvatar profile={{ ...profile, photo: profileForm.photo, name: profileForm.name }} />
+                  </span>
+                  <div className="rider-identity__meta">
+                    <strong>{profileForm.name || (profile && profile.name) || 'Rider'}</strong>
+                    <small>{profile && profile.email}</small>
+                  </div>
+                  <div className="rider-identity__actions">
+                    <label className="rider-btn rider-btn--outline">
+                      <Camera aria-hidden="true" /> Change photo
+                      <input type="file" accept="image/jpeg,image/png,image/webp" onChange={choosePhoto} />
+                    </label>
+                    {profileForm.photo && (
+                      <button
+                        type="button"
+                        className="rider-btn rider-btn--ghost"
+                        onClick={() => { setProfileForm((current) => ({ ...current, photo: '' })); setProfileEditing(true); }}
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="rider-field-grid">
+                  <div className="rider-field">
+                    <label htmlFor="rider-settings-name">Full name</label>
+                    <input
+                      id="rider-settings-name"
+                      value={profileForm.name}
+                      onChange={(event) => { setProfileForm((current) => ({ ...current, name: event.target.value })); setProfileEditing(true); }}
+                      required
+                    />
+                    <p className="rider-field__hint">Shown to customers on their delivery updates.</p>
+                  </div>
+                  <div className="rider-field">
+                    <label htmlFor="rider-settings-email">Email address</label>
+                    <input id="rider-settings-email" value={profile ? profile.email : ''} disabled />
+                    <p className="rider-field__hint">Your sign-in address. Contact dispatch to change it.</p>
+                  </div>
+                  <div className="rider-field rider-field--full">
+                    <label htmlFor="rider-settings-phone">Phone number</label>
+                    <input
+                      id="rider-settings-phone"
+                      value={profileForm.phone}
+                      inputMode="tel"
+                      autoComplete="tel"
+                      onChange={(event) => { setProfileForm((current) => ({ ...current, phone: event.target.value })); setProfileEditing(true); }}
+                    />
+                    <p className="rider-field__hint">Used when dispatch needs to reach you mid-route.</p>
+                  </div>
+                </div>
               </div>
             </section>
-            <section className="rider-profile-card rider-profile-card--appearance">
-              <header className="rider-profile-card__header">
-                <span><Moon size={18} /></span>
-                <div><small>Appearance</small><strong>Screen color</strong></div>
+
+            <section className="rider-card">
+              <header className="rider-card__head">
+                <h2>Appearance</h2>
+                <p>Choose how the workspace looks on this account.</p>
               </header>
-              <div className="rider-theme-toggle">
-                <button type="button" className={profileForm.theme === 'light' ? 'is-active' : ''} onClick={() => { setProfileForm((current) => ({ ...current, theme: 'light' })); setProfileEditing(true); }}><Sun /> Light mode</button>
-                <button type="button" className={profileForm.theme === 'dark' ? 'is-active' : ''} onClick={() => { setProfileForm((current) => ({ ...current, theme: 'dark' })); setProfileEditing(true); }}><Moon /> Dark mode</button>
+              <div className="rider-card__body">
+                <div className="rider-theme-choices" role="radiogroup" aria-label="Screen colour">
+                  {[
+                    { value: 'light', label: 'Light', hint: 'Best in daylight', icon: <Sun aria-hidden="true" /> },
+                    { value: 'dark', label: 'Dark', hint: 'Easier at night', icon: <Moon aria-hidden="true" /> },
+                  ].map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      role="radio"
+                      aria-checked={profileForm.theme === option.value}
+                      className={`rider-theme-choice${profileForm.theme === option.value ? ' is-active' : ''}`}
+                      onClick={() => { setProfileForm((current) => ({ ...current, theme: option.value })); setProfileEditing(true); }}
+                    >
+                      <span className={`rider-theme-choice__preview rider-theme-choice__preview--${option.value}`} aria-hidden="true">
+                        <i /><i /><i />
+                      </span>
+                      <span className="rider-theme-choice__label">
+                        {option.icon}
+                        <strong>{option.label}</strong>
+                        <small>{option.hint}</small>
+                      </span>
+                      <span className="rider-theme-choice__check" aria-hidden="true"><Check /></span>
+                    </button>
+                  ))}
+                </div>
               </div>
             </section>
-            <button className="rider-primary-action rider-profile-save" type="submit" disabled={!profileForm.name.trim() || savingProfile}>
-              <Save /> {savingProfile ? 'Saving…' : 'Save changes'}
-            </button>
+
+            <div className="rider-settings__footer">
+              <p>Changes apply to your account on every device.</p>
+              <button className="rider-btn rider-btn--primary" type="submit" disabled={!profileForm.name.trim() || savingProfile}>
+                <Save aria-hidden="true" /> {savingProfile ? 'Saving…' : 'Save changes'}
+              </button>
+            </div>
           </form>
         </section>
       )}

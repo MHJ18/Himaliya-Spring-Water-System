@@ -99,6 +99,39 @@ export function buildDeliveryDirectionsUrl({
   return `https://www.google.com/maps/dir/?${params.join('&')}`;
 }
 
+async function geocodeWithPhoton(query, signal) {
+  const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=1&lang=en&countrycode=PK&lon=${DEFAULT_COORDINATES.lng}&lat=${DEFAULT_COORDINATES.lat}&zoom=9`;
+  const response = await fetch(url, { signal });
+  if (!response.ok) return null;
+  const payload = await response.json();
+  const coordinates = payload
+    && payload.features
+    && payload.features[0]
+    && payload.features[0].geometry
+    && payload.features[0].geometry.coordinates;
+  if (!Array.isArray(coordinates) || !validCoordinate(coordinates[0]) || !validCoordinate(coordinates[1])) return null;
+  return { lat: Number(coordinates[1]), lng: Number(coordinates[0]) };
+}
+
+// Photon's free tier has thin coverage for small Pakistani towns and
+// neighborhood-level addresses, so many delivery addresses never resolve and
+// silently fall back to an approximate, deterministically-offset pin near the
+// city center. Nominatim indexes the same OpenStreetMap data with a
+// different search strategy and picks up a meaningful share of the addresses
+// Photon misses, so it runs as a second attempt rather than the only source.
+async function geocodeWithNominatim(query, signal) {
+  const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=pk&addressdetails=0&q=${encodeURIComponent(query)}`;
+  const response = await fetch(url, {
+    signal,
+    headers: { Accept: 'application/json' },
+  });
+  if (!response.ok) return null;
+  const payload = await response.json();
+  const first = Array.isArray(payload) ? payload[0] : null;
+  if (!first || !validCoordinate(first.lon) || !validCoordinate(first.lat)) return null;
+  return { lat: Number(first.lat), lng: Number(first.lon) };
+}
+
 export async function resolveDeliveryAddressCoordinates(address, { signal } = {}) {
   const normalizedAddress = String(address || '').trim();
   if (!normalizedAddress) return null;
@@ -109,21 +142,25 @@ export async function resolveDeliveryAddressCoordinates(address, { signal } = {}
   const query = /pakistan/i.test(normalizedAddress)
     ? normalizedAddress
     : `${normalizedAddress}, Pakistan`;
-  const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=1&lang=en&countrycode=PK&lon=${DEFAULT_COORDINATES.lng}&lat=${DEFAULT_COORDINATES.lat}&zoom=9`;
   const lookup = addressLookupQueue
     .catch(() => undefined)
     .then(async () => {
-      const response = await fetch(url, { signal });
-      if (!response.ok) throw new Error('Address lookup is unavailable.');
-      const payload = await response.json();
-      const coordinates = payload
-        && payload.features
-        && payload.features[0]
-        && payload.features[0].geometry
-        && payload.features[0].geometry.coordinates;
-      if (!Array.isArray(coordinates) || !validCoordinate(coordinates[0]) || !validCoordinate(coordinates[1])) return null;
-
-      const result = { lat: Number(coordinates[1]), lng: Number(coordinates[0]) };
+      let result = null;
+      try {
+        result = await geocodeWithPhoton(query, signal);
+      } catch (error) {
+        if (error && error.name === 'AbortError') throw error;
+        result = null;
+      }
+      if (!result) {
+        try {
+          result = await geocodeWithNominatim(query, signal);
+        } catch (error) {
+          if (error && error.name === 'AbortError') throw error;
+          result = null;
+        }
+      }
+      if (!result) return null;
       addressCoordinateCache.set(cacheKey, result);
       return result;
     });

@@ -80,6 +80,36 @@ describe('customer coordinate estimates', () => {
     expect(global.fetch.mock.calls[0][0]).toContain('zoom=9');
   });
 
+  test('falls back to Nominatim when Photon has no match for the address', async () => {
+    global.fetch = jest.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ features: [] }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve([{ lat: '32.4999', lon: '74.5301' }]),
+      });
+
+    await expect(resolveDeliveryAddressCoordinates('Uncommon local address, Sialkot')).resolves.toEqual({
+      lat: 32.4999,
+      lng: 74.5301,
+    });
+    expect(global.fetch).toHaveBeenCalledTimes(2);
+    expect(global.fetch.mock.calls[0][0]).toContain('photon.komoot.io');
+    expect(global.fetch.mock.calls[1][0]).toContain('nominatim.openstreetmap.org');
+    expect(global.fetch.mock.calls[1][0]).toContain('countrycodes=pk');
+  });
+
+  test('returns null when neither geocoder has a match', async () => {
+    global.fetch = jest.fn()
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ features: [] }) })
+      .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve([]) });
+
+    await expect(resolveDeliveryAddressCoordinates('Nowhere at all')).resolves.toBeNull();
+    expect(global.fetch).toHaveBeenCalledTimes(2);
+  });
+
   test('loads road geometry between rider and destination', async () => {
     const coordinates = [[74.52, 32.49], [74.53, 32.51]];
     global.fetch = jest.fn().mockResolvedValue({

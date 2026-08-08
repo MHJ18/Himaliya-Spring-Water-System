@@ -2,7 +2,7 @@
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  padding: clamp(22px, 4vw, 50px) clamp(16px, 4vw, 34px);
+  padding: clamp(20px, 3vw, 36px) clamp(16px, 3vw, 26px);
   background:
     linear-gradient(rgba(131, 219, 237, 0.035) 1px, transparent 1px),
     linear-gradient(90deg, rgba(131, 219, 237, 0.035) 1px, transparent 1px),
@@ -57,7 +57,7 @@
   padding: 0 13px;
   margin-bottom: 24px;
   color: #a4f3fb;
-  font-size: 0.66rem;
+  font-size: 0.75rem;
   background: rgba(81, 216, 234, 0.07);
   border-color: rgba(116, 231, 246, 0.16);
 }
@@ -71,20 +71,20 @@
 }
 
 .admin-login-copy h1 {
-  max-width: 700px;
-  margin-bottom: 22px;
-  font-size: clamp(2.6rem, 5.7vw, 5.4rem);
+  max-width: 640px;
+  margin-bottom: 16px;
+  font-size: clamp(1.6rem, 2.6vw, 2.2rem);
   font-weight: 850;
-  letter-spacing: -0.055em;
-  line-height: 0.94;
+  letter-spacing: -0.04em;
+  line-height: 1.02;
 }
 
 .admin-login-copy > p {
-  max-width: 610px;
+  max-width: 540px;
   color: #b8cfda;
-  font-size: 0.98rem;
+  font-size: 0.86rem;
   font-weight: 500;
-  line-height: 1.75;
+  line-height: 1.65;
 }
 
 .admin-login-flow {
@@ -129,7 +129,7 @@
 .admin-login-flow small {
   margin-top: 3px;
   color: #799aaa;
-  font-size: 0.63rem;
+  font-size: 0.75rem;
   font-weight: 650;
 }
 
@@ -162,7 +162,7 @@
   gap: 9px;
   margin-top: 21px;
   color: #83a7b7;
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: 700;
 }
 
@@ -171,9 +171,9 @@
 }
 
 .admin-login-card {
-  max-width: 442px;
-  min-height: 610px;
-  padding: clamp(27px, 3.7vw, 38px);
+  max-width: 410px;
+  min-height: 0;
+  padding: clamp(18px, 2.4vw, 24px);
   background:
     linear-gradient(145deg, rgba(232, 252, 255, 0.055), rgba(93, 191, 211, 0.018)),
     rgba(4, 18, 29, 0.93);
@@ -194,7 +194,7 @@
 }
 
 .admin-login-card .water-login-logo {
-  margin-bottom: 39px;
+  margin-bottom: 26px;
 }
 
 .admin-login-card .water-login-logo-mark,
@@ -215,7 +215,7 @@
 
 .admin-login-card .water-login-logo p {
   color: #84a5b4;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
 }
 
 .admin-login-heading {
@@ -225,18 +225,18 @@
 
 .admin-login-heading > span {
   color: #69dceb;
-  font-size: 0.63rem;
+  font-size: 0.75rem;
   font-weight: 850;
   letter-spacing: 0.13em;
   text-transform: uppercase;
 }
 
 .admin-login-heading h2 {
-  margin: 7px 0 5px;
+  margin: 6px 0 4px;
   color: #fff !important;
-  font-size: 1.8rem;
+  font-size: 1.32rem;
   font-weight: 850;
-  letter-spacing: -0.035em;
+  letter-spacing: -0.03em;
 }
 
 .admin-login-heading p {
@@ -247,18 +247,18 @@
 }
 
 .admin-login-card .water-login-label {
-  margin-bottom: 7px;
+  margin-bottom: 6px;
   color: #cde0e7;
-  font-size: 0.7rem;
+  font-size: 0.8125rem;
   font-weight: 750;
 }
 
 .admin-login-card .water-login-label + .water-login-input-wrap {
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
 .admin-login-card .water-login-input-wrap {
-  min-height: 54px;
+  min-height: 44px;
   background: rgba(218, 249, 255, 0.04);
   border-color: rgba(144, 221, 233, 0.14);
   border-radius: 16px;
@@ -275,14 +275,15 @@
 }
 
 .admin-login-card .water-login-input-icon {
-  width: 50px;
+  width: 42px;
   color: #66d9e8;
 }
 
 .admin-login-card .water-login-input {
-  min-height: 54px;
+  min-height: 44px;
   color: #ecfbff;
-  font-size: 0.88rem;
+  /* 16px so focusing a field never triggers mobile Safari's zoom. */
+  font-size: 16px;
 }
 
 .admin-login-card .water-login-input::placeholder {
@@ -304,7 +305,7 @@
 
 .admin-login-card .water-login-submit {
   display: flex;
-  min-height: 56px;
+  min-height: 44px;
   align-items: center;
   justify-content: space-between;
   margin-top: 7px;
@@ -337,7 +338,7 @@
   gap: 6px;
   margin: 0;
   color: #7696a4;
-  font-size: 0.62rem;
+  font-size: 0.75rem;
   text-align: left;
 }
 
@@ -349,7 +350,7 @@
   flex: 0 0 auto;
   margin: 0;
   color: #74dfec;
-  font-size: 0.65rem;
+  font-size: 0.75rem;
   text-decoration: none;
 }
 
@@ -358,7 +359,7 @@
   gap: 7px;
   margin-top: 28px;
   color: #748f9d;
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   text-decoration: none;
 }
 
@@ -398,7 +399,7 @@
 
   .admin-login-page .water-login-mobile-brand p {
     color: #82a0ae;
-    font-size: 0.68rem;
+    font-size: 0.75rem;
   }
 
   .admin-login-card {
@@ -408,6 +409,35 @@
 
   .admin-login-heading {
     margin-top: 3px;
+  }
+
+  .admin-login-heading h2 {
+    font-size: 1.4rem;
+  }
+
+  .admin-login-heading p {
+    font-size: 0.75rem;
+  }
+
+  .admin-login-card .water-login-label {
+    font-size: 0.76rem;
+  }
+
+  /* Real <input> elements stay at 16px from the tablet breakpoint down so
+     Safari/Chrome never auto-zoom the page on focus (that zoom is what
+     makes placeholders and labels look oversized on phones). */
+  .admin-login-card .water-login-input {
+    font-size: 16px;
+  }
+
+  .admin-login-card .water-login-submit {
+    font-size: 0.85rem;
+  }
+
+  .admin-login-card .water-login-note,
+  .admin-login-card .water-login-forgot,
+  .admin-login-card .water-login-back {
+    font-size: 0.75rem;
   }
 }
 
@@ -423,7 +453,7 @@
   }
 
   .admin-login-heading h2 {
-    font-size: 1.55rem;
+    font-size: 1.25rem;
   }
 
   .admin-login-form-meta {
@@ -433,7 +463,11 @@
   }
 
   .admin-login-card .water-login-forgot {
-    font-size: 0.68rem;
+    font-size: 0.75rem;
+  }
+
+  .admin-login-card .water-login-input {
+    font-size: 16px;
   }
 }
 
@@ -441,19 +475,4 @@
   .admin-login-flow > i > b {
     animation: none;
   }
-}
-
-/* Deliberately restrained admin sign-in typography. */
-.admin-login-copy h1 { font-size: clamp(2rem, 4vw, 3.35rem); line-height: 1; }
-.admin-login-copy > p { font-size: .8rem; line-height: 1.6; }
-.admin-login-heading h2 { font-size: 1.28rem; }
-.admin-login-heading p { font-size: .7rem; }
-.admin-login-card .water-login-logo h2 { font-size: .88rem; }
-.admin-login-card .water-login-logo p { font-size: .65rem; }
-.admin-login-card .water-login-input { font-size: .8rem; }
-.admin-login-card .water-login-submit { font-size: .75rem; }
-
-@media (max-width: 480px) {
-  .admin-login-heading h2 { font-size: 1.15rem; }
-  .admin-login-card .water-login-input { font-size: 16px; }
 }

@@ -17,14 +17,13 @@ import {
   ListItemButton,
   Stack,
   TextField,
-  ToggleButton,
-  ToggleButtonGroup,
   Typography,
 } from '@mui/material';
 import {
   AddAPhotoOutlined,
   AlternateEmailRounded,
   CalendarMonthRounded,
+  CheckRounded,
   CloseRounded,
   EditRounded,
   LocalShippingRounded,
@@ -34,6 +33,7 @@ import {
   PhoneRounded,
   SearchRounded,
 } from '@mui/icons-material';
+import { alpha } from '@mui/material/styles';
 import { toast } from 'react-toastify';
 import PageShell from '../../components/PageShell/PageShell';
 import { useCustomers } from '../../context/CustomerContext';
@@ -41,6 +41,21 @@ import { DEFAULT_COUNTRY_CODE } from '../../data/constants';
 import { validateCustomerForm, normalizePhone } from '../../utils/validation';
 import { getCustomerAvatar } from '../../utils/customerPhotos';
 import { compressImageFile } from '../../utils/imageCompression';
+
+const PAYMENT_SCHEDULES = [
+  {
+    value: 'monthly',
+    label: 'Monthly account',
+    hint: 'Deliveries build a running balance',
+    icon: CalendarMonthRounded,
+  },
+  {
+    value: 'on_delivery',
+    label: 'Pay on delivery',
+    hint: 'Cash captured with each sale',
+    icon: LocalShippingRounded,
+  },
+];
 
 const initialForm = {
   name: '',
@@ -183,10 +198,10 @@ export default function AddCustomer({ history }) {
                 component="form"
                 onSubmit={handleSubmit}
                 noValidate
-                sx={{ '& .MuiOutlinedInput-root': { minHeight: 44 } }}
+                sx={{ '& .MuiOutlinedInput-root': { minHeight: 40 } }}
               >
-                <Stack spacing={2.25}>
-                  <Stack alignItems="center" spacing={1}>
+                <Stack spacing={1.5}>
+                  <Stack alignItems="center" spacing={0.75}>
                     <ButtonBase
                       component="label"
                       aria-label="Choose a customer photo"
@@ -208,8 +223,8 @@ export default function AddCustomer({ history }) {
                       <Avatar
                         src={preview || undefined}
                         sx={{
-                          width: 92,
-                          height: 92,
+                          width: 72,
+                          height: 72,
                           bgcolor: 'primary.main',
                           boxShadow: '0 12px 30px rgba(20,115,230,.3)',
                         }}
@@ -225,34 +240,41 @@ export default function AddCustomer({ history }) {
                     </Typography>
                   </Stack>
 
-                  <TextField
-                    label="Full name"
-                    value={form.name}
-                    onChange={(event) => updateForm('name', event.target.value)}
-                    required
-                    error={Boolean(errors.name)}
-                    helperText={errors.name}
-                    autoComplete="name"
-                    InputProps={{ startAdornment: <InputAdornment position="start"><PersonOutlineRounded /></InputAdornment> }}
-                  />
-                  <TextField
-                    label="Phone number"
-                    value={form.phone}
-                    onChange={(event) => updateForm('phone', normalizePhone(event.target.value))}
-                    required
-                    error={Boolean(errors.phone)}
-                    helperText={errors.phone || 'Use a Pakistan number with country code.'}
-                    autoComplete="tel"
-                    inputMode="tel"
-                    InputProps={{ startAdornment: <InputAdornment position="start"><PhoneRounded /></InputAdornment> }}
-                  />
+                  {/* Name and phone are both short; pairing them saves a row
+                      without cramping either field. */}
+                  <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.5 }}>
+                    <TextField
+                      label="Full name"
+                      placeholder="e.g. Ayesha Khan"
+                      value={form.name}
+                      onChange={(event) => updateForm('name', event.target.value)}
+                      required
+                      error={Boolean(errors.name)}
+                      helperText={errors.name}
+                      autoComplete="name"
+                      InputProps={{ startAdornment: <InputAdornment position="start"><PersonOutlineRounded /></InputAdornment> }}
+                    />
+                    <TextField
+                      label="Phone number"
+                      placeholder="+92 3XX XXXXXXX"
+                      value={form.phone}
+                      onChange={(event) => updateForm('phone', normalizePhone(event.target.value))}
+                      required
+                      error={Boolean(errors.phone)}
+                      helperText={errors.phone || 'Use a Pakistan number with country code.'}
+                      autoComplete="tel"
+                      inputMode="tel"
+                      InputProps={{ startAdornment: <InputAdornment position="start"><PhoneRounded /></InputAdornment> }}
+                    />
+                  </Box>
                   <TextField
                     label="Delivery address"
+                    placeholder="House / shop number, street, area, city"
                     value={form.address}
                     onChange={(event) => updateForm('address', event.target.value)}
                     required
                     multiline
-                    minRows={3}
+                    minRows={2}
                     error={Boolean(errors.address)}
                     helperText={errors.address}
                     autoComplete="street-address"
@@ -260,6 +282,7 @@ export default function AddCustomer({ history }) {
                   />
                   <TextField
                     label="Email address"
+                    placeholder="name@example.com"
                     type="email"
                     value={form.email}
                     onChange={(event) => updateForm('email', event.target.value)}
@@ -272,33 +295,89 @@ export default function AddCustomer({ history }) {
                     <Typography variant="body2" fontWeight={800} sx={{ mb: 0.75 }}>
                       Payment schedule
                     </Typography>
-                    <ToggleButtonGroup
-                      exclusive
-                      fullWidth
-                      value={form.paymentSchedule}
-                      onChange={(event, value) => {
-                        if (value) updateForm('paymentSchedule', value);
-                      }}
+                    {/* Choice cards rather than plain toggles: each option
+                        states what it does, and the active one is carried by
+                        border, tint and a check — not colour alone. */}
+                    <Box
+                      role="radiogroup"
                       aria-label="Customer payment schedule"
-                      sx={{
-                        '& .MuiToggleButton-root': {
-                          minWidth: 0,
-                          minHeight: 48,
-                          gap: 0.75,
-                          px: { xs: 1, sm: 1.5 },
-                          whiteSpace: 'normal',
-                        },
-                      }}
+                      sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1 }}
                     >
-                      <ToggleButton value="monthly" aria-label="Monthly account">
-                        <CalendarMonthRounded fontSize="small" />
-                        Monthly account
-                      </ToggleButton>
-                      <ToggleButton value="on_delivery" aria-label="Pay on delivery">
-                        <LocalShippingRounded fontSize="small" />
-                        Pay on delivery
-                      </ToggleButton>
-                    </ToggleButtonGroup>
+                      {PAYMENT_SCHEDULES.map((option) => {
+                        const selected = form.paymentSchedule === option.value;
+                        const OptionIcon = option.icon;
+                        return (
+                          <Box
+                            key={option.value}
+                            component="button"
+                            type="button"
+                            role="radio"
+                            aria-checked={selected}
+                            onClick={() => updateForm('paymentSchedule', option.value)}
+                            sx={(theme) => ({
+                              position: 'relative',
+                              display: 'grid',
+                              gridTemplateColumns: 'auto minmax(0, 1fr)',
+                              alignItems: 'start',
+                              gap: 1,
+                              p: 1.15,
+                              font: 'inherit',
+                              textAlign: 'left',
+                              cursor: 'pointer',
+                              color: 'text.primary',
+                              bgcolor: selected ? alpha(theme.palette.primary.main, 0.1) : 'action.hover',
+                              border: '1.5px solid',
+                              borderColor: selected ? 'primary.main' : 'divider',
+                              borderRadius: 2,
+                              boxShadow: selected ? `0 6px 18px ${alpha(theme.palette.primary.main, 0.18)}` : 'none',
+                              transition: 'border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease',
+                              '&:hover': { borderColor: selected ? 'primary.main' : 'text.secondary' },
+                              '&:focus-visible': { outline: '3px solid', outlineColor: alpha(theme.palette.primary.main, 0.4), outlineOffset: 2 },
+                            })}
+                          >
+                            <Box sx={{
+                              display: 'grid',
+                              width: 30,
+                              height: 30,
+                              placeItems: 'center',
+                              color: selected ? 'primary.main' : 'text.secondary',
+                              bgcolor: 'background.paper',
+                              border: '1px solid',
+                              borderColor: 'divider',
+                              borderRadius: 1.5,
+                              '& svg': { fontSize: 17 },
+                            }}
+                            >
+                              <OptionIcon />
+                            </Box>
+                            <Box sx={{ minWidth: 0, pr: 2 }}>
+                              <Typography variant="body2" fontWeight={750} noWrap>{option.label}</Typography>
+                              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', lineHeight: 1.35 }}>
+                                {option.hint}
+                              </Typography>
+                            </Box>
+                            {selected && (
+                              <Box aria-hidden="true" sx={{
+                                position: 'absolute',
+                                top: 8,
+                                right: 8,
+                                display: 'grid',
+                                width: 18,
+                                height: 18,
+                                placeItems: 'center',
+                                color: 'primary.contrastText',
+                                bgcolor: 'primary.main',
+                                borderRadius: '50%',
+                                '& svg': { fontSize: 12 },
+                              }}
+                              >
+                                <CheckRounded />
+                              </Box>
+                            )}
+                          </Box>
+                        );
+                      })}
+                    </Box>
                     <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.75 }}>
                       Monthly deliveries build an account balance; pay-on-delivery entries capture cash with each sale.
                     </Typography>

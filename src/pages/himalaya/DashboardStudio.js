@@ -28,6 +28,8 @@ import {
   BottleMixChart,
   BusinessSalesChart,
   CustomerTrendMiniChart,
+  DailySalesTrendChart,
+  MonthlyCollectionChart,
   WeeklyPaymentsMiniChart,
 } from '../../components/charts/SalesOverviewCharts';
 import LoadingState from '../../components/LoadingState/LoadingState';
@@ -65,6 +67,10 @@ const copyByLanguage = {
     collectionSub: 'Payment health this month',
     payments: 'Payments',
     paymentsSub: 'Daily collections this week',
+    dailyTrend: 'Sales trend',
+    dailyTrendSub: 'Daily revenue over the last 14 days',
+    collectionHealth: 'Collection health',
+    collectionHealthSub: 'Collected vs. outstanding by month',
     recent: 'Recent sales',
     recentSub: 'Latest customer entries from your ledger',
     schedule: 'Upcoming deliveries',
@@ -114,6 +120,10 @@ const copyByLanguage = {
     collectionSub: 'اس ماہ ادائیگی کی صورتحال',
     payments: 'ادائیگیاں',
     paymentsSub: 'اس ہفتے کی روزانہ وصولی',
+    dailyTrend: 'فروخت کا رجحان',
+    dailyTrendSub: 'گزشتہ 14 دنوں کی روزانہ آمدنی',
+    collectionHealth: 'وصولی کی صورتحال',
+    collectionHealthSub: 'ماہانہ بنیاد پر وصول شدہ بمقابلہ بقایا',
     recent: 'حالیہ فروخت',
     recentSub: 'آپ کے ریکارڈ کے تازہ ترین اندراجات',
     schedule: 'آنے والی ڈیلیوریز',
@@ -471,6 +481,16 @@ export default function DashboardStudio() {
             )}
             <StatusRow icon={NotificationsActiveOutlinedIcon} label={copy.alerts} value={portalStatus === 'error' ? '—' : portalStats.unreadAdminNotifications} tone="warning" />
           </div>
+        </StudioCard>
+
+        <StudioCard className="studio-trend-chart" delay={0.18}>
+          <CardHeading title={copy.dailyTrend} subtitle={copy.dailyTrendSub} />
+          <DailySalesTrendChart data={dailySalesChart} />
+        </StudioCard>
+
+        <StudioCard className="studio-collection-chart" delay={0.19}>
+          <CardHeading title={copy.collectionHealth} subtitle={copy.collectionHealthSub} />
+          <MonthlyCollectionChart data={monthlyRevenueChart} />
         </StudioCard>
 
         <StudioCard className="studio-recent" delay={0.2}>

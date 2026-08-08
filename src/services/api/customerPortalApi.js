@@ -3,8 +3,6 @@ import {
   clearPendingCustomerProfile,
   consumeCustomerEmailConfirmation,
   dbRequest,
-  discardAuthSession,
-  ensureEmailConfirmationEnabled,
   ensurePhoneVerificationEnabled,
   getPendingCustomerProfile,
   getStoredSession,
@@ -266,7 +264,6 @@ export async function signInCustomer(identifier, password) {
 
 export async function registerCustomer(form) {
   requireCloud();
-  await ensureEmailConfirmationEnabled();
   const email = form.email.trim().toLowerCase();
   const publicBase = String(process.env.PUBLIC_URL || '').replace(/\/$/, '');
   const confirmationRedirect = typeof window === 'undefined'
@@ -288,11 +285,10 @@ export async function registerCustomer(form) {
   const session = result && result.session;
   const user = result && result.user;
   if (session) {
-    await discardAuthSession(session);
-    clearPendingCustomerProfile();
-    throw new Error(
-      'Secure email confirmation is required before customer history can be linked. Enable Confirm Email in Supabase Authentication settings. This rejected Auth user must be removed by an administrator before registration is retried.'
-    );
+    // Confirm Email is disabled in Supabase Auth settings, so signup returns
+    // an active session immediately. Sign the customer straight in and
+    // continue to profile creation/linking below.
+    storeSession(session, 'customer');
   } else if (user && Array.isArray(user.identities) && user.identities.length === 0) {
     try {
       await signInWithPassword(email, form.password, 'customer');

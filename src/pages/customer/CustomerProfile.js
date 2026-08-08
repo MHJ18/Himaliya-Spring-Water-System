@@ -19,8 +19,6 @@ import {
   Tab,
   Tabs,
   TextField,
-  ToggleButton,
-  ToggleButtonGroup,
   Typography,
 } from '@mui/material';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
@@ -29,22 +27,66 @@ import WaterDropRoundedIcon from '@mui/icons-material/WaterDropRounded';
 import PersonOutlineRoundedIcon from '@mui/icons-material/PersonOutlineRounded';
 import TuneRoundedIcon from '@mui/icons-material/TuneRounded';
 import SecurityRoundedIcon from '@mui/icons-material/SecurityRounded';
-import LightModeRoundedIcon from '@mui/icons-material/LightModeRounded';
-import DarkModeRoundedIcon from '@mui/icons-material/DarkModeRounded';
-import GradientRoundedIcon from '@mui/icons-material/GradientRounded';
 import ColorLensRoundedIcon from '@mui/icons-material/ColorLensRounded';
+import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
+import CookieRoundedIcon from '@mui/icons-material/CookieRounded';
 import ViewModuleRoundedIcon from '@mui/icons-material/ViewModuleRounded';
 import SaveRoundedIcon from '@mui/icons-material/SaveRounded';
 import NotificationsActiveRoundedIcon from '@mui/icons-material/NotificationsActiveRounded';
 import LocalShippingRoundedIcon from '@mui/icons-material/LocalShippingRounded';
 import ReceiptLongRoundedIcon from '@mui/icons-material/ReceiptLongRounded';
-import { motion } from 'motion/react';
+import { LayoutGroup, motion } from 'motion/react';
 import { toast } from 'react-toastify';
 import { getCustomerProfile, saveCustomerProfile } from '../../services/api/customerPortalApi';
 import LoadingState from '../../components/LoadingState/LoadingState';
 import useCustomerTheme from './useCustomerTheme';
 import PasswordChangeForm from '../../components/PasswordChangeForm/PasswordChangeForm';
 import { BOTTLE_TYPES, BOTTLE_TYPE_LABELS } from '../../data/constants';
+
+// Mirrors the .customer-accent--* custom properties in CustomerPortal.css so
+// the swatch a customer picks matches the colour the dashboard actually uses.
+const ACCENT_SWATCHES = [
+  { value: 'aqua', label: 'Aqua', color: '#078eb4', light: '#37c8dd' },
+  { value: 'blue', label: 'Blue', color: '#2f6fed', light: '#68a3ff' },
+  { value: 'violet', label: 'Violet', color: '#7357d8', light: '#aa7cf3' },
+  { value: 'emerald', label: 'Green', color: '#11875d', light: '#4acb92' },
+];
+
+// Each preview mirrors the actual page background for that appearance, so the
+// swatch is a real sample rather than a decorative colour chip.
+const APPEARANCE_OPTIONS = [
+  {
+    value: 'light',
+    label: 'Light',
+    description: 'Bright surfaces for daytime',
+    accent: '#078eb4',
+    swatches: ['#f4fbfe', '#cbe7f2', '#078eb4'],
+  },
+  {
+    value: 'dark',
+    label: 'Dark',
+    description: 'Low glare for evening use',
+    accent: '#37c8dd',
+    swatches: ['#07111f', '#0a1724', '#37c8dd'],
+  },
+  {
+    value: 'dark-gradient',
+    label: 'Dark gradient',
+    description: 'Deep tones with a colour wash',
+    accent: '#7b5cff',
+    swatches: ['#061927', '#140d2b', '#7b5cff'],
+  },
+];
+
+const COOKIE_CONSENT_KEY = 'himaliya.customer.cookie-consent';
+
+function readCookieConsent() {
+  try {
+    return window.localStorage.getItem(COOKIE_CONSENT_KEY) || '';
+  } catch {
+    return '';
+  }
+}
 
 function buildCustomerTheme(theme) {
   const dark = theme !== 'light';
@@ -207,7 +249,20 @@ function CustomerProfile({ history }) {
   const [tab, setTab] = React.useState(0);
   const [loading, setLoading] = React.useState(true);
   const [saving, setSaving] = React.useState(false);
+  const [cookieConsent, setCookieConsent] = React.useState(readCookieConsent);
   const customerTheme = React.useMemo(() => buildCustomerTheme(theme), [theme]);
+
+  // Declining here clears the stored choice as well as the allowance, so the
+  // portal's consent card is shown again on the next visit.
+  const updateCookieConsent = React.useCallback((allowed) => {
+    const next = allowed ? 'allowed' : 'declined';
+    setCookieConsent(next);
+    try {
+      window.localStorage.setItem(COOKIE_CONSENT_KEY, next);
+    } catch {
+      // Consent stays active for this visit when storage is unavailable.
+    }
+  }, []);
 
   React.useEffect(() => {
     let active = true;
@@ -318,17 +373,30 @@ function CustomerProfile({ history }) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.24 }}
           >
-            <Card sx={{ mb: 2.5 }}>
+            <Card
+              sx={{
+                mb: 2.5,
+                overflow: 'hidden',
+                borderRadius: 3,
+                boxShadow: '0 18px 46px rgba(6, 40, 58, .1)',
+              }}
+            >
               <CardHeader
+                sx={{
+                  // A tinted masthead separates identity from the tabbed
+                  // content below without needing another divider.
+                  background: 'linear-gradient(135deg, rgba(8, 150, 196, .13), transparent 68%)',
+                }}
                 avatar={(
                   <Box sx={{
                     display: 'grid',
-                    width: 48,
-                    height: 48,
+                    width: 52,
+                    height: 52,
                     placeItems: 'center',
-                    color: 'primary.main',
-                    bgcolor: 'rgba(8, 150, 196, .12)',
-                    borderRadius: 2,
+                    color: '#fff',
+                    background: 'linear-gradient(140deg, #43cfe6, #0782ab)',
+                    borderRadius: 2.25,
+                    boxShadow: '0 10px 24px rgba(7, 130, 171, .3)',
                   }}
                   >
                     <PersonOutlineRoundedIcon />
@@ -336,7 +404,7 @@ function CustomerProfile({ history }) {
                 )}
                 title="Profile & preferences"
                 subheader="Manage your delivery details, ordering defaults, notifications, and password."
-                titleTypographyProps={{ variant: 'h5', fontWeight: 800 }}
+                titleTypographyProps={{ variant: 'h5', fontWeight: 850 }}
               />
               <Tabs
                 value={tab}
@@ -344,7 +412,12 @@ function CustomerProfile({ history }) {
                 variant="scrollable"
                 scrollButtons="auto"
                 aria-label="Customer settings sections"
-                sx={{ px: 1 }}
+                sx={{
+                  px: 1,
+                  borderTop: '1px solid',
+                  borderBottom: '1px solid',
+                  borderColor: 'divider',
+                }}
               >
                 <Tab icon={<PersonOutlineRoundedIcon />} iconPosition="start" label="Account" />
                 <Tab icon={<TuneRoundedIcon />} iconPosition="start" label="Preferences" />
@@ -400,17 +473,50 @@ function CustomerProfile({ history }) {
                 <CardContent>
                   <Box component="form" onSubmit={(event) => save(event, 'Portal preferences saved.')}>
                     <Typography variant="overline" color="text.secondary">Appearance</Typography>
-                    <ToggleButtonGroup
-                      exclusive
-                      fullWidth
-                      value={theme}
-                      onChange={(event, value) => value && setTheme(value)}
-                      sx={{ mt: 0.5, mb: 2 }}
-                    >
-                      <ToggleButton value="light"><LightModeRoundedIcon sx={{ mr: 1 }} />Light</ToggleButton>
-                      <ToggleButton value="dark"><DarkModeRoundedIcon sx={{ mr: 1 }} />Dark</ToggleButton>
-                      <ToggleButton value="dark-gradient"><GradientRoundedIcon sx={{ mr: 1 }} />Dark gradient</ToggleButton>
-                    </ToggleButtonGroup>
+                    {/* Same selector component as the admin interface settings,
+                        so both sides of the product pick options the same way. */}
+                    <LayoutGroup id="customer-appearance-options">
+                      <div className="settings-theme-grid" role="radiogroup" aria-label="Appearance" style={{ margin: '0.6rem 0 1rem' }}>
+                        {APPEARANCE_OPTIONS.map((option) => {
+                          const selected = theme === option.value;
+                          return (
+                            <motion.button
+                              key={option.value}
+                              type="button"
+                              role="radio"
+                              aria-checked={selected}
+                              className={`settings-theme-card${selected ? ' is-selected' : ''}`}
+                              style={{
+                                '--settings-theme-accent': option.accent,
+                                '--settings-theme-ring': `${option.accent}2b`,
+                              }}
+                              onClick={() => setTheme(option.value)}
+                              whileHover={{ y: -2 }}
+                              whileTap={{ scale: 0.985 }}
+                            >
+                              {selected && (
+                                <motion.span
+                                  className="settings-theme-card__selection"
+                                  layoutId="customer-appearance-selection"
+                                />
+                              )}
+                              <span className="settings-theme-card__content">
+                                <span className="settings-theme-card__topline">
+                                  <span className="settings-theme-card__swatches" aria-hidden="true">
+                                    {option.swatches.map((color) => <i key={color} style={{ background: color }} />)}
+                                  </span>
+                                  <span className="settings-theme-card__check" aria-hidden="true">
+                                    {selected && <CheckRoundedIcon fontSize="small" />}
+                                  </span>
+                                </span>
+                                <strong>{option.label}</strong>
+                                <small>{option.description}</small>
+                              </span>
+                            </motion.button>
+                          );
+                        })}
+                      </div>
+                    </LayoutGroup>
                     <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: -1, mb: 2 }}>
                       Saved only in this browser, so it can be different on each device.
                     </Typography>
@@ -426,19 +532,55 @@ function CustomerProfile({ history }) {
                     <Grid container spacing={1.5} sx={{ mb: 2 }}>
                       <Grid item xs={12} md={4}>
                         <Typography variant="caption" color="text.secondary" fontWeight={800}>Accent</Typography>
-                        <ToggleButtonGroup
-                          exclusive
-                          fullWidth
-                          size="small"
-                          value={dashboardStyle.accent}
-                          onChange={(event, value) => value && setDashboardStyle({ accent: value })}
-                          sx={{ mt: .5 }}
+                        <Stack
+                          direction="row"
+                          spacing={1}
+                          role="radiogroup"
+                          aria-label="Dashboard accent colour"
+                          sx={{ mt: 0.75 }}
                         >
-                          <ToggleButton value="aqua">Aqua</ToggleButton>
-                          <ToggleButton value="blue">Blue</ToggleButton>
-                          <ToggleButton value="violet">Violet</ToggleButton>
-                          <ToggleButton value="emerald">Green</ToggleButton>
-                        </ToggleButtonGroup>
+                          {ACCENT_SWATCHES.map((swatch) => {
+                            const selected = dashboardStyle.accent === swatch.value;
+                            return (
+                              <Box
+                                key={swatch.value}
+                                component="button"
+                                type="button"
+                                role="radio"
+                                aria-checked={selected}
+                                aria-label={swatch.label}
+                                title={swatch.label}
+                                onClick={() => setDashboardStyle({ accent: swatch.value })}
+                                sx={{
+                                  display: 'grid',
+                                  width: 40,
+                                  height: 40,
+                                  flex: '0 0 auto',
+                                  placeItems: 'center',
+                                  p: 0,
+                                  color: '#fff',
+                                  cursor: 'pointer',
+                                  background: `linear-gradient(140deg, ${swatch.light}, ${swatch.color})`,
+                                  border: '2px solid',
+                                  borderColor: selected ? 'text.primary' : 'transparent',
+                                  borderRadius: '50%',
+                                  boxShadow: selected
+                                    ? `0 0 0 3px ${swatch.color}33, 0 6px 16px ${swatch.color}44`
+                                    : '0 3px 10px rgba(12, 45, 62, .16)',
+                                  transition: 'transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease',
+                                  '&:hover': { transform: 'translateY(-2px)' },
+                                  '&:focus-visible': { outline: `3px solid ${swatch.color}`, outlineOffset: 2 },
+                                  '@media (prefers-reduced-motion: reduce)': {
+                                    transition: 'none',
+                                    '&:hover': { transform: 'none' },
+                                  },
+                                }}
+                              >
+                                {selected && <CheckRoundedIcon sx={{ fontSize: 20 }} />}
+                              </Box>
+                            );
+                          })}
+                        </Stack>
                       </Grid>
                       <Grid item xs={12} md={4}>
                         <Typography variant="caption" color="text.secondary" fontWeight={800}>Header</Typography>
@@ -478,6 +620,13 @@ function CustomerProfile({ history }) {
 
                     <Divider />
                     <Stack spacing={1} sx={{ mt: 1.5, mb: 2 }}>
+                      <PreferenceSwitch
+                        label="Allow cookies"
+                        description="Optional storage for saved dashboard preferences. Declining shows the consent card again."
+                        checked={cookieConsent === 'allowed'}
+                        onChange={(event) => updateCookieConsent(event.target.checked)}
+                        icon={<CookieRoundedIcon />}
+                      />
                       <PreferenceSwitch
                         label="Browser notifications"
                         description="Allow invoice and delivery alerts on supported devices."

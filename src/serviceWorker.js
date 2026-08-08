@@ -122,13 +122,25 @@ function checkValidServiceWorker(swUrl, config) {
     });
 }
 
+// The notification worker is the one service worker this app keeps: mobile
+// notifications cannot be shown without it. Legacy offline/precache workers are
+// still removed, because those are what served phones stale HTML.
+const NOTIFICATION_WORKER_PATH = '/service-worker.js';
+
+function isNotificationWorker(registration) {
+  const script = (registration.active || registration.waiting || registration.installing || {}).scriptURL;
+  if (!script) return false;
+  return new URL(script, window.location.origin).pathname === NOTIFICATION_WORKER_PATH;
+}
+
 export async function unregister() {
   if (!('serviceWorker' in navigator)) return;
 
   try {
-    const wasControlled = Boolean(navigator.serviceWorker.controller);
     const registrations = await navigator.serviceWorker.getRegistrations();
-    await Promise.all(registrations.map(registration => registration.unregister()));
+    const legacy = registrations.filter(registration => !isNotificationWorker(registration));
+    const wasControlled = Boolean(navigator.serviceWorker.controller) && legacy.length > 0;
+    await Promise.all(legacy.map(registration => registration.unregister()));
 
     if ('caches' in window) {
       const cacheNames = await window.caches.keys();

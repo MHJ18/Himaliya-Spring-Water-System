@@ -47,7 +47,7 @@ body.dashboard-dark .studio-dashboard-shell {
   align-items: center;
   gap: 7px;
   color: var(--studio-muted);
-  font-size: .7rem;
+  font-size: 0.8rem;
   font-weight: 750;
   letter-spacing: .05em;
   text-transform: uppercase;
@@ -136,7 +136,7 @@ body.dashboard-dark .studio-dashboard-shell {
 .studio-card .MuiButton-root {
   min-height: 36px;
   color: var(--studio-text);
-  font-size: .72rem;
+  font-size: 0.8rem;
 }
 
 .studio-card .MuiAvatar-root {
@@ -154,7 +154,7 @@ body.dashboard-dark .studio-dashboard-shell {
 
 .studio-growth-pill {
   padding: 4px 7px;
-  font-size: .69rem;
+  font-size: 0.8rem;
   font-weight: 850;
   border-radius: 999px;
 }
@@ -199,7 +199,7 @@ body.dashboard-dark .studio-dashboard-shell {
 .studio-kicker {
   margin-bottom: 8px;
   color: var(--studio-text);
-  font-size: .7rem;
+  font-size: 0.8rem;
   font-weight: 800;
   letter-spacing: .04em;
 }
@@ -216,7 +216,7 @@ body.dashboard-dark .studio-dashboard-shell {
 .studio-hero-copy > p {
   max-width: 33rem;
   color: var(--studio-muted) !important;
-  font-size: .72rem;
+  font-size: 0.8rem;
 }
 
 .studio-status-list {
@@ -269,7 +269,7 @@ body.dashboard-dark .studio-dashboard-shell {
 .studio-status-row small {
   overflow: hidden;
   color: var(--studio-muted);
-  font-size: .67rem;
+  font-size: 0.8rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -322,7 +322,7 @@ body.dashboard-dark .studio-dashboard-shell {
 
 .studio-big-bottle i,
 .studio-small-bottle i {
-  font-size: .72rem;
+  font-size: 0.8rem;
   font-style: normal;
   font-weight: 950;
 }
@@ -492,7 +492,7 @@ body.dashboard-dark .studio-dashboard-shell {
 .studio-signal-copy em {
   overflow: hidden;
   color: var(--studio-muted);
-  font-size: .66rem;
+  font-size: 0.8rem;
   font-style: normal;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -510,14 +510,37 @@ body.dashboard-dark .studio-dashboard-shell {
 .studio-signal-trend {
   align-self: start;
   max-width: 7rem;
-  padding: 4px 7px;
+  padding: 4px 8px;
   color: var(--signal-accent);
-  font-size: .65rem;
+  font-size: 0.8rem;
   font-weight: 850;
   line-height: 1.2;
   text-align: center;
-  background: color-mix(in srgb, var(--signal-accent) 11%, transparent);
+  background: color-mix(in srgb, var(--signal-accent) 13%, transparent);
+  border: 1px solid color-mix(in srgb, var(--signal-accent) 22%, transparent);
   border-radius: 999px;
+}
+
+/* A hairline of the card's accent along the top edge makes the metric tiles
+   scan as a set of related figures rather than four unrelated panels. */
+.studio-signal-card::after {
+  position: absolute;
+  top: 0;
+  left: 16px;
+  width: 48px;
+  height: 3px;
+  content: '';
+  background: linear-gradient(90deg, var(--signal-accent), transparent);
+  border-radius: 0 0 999px 999px;
+}
+
+.studio-signal-card {
+  position: relative;
+}
+
+.studio-signal-copy strong {
+  font-size: 1.02rem;
+  letter-spacing: -.02em;
 }
 
 .studio-sales-chart {
@@ -541,7 +564,7 @@ body.dashboard-dark .studio-dashboard-shell {
 
 .studio-sales-figure small {
   color: var(--studio-muted);
-  font-size: .69rem;
+  font-size: 0.8rem;
 }
 
 .studio-sales-chart [role='img'] {
@@ -576,7 +599,7 @@ body.dashboard-dark .studio-dashboard-shell {
 .studio-collection-rate span {
   margin-top: 4px;
   color: var(--studio-muted);
-  font-size: .68rem;
+  font-size: 0.8rem;
   font-weight: 700;
 }
 
@@ -605,13 +628,13 @@ body.dashboard-dark .studio-dashboard-shell {
 
 .studio-money-row small {
   color: var(--studio-muted);
-  font-size: .66rem;
+  font-size: 0.8rem;
 }
 
 .studio-money-row strong {
   overflow-wrap: anywhere;
   color: var(--studio-text);
-  font-size: .73rem;
+  font-size: 0.8rem;
   font-variant-numeric: tabular-nums;
 }
 
@@ -633,7 +656,7 @@ body.dashboard-dark .studio-dashboard-shell {
   gap: 7px;
   align-items: center;
   color: var(--studio-muted);
-  font-size: .68rem;
+  font-size: 0.8rem;
 }
 
 .studio-payment-legend i {
@@ -693,6 +716,14 @@ body.dashboard-dark .studio-dashboard-shell {
   50% { transform: translateX(8px); }
 }
 
+.studio-trend-chart,
+.studio-collection-chart {
+  min-height: 330px;
+}
+
+.studio-trend-chart { grid-column: span 7; }
+.studio-collection-chart { grid-column: span 5; }
+
 .studio-recent { grid-column: span 8; }
 .studio-schedule { grid-column: span 4; }
 
@@ -726,13 +757,13 @@ body.dashboard-dark .studio-dashboard-shell {
 
 .studio-table th {
   color: #9a9ea6;
-  font-size: .68rem;
+  font-size: 0.8rem;
   font-weight: 850;
   letter-spacing: .04em;
   text-transform: uppercase;
 }
 
-.studio-table td { font-size: .72rem; }
+.studio-table td { font-size: 0.8rem; }
 .studio-table td > strong,
 .studio-table td > small { display: block; }
 .studio-table td > small { color: var(--studio-muted); }
@@ -749,7 +780,7 @@ body.dashboard-dark .studio-dashboard-shell {
 .studio-table-status {
   display: inline-flex;
   padding: 4px 7px;
-  font-size: .66rem;
+  font-size: 0.8rem;
   font-weight: 800;
   border-radius: 999px;
 }
@@ -780,7 +811,7 @@ body.dashboard-dark .studio-dashboard-shell {
   min-height: 44px;
   padding: 6px;
   color: inherit;
-  font-size: .66rem;
+  font-size: 0.8rem;
   font-weight: 700;
   text-align: center;
   cursor: pointer;
@@ -851,15 +882,15 @@ body.dashboard-dark .studio-dashboard-shell {
   white-space: nowrap;
 }
 
-.studio-schedule-row strong { font-size: .7rem; }
+.studio-schedule-row strong { font-size: 0.8rem; }
 .studio-schedule-row small {
   color: var(--studio-muted);
-  font-size: .66rem;
+  font-size: 0.8rem;
 }
 
 .studio-schedule-row em {
   color: #5ae0b9;
-  font-size: .64rem;
+  font-size: 0.8rem;
   font-style: normal;
   font-weight: 800;
 }
@@ -867,7 +898,7 @@ body.dashboard-dark .studio-dashboard-shell {
 .studio-empty {
   padding: 26px 12px !important;
   color: var(--studio-muted) !important;
-  font-size: .7rem;
+  font-size: 0.8rem;
   text-align: center !important;
 }
 
@@ -879,6 +910,8 @@ body.dashboard-dark .studio-dashboard-shell {
   .studio-payments { grid-column: span 4; }
   .studio-signal-card { grid-column: span 6; }
   .studio-sales-chart { grid-column: span 8; }
+  .studio-trend-chart,
+  .studio-collection-chart { grid-column: span 6; }
   .studio-recent,
   .studio-schedule { grid-column: span 12; }
 }
@@ -908,6 +941,8 @@ body.dashboard-dark .studio-dashboard-shell {
   .studio-collection,
   .studio-payments,
   .studio-signal-card,
+  .studio-trend-chart,
+  .studio-collection-chart,
   .studio-recent,
   .studio-schedule { grid-column: 1; }
 
@@ -917,7 +952,7 @@ body.dashboard-dark .studio-dashboard-shell {
   }
 
   .studio-hero-visual { display: none; }
-  .studio-hero-copy > p { font-size: .7rem; }
+  .studio-hero-copy > p { font-size: 0.8rem; }
   .studio-status-list {
     gap: 6px;
     margin-top: 12px;
@@ -930,7 +965,7 @@ body.dashboard-dark .studio-dashboard-shell {
   }
   .studio-status-icon { width: 30px; height: 30px; }
   .studio-status-row strong { font-size: .8rem; }
-  .studio-status-row small { font-size: .64rem; }
+  .studio-status-row small { font-size: 0.8rem; }
   .studio-customers,
   .studio-bottle-mix { min-height: 184px; }
   .studio-card-number { margin-top: 7px; font-size: 2.2rem; }
@@ -956,6 +991,8 @@ body.dashboard-dark .studio-dashboard-shell {
   }
   .studio-status-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .studio-sales-chart [role='img'] { height: 235px; }
+  .studio-trend-chart,
+  .studio-collection-chart { min-height: 0; }
 
   .studio-table-wrap {
     margin-top: 10px;
@@ -1015,7 +1052,7 @@ body.dashboard-dark .studio-dashboard-shell {
     flex: 0 0 auto;
     color: var(--studio-muted);
     content: attr(data-label);
-    font-size: .66rem;
+    font-size: 0.8rem;
     font-weight: 800;
     letter-spacing: .03em;
     text-transform: uppercase;
@@ -1048,8 +1085,8 @@ body.dashboard-dark .studio-dashboard-shell {
   .studio-status-list { gap: 5px; margin-top: 9px; }
   .studio-status-row { grid-template-columns: 28px minmax(0, 1fr); padding: 5px; }
   .studio-status-icon { width: 28px; height: 28px; }
-  .studio-status-row strong { font-size: .76rem; }
-  .studio-status-row small { font-size: .62rem; }
+  .studio-status-row strong { font-size: 0.8rem; }
+  .studio-status-row small { font-size: 0.8rem; }
   .studio-customers,
   .studio-bottle-mix { min-height: 172px; }
   .studio-mini-line { height: 34px; }
@@ -1059,14 +1096,14 @@ body.dashboard-dark .studio-dashboard-shell {
     padding: 13px;
   }
   .studio-signal-icon { width: 44px; height: 44px; }
-  .studio-signal-copy small { font-size: .7rem; }
+  .studio-signal-copy small { font-size: 0.8rem; }
   .studio-signal-copy strong { font-size: .96rem; }
-  .studio-signal-copy em { font-size: .68rem; }
+  .studio-signal-copy em { font-size: 0.8rem; }
   .studio-status-list { gap: 5px; }
   .studio-status-row { grid-template-columns: 30px minmax(0, 1fr); gap: 6px; }
   .studio-status-icon { width: 30px; height: 30px; }
-  .studio-status-row strong { font-size: .75rem; }
-  .studio-status-row small { font-size: .64rem; }
+  .studio-status-row strong { font-size: 0.8rem; }
+  .studio-status-row small { font-size: 0.8rem; }
   .studio-sales-figure { align-items: flex-start; flex-direction: column; gap: 1px; }
   .studio-money-row { grid-template-columns: 1fr; }
   .studio-table-wrap { margin-inline: -14px; }

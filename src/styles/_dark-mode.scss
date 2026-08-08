@@ -181,9 +181,7 @@ body.dashboard-dark {
   textarea.form-control,
   select.form-control,
   .input-transparent,
-  .bg-custom-dark,
-  .MuiOutlinedInput-root,
-  .MuiInputBase-input {
+  .bg-custom-dark {
     color: #f4f8ff !important;
     background: var(--hs-input-bg) !important;
     border-color: var(--hs-input-border) !important;
@@ -193,8 +191,7 @@ body.dashboard-dark {
   textarea.form-control:focus,
   select.form-control:focus,
   .input-transparent:focus,
-  .bg-custom-dark:focus,
-  .MuiOutlinedInput-root.Mui-focused {
+  .bg-custom-dark:focus {
     color: #ffffff !important;
     background: rgba(5, 31, 51, 0.98) !important;
     border-color: rgba(88, 180, 255, 0.55) !important;
@@ -1344,3 +1341,56 @@ body.dashboard-light .himalaya-add-customer .MuiDivider-root {
     display: none;
   }
 }
+
+/* ── Monochrome accent ──────────────────────────────────────────────────
+   A true black-and-white workspace: no hue anywhere, hierarchy carried by
+   value alone. */
+body.dashboard-light[data-admin-theme='monochrome'] {
+  --hs-page-bg: linear-gradient(180deg, #ffffff 0%, #f4f4f5 58%, #ececee 100%);
+  --hs-header-hover: #18181b;
+  --hs-sidebar-brand-accent: #18181b;
+  --hs-sidebar-hover: rgba(24, 24, 27, 0.06);
+  --hs-sidebar-active-text: #18181b;
+  --hs-sidebar-active-bg: linear-gradient(105deg, rgba(24, 24, 27, 0.12), rgba(24, 24, 27, 0.04));
+  --hs-sidebar-active-border: rgba(24, 24, 27, 0.22);
+  --hs-sidebar-active-indicator: #18181b;
+  --hs-sidebar-active-glow: rgba(24, 24, 27, 0.24);
+  background: var(--hs-page-bg);
+}
+
+body.dashboard-dark[data-admin-theme='monochrome'] {
+  --hs-page-bg: linear-gradient(180deg, #0b0b0d 0%, #141416 58%, #0b0b0d 100%);
+  --hs-header-hover: #fafafa;
+  --hs-sidebar-brand-accent: #fafafa;
+  --hs-sidebar-hover: rgba(250, 250, 250, 0.09);
+  --hs-sidebar-active-text: #fafafa;
+  --hs-sidebar-active-bg: linear-gradient(105deg, rgba(250, 250, 250, 0.16), rgba(250, 250, 250, 0.05));
+  --hs-sidebar-active-border: rgba(250, 250, 250, 0.24);
+  --hs-sidebar-active-indicator: #fafafa;
+  --hs-sidebar-active-glow: rgba(250, 250, 250, 0.3);
+  background: var(--hs-page-bg);
+}
+
+/* ── Background palettes ────────────────────────────────────────────────
+   The palette is applied by setting --hs-page-bg from SettingsContext, which
+   both <body> and the admin Layout root already consume. Only the paint
+   behaviour needs stating here. */
+body[data-bg-palette] {
+  background-attachment: fixed;
+}
+
+@keyframes hs-aurora-drift {
+  from { transform: translate3d(-3%, -2%, 0) scale(1); }
+  to { transform: translate3d(4%, 3%, 0) scale(1.12); }
+}
+
+@keyframes hs-mesh-shift {
+  from { transform: translate3d(2%, -3%, 0); }
+  to { transform: translate3d(-3%, 4%, 0); }
+}
+
+@keyframes hs-glow-pulse {
+  from { opacity: 0.6; }
+  to { opacity: 1; }
+}
+

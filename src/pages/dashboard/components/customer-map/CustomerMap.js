@@ -7,13 +7,11 @@ import {
   getStableCustomerCoordinates,
   resolveDeliveryAddressCoordinates,
 } from '../../../../utils/coordinates';
-import { MAP_STYLE_URLS } from '../../../../utils/mapStyles';
+import { getMapStyle } from '../../../../utils/mapStyles';
 
 const SIALKOT_CANTT_CENTER = [74.5229, 32.4945];
 const DEFAULT_ZOOM = 10.5;
 const SINGLE_POINT_ZOOM = 11.25;
-const LIGHT_STYLE = MAP_STYLE_URLS.light;
-const DARK_STYLE = MAP_STYLE_URLS.dark;
 
 function isCoordinate(value) {
   return value !== null && value !== undefined && Number.isFinite(Number(value));
@@ -170,8 +168,10 @@ export default function CustomerMap({ customers }) {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markersRef = useRef([]);
-  const currentStyleRef = useRef(DARK_STYLE);
-  const [darkMap, setDarkMap] = React.useState(true);
+  const currentStyleModeRef = useRef('light');
+  // Light basemap by default: delivery pins and route lines read better on the
+  // pale tiles, and it matches the rest of the admin surfaces.
+  const [darkMap, setDarkMap] = React.useState(false);
   const [mapReady, setMapReady] = React.useState(false);
   const [mapError, setMapError] = React.useState(false);
   const [geocodedCustomers, setGeocodedCustomers] = React.useState({});
@@ -187,32 +187,38 @@ export default function CustomerMap({ customers }) {
     })
   ), [customers]);
 
-  useEffect(() => {
-    const controller = new AbortController();
-    const unresolved = baseMappedCustomers.filter((customer) => customer.approximate && customer.address);
-    if (!unresolved.length) {
-      setGeocodedCustomers({});
-      return () => controller.abort();
-    }
+  // Keyed on the addresses themselves so an unrelated re-render (a customer
+  // list refresh, a theme toggle) cannot abort and restart lookups that are
+  // still in flight.
+  const pendingAddressKey = useMemo(() => Array.from(new Set(
+    baseMappedCustomers
+      .filter((customer) => customer.approximate && customer.address)
+      .map((customer) => String(customer.address)),
+  )).sort().join('|'), [baseMappedCustomers]);
 
-    Promise.all(unresolved.map(async (customer) => {
+  useEffect(() => {
+    if (!pendingAddressKey) return undefined;
+    const controller = new AbortController();
+
+    Promise.all(pendingAddressKey.split('|').map(async (address) => {
       try {
-        const coords = await resolveDeliveryAddressCoordinates(customer.address, { signal: controller.signal });
-        return [String(customer.id || customer.address || customer.name), coords];
+        const coords = await resolveDeliveryAddressCoordinates(address, { signal: controller.signal });
+        return [address, coords];
       } catch (error) {
-        return [String(customer.id || customer.address || customer.name), null];
+        return [address, null];
       }
     })).then((results) => {
       if (controller.signal.aborted) return;
-      setGeocodedCustomers(Object.fromEntries(results.filter((entry) => entry[1])));
+      const resolved = results.filter((entry) => entry[1]);
+      if (!resolved.length) return;
+      setGeocodedCustomers((current) => ({ ...current, ...Object.fromEntries(resolved) }));
     });
 
     return () => controller.abort();
-  }, [baseMappedCustomers]);
+  }, [pendingAddressKey]);
 
   const mappedCustomers = useMemo(() => baseMappedCustomers.map((customer) => {
-    const key = String(customer.id || customer.address || customer.name);
-    const geocoded = geocodedCustomers[key];
+    const geocoded = customer.address ? geocodedCustomers[String(customer.address)] : null;
     return geocoded ? { ...customer, coords: geocoded, geocoded: true } : customer;
   }), [baseMappedCustomers, geocodedCustomers]);
 
@@ -229,7 +235,7 @@ export default function CustomerMap({ customers }) {
     try {
       map = new maplibregl.Map({
         container: mapRef.current,
-        style: DARK_STYLE,
+        style: getMapStyle('light'),
         center: SIALKOT_CANTT_CENTER,
         zoom: DEFAULT_ZOOM,
         minZoom: 3,
@@ -262,8 +268,11 @@ export default function CustomerMap({ customers }) {
         canvas.setAttribute('aria-label', 'Interactive customer coverage map');
       };
       const handleStyleLoad = () => setMapError(false);
-      const handleError = () => {
-        if (!map.isStyleLoaded()) setMapError(true);
+      // A single failed tile is not a broken map; only a style that never
+      // loads means there is nothing to show.
+      const handleError = (event) => {
+        if (map.isStyleLoaded() || (event && event.sourceId)) return;
+        setMapError(true);
       };
 
       map.on('load', handleLoad);
@@ -301,14 +310,14 @@ export default function CustomerMap({ customers }) {
 
   useEffect(() => {
     const map = mapInstanceRef.current;
-    const nextStyle = darkMap ? DARK_STYLE : LIGHT_STYLE;
-    if (!map || currentStyleRef.current === nextStyle) return undefined;
+    const nextMode = darkMap ? 'dark' : 'light';
+    if (!map || currentStyleModeRef.current === nextMode) return undefined;
 
     const handleStyleLoad = () => setMapError(false);
-    currentStyleRef.current = nextStyle;
+    currentStyleModeRef.current = nextMode;
     setMapError(false);
     map.once('style.load', handleStyleLoad);
-    map.setStyle(nextStyle);
+    map.setStyle(getMapStyle(nextMode));
 
     return () => map.off('style.load', handleStyleLoad);
   }, [darkMap]);

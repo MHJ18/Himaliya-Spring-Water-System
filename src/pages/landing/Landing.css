@@ -323,10 +323,17 @@
   isolation: isolate;
 }
 
+/* Host for the WebGL fluid. The gradient only shows before the canvas fades in
+   and behind the simulation's own static fallback. */
 .landing-hero__field {
   position: absolute;
   z-index: -2;
   inset: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(60% 60% at 18% 12%, rgba(41, 201, 232, 0.16), transparent 70%),
+    radial-gradient(55% 55% at 84% 78%, rgba(59, 140, 255, 0.14), transparent 70%),
+    linear-gradient(150deg, #041019 0%, #061726 52%, #030c14 100%);
 }
 
 .landing-hero__grid {
@@ -359,7 +366,7 @@
 .landing-hero__copy {
   width: min(var(--hs-max), calc(100% - 48px));
   margin: auto;
-  padding: 134px 0 114px;
+  padding: 112px 0 96px;
 }
 
 .landing-hero .landing-eyebrow {
@@ -372,9 +379,9 @@
   margin: 28px 0 26px;
   color: var(--hs-white) !important;
   font-family: var(--hs-display);
-  font-size: clamp(64px, 8.2vw, 124px);
+  font-size: clamp(46px, 6.2vw, 96px);
   font-weight: 800;
-  line-height: 0.8;
+  line-height: 0.82;
   letter-spacing: -0.052em;
   text-transform: uppercase;
   text-shadow: 0 10px 40px rgba(0, 8, 16, 0.42);
@@ -436,10 +443,10 @@
 }
 
 .landing-hero__copy > p {
-  max-width: 570px;
-  margin: 0 0 34px;
+  max-width: 540px;
+  margin: 0 0 30px;
   color: #e0f0f4 !important;
-  font-size: clamp(17px, 1.8vw, 21px);
+  font-size: clamp(15px, 1.3vw, 17px);
   font-weight: 500;
   line-height: 1.62;
   -webkit-text-fill-color: #e0f0f4 !important;
@@ -548,7 +555,7 @@
   margin: 0;
   color: var(--hs-text-dark) !important;
   font-family: var(--hs-display);
-  font-size: clamp(48px, 6vw, 82px);
+  font-size: clamp(30px, 3.6vw, 48px);
   font-weight: 800;
   line-height: 0.9;
   letter-spacing: -0.045em;
@@ -632,7 +639,7 @@
   right: -6px;
   color: rgba(8, 66, 83, 0.07);
   font-family: var(--hs-display);
-  font-size: 112px;
+  font-size: 54px;
   font-weight: 800;
   line-height: 1;
 }
@@ -643,7 +650,7 @@
   margin: 18px 0 20px;
   color: var(--hs-text-dark) !important;
   font-family: var(--hs-display);
-  font-size: clamp(34px, 3.5vw, 48px);
+  font-size: clamp(22px, 2.2vw, 29px);
   font-weight: 800;
   line-height: 0.98;
   letter-spacing: -0.035em;
@@ -956,12 +963,12 @@
   grid-template-columns: repeat(4, 1fr);
   width: min(var(--hs-max), calc(100% - 48px));
   margin: 0 auto;
-  padding: 80px 0 26px;
+  padding: 56px 0 20px;
 }
 
 .landing-stats > div {
-  min-height: 142px;
-  padding: 25px 24px;
+  min-height: 108px;
+  padding: 18px 20px;
   background: rgba(241, 252, 255, 0.035);
   border-top: 1px solid var(--hs-line-dark);
   border-right: 1px solid var(--hs-line-dark);
@@ -982,7 +989,7 @@
   display: block;
   color: var(--hs-white) !important;
   font-family: var(--hs-display);
-  font-size: clamp(28px, 3.4vw, 44px);
+  font-size: clamp(20px, 2.2vw, 28px);
   font-weight: 800;
   line-height: 1;
   -webkit-text-fill-color: var(--hs-white) !important;
@@ -1005,7 +1012,7 @@
 
 .legacy-section-heading {
   max-width: 720px;
-  margin-bottom: 42px;
+  margin-bottom: 30px;
 }
 
 .legacy-section-heading--center {
@@ -1037,7 +1044,7 @@
   margin: 0;
   color: var(--hs-white) !important;
   font-family: var(--hs-display);
-  font-size: clamp(42px, 5.4vw, 72px);
+  font-size: clamp(28px, 3.3vw, 42px);
   font-weight: 800;
   line-height: 0.95;
   letter-spacing: -0.04em;
@@ -1048,10 +1055,10 @@
 
 .legacy-section-heading > p,
 .landing-cta p {
-  max-width: 620px;
-  margin: 18px 0 0;
+  max-width: 600px;
+  margin: 16px 0 0;
   color: #c8dae1 !important;
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 500;
   line-height: 1.62;
   -webkit-text-fill-color: #c8dae1 !important;
@@ -1065,7 +1072,7 @@
 .scroll-story {
   width: min(940px, calc(100% - 48px));
   margin: 0 auto;
-  padding: 110px 0 92px;
+  padding: 72px 0 60px;
   scroll-margin-top: 80px;
 }
 
@@ -1117,24 +1124,28 @@
   background: linear-gradient(var(--hs-cyan), rgba(105, 231, 247, 0.08));
 }
 
+/* Big containers carry a single lit edge on the left — a gradient rail
+   painted as a background layer so it stays inside the border radius. */
 .story-panel {
   position: relative;
   display: grid;
   grid-template-columns: 54px 1fr 44px;
   gap: 20px;
   align-items: center;
-  min-height: 176px;
-  padding: 28px 30px;
-  margin-bottom: 22px;
+  min-height: 132px;
+  padding: 20px 22px 20px 26px;
+  margin-bottom: 14px;
   overflow: hidden;
   background:
+    linear-gradient(180deg, var(--hs-cyan), rgba(59, 140, 255, 0.5)) left / 4px 100% no-repeat,
     linear-gradient(135deg, rgba(248, 253, 255, 0.075), rgba(106, 219, 241, 0.025)),
     rgba(8, 24, 39, 0.72);
-  border: 1px solid rgba(143, 221, 239, 0.16);
+  border: 1px solid rgba(105, 231, 247, 0.3);
+  border-left-color: transparent;
   border-radius: 24px;
   box-shadow:
-    0 22px 60px rgba(0, 0, 0, 0.22),
-    inset 0 1px 0 rgba(255, 255, 255, 0.045);
+    0 26px 68px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
   backdrop-filter: blur(18px);
   transition: border-color 220ms ease, box-shadow 220ms ease;
 }
@@ -1151,10 +1162,12 @@
 }
 
 .story-panel:hover {
-  border-color: rgba(105, 231, 247, 0.32);
+  border-color: rgba(105, 231, 247, 0.55);
+  border-left-color: transparent;
   box-shadow:
-    0 28px 68px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+    0 32px 80px rgba(0, 0, 0, 0.36),
+    0 0 0 1px rgba(105, 231, 247, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .story-panel__icon,
@@ -1192,7 +1205,7 @@
   margin: 0;
   color: var(--hs-white) !important;
   font-family: var(--hs-display);
-  font-size: clamp(24px, 3vw, 34px);
+  font-size: clamp(17px, 1.9vw, 23px);
   font-weight: 800;
   line-height: 1;
   letter-spacing: -0.02em;
@@ -1229,30 +1242,32 @@
 .operations-section {
   width: min(var(--hs-max), calc(100% - 48px));
   margin: 0 auto;
-  padding: 72px 0 112px;
+  padding: 56px 0 76px;
   scroll-margin-top: 80px;
 }
 
 .bento-grid {
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: 18px;
+  gap: 14px;
 }
 
+/* The lifted treatment is the resting state — hover then pushes further
+   rather than being the only way to see the card properly. */
 .bento-card {
   position: relative;
   grid-column: span 5;
-  min-height: 316px;
-  padding: 28px;
+  min-height: 244px;
+  padding: 20px 22px;
   overflow: hidden;
   background:
     linear-gradient(145deg, rgba(247, 253, 255, 0.075), rgba(53, 183, 217, 0.025)),
     rgba(8, 24, 39, 0.74);
-  border: 1px solid rgba(143, 221, 239, 0.15);
+  border: 1px solid rgba(105, 231, 247, 0.32);
   border-radius: 26px;
   box-shadow:
-    0 24px 70px rgba(0, 0, 0, 0.22),
-    inset 0 1px 0 rgba(255, 255, 255, 0.045);
+    0 30px 80px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
   backdrop-filter: blur(18px);
   transition: border-color 220ms ease, box-shadow 220ms ease;
 }
@@ -1262,10 +1277,11 @@
 }
 
 .bento-card:hover {
-  border-color: rgba(105, 231, 247, 0.32);
+  border-color: rgba(105, 231, 247, 0.58);
   box-shadow:
-    0 30px 80px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+    0 36px 92px rgba(0, 0, 0, 0.38),
+    0 0 0 1px rgba(105, 231, 247, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .bento-card::before {
@@ -1301,10 +1317,10 @@
 
 .bento-card h3 {
   position: relative;
-  margin: 25px 0 0;
+  margin: 18px 0 0;
   color: var(--hs-white) !important;
   font-family: var(--hs-display);
-  font-size: clamp(26px, 3vw, 38px);
+  font-size: clamp(18px, 2.1vw, 25px);
   font-weight: 800;
   line-height: 1;
   letter-spacing: -0.025em;
@@ -1323,50 +1339,36 @@
   -webkit-text-fill-color: #c5d7de !important;
 }
 
+/* Each card draws its own subject rather than repeating one generic bar
+   chart, so the artwork reads as an extension of the heading. */
 .bento-card__visual {
   position: absolute;
-  right: 28px;
-  bottom: 26px;
-  display: flex;
-  gap: 6px;
-  align-items: flex-end;
-  width: 150px;
-  height: 64px;
-  padding: 10px 12px 0;
-  overflow: hidden;
-  opacity: 0.68;
-  border-bottom: 1px solid rgba(150, 225, 242, 0.18);
+  right: 22px;
+  bottom: 20px;
+  width: 128px;
+  height: 54px;
+  color: var(--hs-cyan);
+  opacity: 0.82;
+  transition: opacity 260ms ease, transform 260ms ease;
 }
 
-.bento-card__visual i {
-  flex: 1;
-  height: 32%;
-  background: linear-gradient(var(--hs-cyan), rgba(59, 140, 255, 0.3));
-  border-radius: 4px 4px 0 0;
-  transform-origin: bottom;
-  animation: bento-bars 3s ease-in-out infinite alternate;
+.bento-card__visual svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
 }
 
-.bento-card__visual i:nth-child(2) {
-  height: 76%;
-  animation-delay: -.8s;
-}
-
-.bento-card__visual i:nth-child(3) {
-  height: 48%;
-  animation-delay: -1.5s;
-}
-
-.bento-card__visual i:nth-child(4) {
-  height: 92%;
-  animation-delay: -2.1s;
+.bento-card:hover .bento-card__visual {
+  opacity: 1;
+  transform: translateY(-2px);
 }
 
 .bento-card__metrics {
   position: absolute;
-  right: 200px;
-  bottom: 30px;
-  left: 28px;
+  right: 168px;
+  bottom: 22px;
+  left: 22px;
   display: flex;
   flex-wrap: wrap;
   gap: 7px;
@@ -1393,14 +1395,16 @@
   align-items: center;
   justify-content: space-between;
   width: min(var(--hs-max), calc(100% - 48px));
-  min-height: 360px;
-  padding: 50px;
-  margin: 0 auto 84px;
+  min-height: 268px;
+  padding: 34px 36px 34px 42px;
+  margin: 0 auto 58px;
   overflow: hidden;
   background:
+    linear-gradient(180deg, #c4f9ff, var(--hs-cyan) 45%, rgba(59, 140, 255, 0.45)) left / 6px 100% no-repeat,
     linear-gradient(135deg, rgba(247, 253, 255, 0.085), rgba(58, 165, 223, 0.04)),
     rgba(8, 25, 40, 0.78);
-  border: 1px solid rgba(139, 225, 242, 0.21);
+  border: 1px solid rgba(105, 231, 247, 0.34);
+  border-left-color: transparent;
   border-radius: 32px;
   box-shadow:
     0 36px 100px rgba(0, 0, 0, 0.3),
@@ -1429,7 +1433,7 @@
 
 .landing-cta h2 {
   max-width: 760px;
-  font-size: clamp(42px, 5vw, 66px);
+  font-size: clamp(28px, 3.1vw, 40px);
 }
 
 .landing-cta__actions {
@@ -1572,11 +1576,6 @@
   50% { transform: translate(42px, -30px) scale(1.08); }
 }
 
-@keyframes bento-bars {
-  from { transform: scaleY(.72); opacity: .55; }
-  to { transform: scaleY(1); opacity: 1; }
-}
-
 /* Responsive */
 
 @media (max-width: 1080px) {
@@ -1688,7 +1687,7 @@
   }
 
   .landing-hero h1 {
-    font-size: clamp(58px, 14vw, 102px);
+    font-size: clamp(40px, 9vw, 64px);
   }
 
   .landing-hero h1 .landing-hero__title-line {
@@ -1803,8 +1802,8 @@
 
   .landing-hero h1 {
     margin: 24px 0 22px;
-    font-size: clamp(52px, 17vw, 72px);
-    line-height: .84;
+    font-size: clamp(34px, 12vw, 52px);
+    line-height: .88;
   }
 
   .landing-hero__copy > p {
@@ -1838,7 +1837,7 @@
   }
 
   .refill-film-section__heading h2 {
-    font-size: clamp(43px, 13vw, 58px);
+    font-size: clamp(30px, 9vw, 42px);
   }
 
   .refill-film-section__heading > p {
@@ -1863,7 +1862,7 @@
   }
 
   .refill-film-copy h3 {
-    font-size: 35px;
+    font-size: 27px;
   }
 
   .landing-stats {
@@ -1876,7 +1875,7 @@
   }
 
   .landing-stats strong {
-    font-size: 29px;
+    font-size: 24px;
   }
 
   .scroll-story {
@@ -1886,7 +1885,7 @@
 
   .legacy-section-heading h2,
   .landing-cta h2 {
-    font-size: clamp(40px, 12vw, 54px);
+    font-size: clamp(28px, 9vw, 40px);
   }
 
   .legacy-section-heading > p,
@@ -1925,7 +1924,7 @@
   }
 
   .story-panel h3 {
-    font-size: 25px;
+    font-size: 20px;
   }
 
   .story-panel p {
@@ -1959,7 +1958,7 @@
 
   .landing-cta {
     min-height: 450px;
-    padding: 32px 24px;
+    padding: 32px 24px 32px 30px;
     margin-bottom: 62px;
     border-radius: 26px;
   }
@@ -2010,5 +2009,231 @@
 
   .bottle-film__timeline i {
     transform: scaleX(1);
+  }
+}
+
+/* ── Accent motion ──────────────────────────────────────────────────
+   A few deliberately small moments of life: a drifting gradient on the
+   headline, an accent edge that lights up as stats are scanned, and a single
+   sheen across the primary call to action. Each animates only transform,
+   opacity or background-position so none of them cause layout work. */
+
+.landing-hero h1 .landing-hero__title-line {
+  background-size: 220% 100%;
+  animation: landing-title-flow 9s linear infinite;
+}
+
+@keyframes landing-title-flow {
+  to { background-position: 220% 0; }
+}
+
+.landing-stats > div {
+  position: relative;
+  overflow: hidden;
+  transition: background-color 240ms ease, transform 240ms ease;
+}
+
+.landing-stats > div::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 2px;
+  content: '';
+  background: linear-gradient(90deg, var(--hs-cyan), transparent);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 320ms ease;
+}
+
+.landing-stats > div:hover {
+  background: rgba(241, 252, 255, 0.065);
+  transform: translateY(-3px);
+}
+
+.landing-stats > div:hover::before {
+  transform: scaleX(1);
+}
+
+.landing-primary-action {
+  position: relative;
+  overflow: hidden;
+}
+
+.landing-primary-action::before {
+  position: absolute;
+  z-index: 1;
+  top: -60%;
+  bottom: -60%;
+  left: 0;
+  width: 20%;
+  content: '';
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  transform: skewX(-18deg) translateX(-160%);
+  animation: landing-cta-sheen 5s ease-in-out infinite;
+}
+
+.landing-primary-action > span {
+  position: relative;
+  z-index: 2;
+}
+
+@keyframes landing-cta-sheen {
+  0%, 64% { transform: skewX(-18deg) translateX(-160%); }
+  88%, 100% { transform: skewX(-18deg) translateX(620%); }
+}
+
+.bento-card::after {
+  position: absolute;
+  right: -40px;
+  bottom: -40px;
+  width: 160px;
+  height: 160px;
+  content: '';
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(105, 231, 247, 0.16), transparent 70%);
+  opacity: 0.55;
+  transition: opacity 280ms ease;
+}
+
+.bento-card:hover::after {
+  opacity: 1;
+}
+
+.story-timeline-dot {
+  transition: transform 240ms ease, box-shadow 240ms ease;
+}
+
+.story-panel:hover .story-timeline-dot,
+.story-timeline li:hover .story-timeline-dot {
+  box-shadow: 0 0 0 1px rgba(105, 231, 247, 0.5), 0 0 34px rgba(105, 231, 247, 0.4);
+  transform: scale(1.08);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-hero h1 .landing-hero__title-line,
+  .landing-primary-action::before {
+    animation: none;
+  }
+
+  .landing-stats > div,
+  .landing-stats > div::before,
+  .bento-card::after,
+  .story-timeline-dot {
+    transition: none;
+  }
+
+  .landing-stats > div:hover,
+  .story-panel:hover .story-timeline-dot {
+    transform: none;
+  }
+}
+
+/* ── Closing section ────────────────────────────────────────────────
+   The final dark band was a flat panel. It now carries a slow aurora wash,
+   a drifting caustic ripple and a rising column of bubbles so the page ends
+   on the same water motif it opens with. Everything is decorative and
+   pointer-events:none, and all of it stops under reduced-motion. */
+
+.landing-cta {
+  isolation: isolate;
+}
+
+.landing-cta::after {
+  position: absolute;
+  z-index: -1;
+  inset: -40%;
+  content: '';
+  pointer-events: none;
+  background:
+    radial-gradient(38% 44% at 22% 30%, rgba(105, 231, 247, 0.22), transparent 68%),
+    radial-gradient(34% 40% at 74% 68%, rgba(59, 140, 255, 0.2), transparent 66%),
+    radial-gradient(30% 36% at 52% 18%, rgba(121, 242, 197, 0.14), transparent 64%);
+  filter: blur(14px);
+  animation: landing-cta-aurora 18s ease-in-out infinite alternate;
+}
+
+@keyframes landing-cta-aurora {
+  0% { transform: translate3d(-3%, -2%, 0) scale(1); }
+  50% { transform: translate3d(3%, 2%, 0) scale(1.06); }
+  100% { transform: translate3d(-2%, 3%, 0) scale(1.02); }
+}
+
+.landing-cta__bubbles {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.landing-cta__bubbles i {
+  position: absolute;
+  bottom: -3rem;
+  width: 12px;
+  height: 12px;
+  background: radial-gradient(circle at 32% 30%, rgba(255, 255, 255, 0.85), rgba(160, 236, 255, 0.16) 62%, transparent 70%);
+  border: 1px solid rgba(190, 243, 255, 0.35);
+  border-radius: 50%;
+  opacity: 0;
+  animation: landing-cta-bubble 9s ease-in infinite;
+}
+
+.landing-cta__bubbles i:nth-child(1) { left: 8%; animation-delay: 0s; }
+.landing-cta__bubbles i:nth-child(2) { left: 21%; width: 8px; height: 8px; animation-delay: 1.6s; animation-duration: 7.5s; }
+.landing-cta__bubbles i:nth-child(3) { left: 37%; width: 16px; height: 16px; animation-delay: 3.1s; animation-duration: 11s; }
+.landing-cta__bubbles i:nth-child(4) { left: 58%; width: 7px; height: 7px; animation-delay: 4.4s; animation-duration: 8s; }
+.landing-cta__bubbles i:nth-child(5) { left: 72%; width: 13px; height: 13px; animation-delay: 2.2s; animation-duration: 10s; }
+.landing-cta__bubbles i:nth-child(6) { left: 88%; width: 9px; height: 9px; animation-delay: 5.6s; animation-duration: 8.6s; }
+
+@keyframes landing-cta-bubble {
+  0% { opacity: 0; transform: translateY(0) scale(.7); }
+  12% { opacity: .8; }
+  78% { opacity: .5; }
+  100% { opacity: 0; transform: translateY(-26rem) translateX(1.4rem) scale(1.15); }
+}
+
+/* A brighter rule across the top edge so the band reads as a deliberate
+   closing statement rather than another card. */
+.landing-cta::before {
+  z-index: 0;
+}
+
+.landing-cta > div {
+  z-index: 1;
+}
+
+.landing-footer {
+  position: relative;
+  overflow: hidden;
+}
+
+.landing-footer::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 1px;
+  content: '';
+  background: linear-gradient(90deg, transparent, var(--hs-cyan), rgba(59, 140, 255, .8), transparent);
+  background-size: 220% 100%;
+  animation: landing-footer-line 7s linear infinite;
+}
+
+@keyframes landing-footer-line {
+  to { background-position: 220% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-cta::after,
+  .landing-cta__bubbles i,
+  .landing-footer::before {
+    animation: none;
+  }
+
+  .landing-cta__bubbles {
+    display: none;
   }
 }

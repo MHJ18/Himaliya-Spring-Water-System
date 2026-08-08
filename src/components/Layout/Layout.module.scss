@@ -146,3 +146,95 @@
     padding: 12px 10px calc(24px + env(safe-area-inset-bottom, 0px));
   }
 }
+
+/* Animated background layer.
+   It lives on the Layout root because that is the element painting
+   var(--hs-page-bg); a layer on <body> would sit behind this and never show.
+   isolation keeps the pseudo-element from escaping into page content. */
+.root {
+  isolation: isolate;
+}
+
+/* No pseudo-element at all unless an effect is selected. Toggling `content`
+   is deterministic; an opacity fade on a pseudo-element did not reliably
+   transition and could stay stuck at 0. */
+.root::before {
+  position: fixed;
+  z-index: 0;
+  inset: 0;
+  content: none;
+  pointer-events: none;
+}
+
+/* Only the content column needs lifting above the effect layer. A blanket
+   `.root > *` rule also hit the fixed sidebar and its backdrop, dropping them
+   into normal flow and pushing the whole page down. */
+.wrap {
+  position: relative;
+  z-index: 1;
+}
+
+:global(body[data-bg-effect='aurora']) .root::before {
+  content: '';
+  background:
+    radial-gradient(26rem 20rem at 18% 12%, rgba(124, 90, 200, 0.3), transparent 70%),
+    radial-gradient(24rem 18rem at 82% 78%, rgba(41, 201, 232, 0.26), transparent 70%);
+  filter: blur(40px);
+  animation: layout-aurora-drift 24s ease-in-out infinite alternate;
+}
+
+:global(body[data-bg-effect='mesh']) .root::before {
+  content: '';
+  background:
+    radial-gradient(18rem 14rem at 28% 28%, rgba(245, 160, 111, 0.24), transparent 70%),
+    radial-gradient(20rem 16rem at 74% 68%, rgba(104, 163, 255, 0.22), transparent 70%),
+    radial-gradient(16rem 13rem at 52% 92%, rgba(74, 203, 146, 0.18), transparent 70%);
+  filter: blur(52px);
+  animation: layout-mesh-shift 28s ease-in-out infinite alternate;
+}
+
+:global(body[data-bg-effect='glow']) .root::before {
+  content: '';
+  background: radial-gradient(36rem 18rem at 50% 0%, rgba(220, 100, 59, 0.26), transparent 72%);
+  filter: blur(34px);
+  animation: layout-glow-pulse 14s ease-in-out infinite alternate;
+}
+
+/* Blueprint drifts its own grid rather than fading, so dense tables stay calm. */
+:global(body[data-bg-effect='grid']) .root::before {
+  content: '';
+  background:
+    linear-gradient(rgba(37, 99, 235, 0.06) 1px, transparent 1px) 0 0 / 3rem 3rem,
+    linear-gradient(90deg, rgba(37, 99, 235, 0.06) 1px, transparent 1px) 0 0 / 3rem 3rem;
+  animation: layout-grid-drift 40s linear infinite;
+}
+
+:global(body.dashboard-dark[data-bg-effect='grid']) .root::before {
+  background:
+    linear-gradient(rgba(96, 165, 250, 0.07) 1px, transparent 1px) 0 0 / 3rem 3rem,
+    linear-gradient(90deg, rgba(96, 165, 250, 0.07) 1px, transparent 1px) 0 0 / 3rem 3rem;
+}
+
+@keyframes layout-aurora-drift {
+  from { transform: translate3d(-3%, -2%, 0) scale(1); }
+  to { transform: translate3d(4%, 3%, 0) scale(1.14); }
+}
+
+@keyframes layout-mesh-shift {
+  from { transform: translate3d(2%, -3%, 0) scale(1); }
+  to { transform: translate3d(-3%, 4%, 0) scale(1.08); }
+}
+
+@keyframes layout-glow-pulse {
+  from { opacity: 0.55; }
+  to { opacity: 1; }
+}
+
+@keyframes layout-grid-drift {
+  from { background-position: 0 0, 0 0; }
+  to { background-position: 3rem 3rem, 3rem 3rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .root::before { animation: none !important; }
+}

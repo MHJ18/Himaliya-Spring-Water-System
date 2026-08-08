@@ -8,7 +8,7 @@ import { CssBaseline } from '@mui/material';
 import { useDispatch } from 'react-redux';
 import { MotionConfig } from 'motion/react';
 import { useSettings } from '../context/SettingsContext';
-import { getAdminThemePreset } from '../data/constants';
+import { getAdminFontStack, getAdminThemePreset } from '../data/constants';
 import { changeSidebarPosition, changeSidebarVisibility } from '../actions/navigation';
 
 const coarsePointerTarget = {
@@ -17,7 +17,11 @@ const coarsePointerTarget = {
   },
 };
 
-const buildTheme = (darkMode, compactMode, preset) => {
+const buildTheme = (darkMode, compactMode, preset, fontStack) => {
+  // The accent preset alone only recolours primary/secondary. A pure black and
+  // white workspace also needs neutral surfaces, text and dividers, otherwise
+  // the blue-tinted defaults leak a hue back in.
+  const mono = preset.id === 'monochrome';
   const focusRing = alpha(preset.primary, darkMode ? 0.34 : 0.22);
   const softAccent = alpha(preset.primary, darkMode ? 0.12 : 0.07);
   const selectedAccent = alpha(preset.primary, darkMode ? 0.22 : 0.13);
@@ -52,19 +56,27 @@ const buildTheme = (darkMode, compactMode, preset) => {
         main: preset.secondary,
       },
       background: darkMode
-        ? { default: '#06121c', paper: '#0d202c' }
-        : { default: '#edf5f7', paper: '#ffffff' },
+        ? { default: mono ? '#0b0b0d' : '#06121c', paper: mono ? '#151517' : '#0d202c' }
+        : { default: mono ? '#f4f4f5' : '#edf5f7', paper: '#ffffff' },
       text: darkMode
-        ? { primary: '#f3f8fc', secondary: '#9fb1c5' }
-        : { primary: '#10253a', secondary: '#5d7085' },
-      divider: darkMode ? 'rgba(168, 197, 222, 0.13)' : 'rgba(34, 74, 111, 0.12)',
+        ? {
+          primary: mono ? '#fafafa' : '#f3f8fc',
+          secondary: mono ? '#a1a1aa' : '#9fb1c5',
+        }
+        : {
+          primary: mono ? '#18181b' : '#10253a',
+          secondary: mono ? '#52525b' : '#5d7085',
+        },
+      divider: mono
+        ? (darkMode ? 'rgba(250, 250, 250, 0.14)' : 'rgba(24, 24, 27, 0.13)')
+        : (darkMode ? 'rgba(168, 197, 222, 0.13)' : 'rgba(34, 74, 111, 0.12)'),
     },
     shape: {
       borderRadius: compactMode ? 13 : 16,
     },
     spacing: 8,
     typography: {
-      fontFamily: '"Plus Jakarta Sans", "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+      fontFamily: fontStack,
       htmlFontSize: 16,
       fontSize: compactMode ? 12 : 13,
       h1: {
@@ -118,8 +130,8 @@ const buildTheme = (darkMode, compactMode, preset) => {
         },
         styleOverrides: {
           root: {
-            minHeight: compactMode ? 34 : 38,
-            paddingInline: compactMode ? 12 : 14,
+            minHeight: compactMode ? 30 : 34,
+            paddingInline: compactMode ? 10 : 12,
             border: '1px solid transparent',
             borderRadius: compactMode ? 9 : 11,
             fontWeight: 790,
@@ -140,7 +152,9 @@ const buildTheme = (darkMode, compactMode, preset) => {
             },
           },
           containedPrimary: {
-            background: `linear-gradient(120deg, ${preset.primaryDark} 0%, ${preset.primary} 58%, ${preset.primaryLight} 145%)`,
+            background: mono
+              ? preset.primaryDark
+              : `linear-gradient(120deg, ${preset.primaryDark} 0%, ${preset.primary} 58%, ${preset.primaryLight} 145%)`,
             boxShadow: `0 10px 24px ${alpha(preset.primaryDark, darkMode ? 0.3 : 0.22)}`,
             borderColor: alpha(preset.primaryLight, 0.18),
             '&:hover': {
@@ -189,8 +203,8 @@ const buildTheme = (darkMode, compactMode, preset) => {
             },
           },
           sizeSmall: {
-            minHeight: compactMode ? 30 : 32,
-            paddingInline: compactMode ? 8 : 10,
+            minHeight: compactMode ? 28 : 30,
+            paddingInline: compactMode ? 8 : 9,
             fontSize: compactMode ? '0.69rem' : '0.73rem',
             '@media (pointer: coarse)': {
               minHeight: 40,
@@ -201,8 +215,8 @@ const buildTheme = (darkMode, compactMode, preset) => {
       MuiIconButton: {
         styleOverrides: {
           root: {
-            width: compactMode ? 34 : 38,
-            height: compactMode ? 34 : 38,
+            width: compactMode ? 30 : 34,
+            height: compactMode ? 30 : 34,
             borderRadius: compactMode ? 8 : 10,
             transition: 'transform 160ms ease, color 160ms ease, background 160ms ease',
             '@media (pointer: coarse)': {
@@ -246,7 +260,7 @@ const buildTheme = (darkMode, compactMode, preset) => {
       MuiCardHeader: {
         styleOverrides: {
           root: {
-            padding: compactMode ? '12px 12px 8px' : '14px 14px 9px',
+            padding: compactMode ? '10px 11px 6px' : '12px 12px 8px',
           },
           avatar: {
             marginRight: compactMode ? 8 : 10,
@@ -260,9 +274,9 @@ const buildTheme = (darkMode, compactMode, preset) => {
       MuiCardContent: {
         styleOverrides: {
           root: {
-            padding: compactMode ? 12 : 14,
+            padding: compactMode ? 10 : 12,
             '&:last-child': {
-              paddingBottom: compactMode ? 12 : 14,
+              paddingBottom: compactMode ? 10 : 12,
             },
           },
         },
@@ -276,23 +290,44 @@ const buildTheme = (darkMode, compactMode, preset) => {
       MuiOutlinedInput: {
         styleOverrides: {
           root: {
-            minHeight: compactMode ? 36 : 40,
-            borderRadius: compactMode ? 9 : 11,
+            minHeight: compactMode ? 32 : 36,
+            borderRadius: compactMode ? 8 : 10,
             fontSize: compactMode ? '0.77rem' : '0.8125rem',
-            background: darkMode ? 'rgba(2, 17, 29, .16)' : 'rgba(255, 255, 255, .7)',
-            transition: 'box-shadow 160ms ease, background 160ms ease, border-color 160ms ease',
+            // A recessed field reads as somewhere to type rather than a flat
+            // outline: tinted surface, hairline inset, lift on focus.
+            background: darkMode
+              ? 'linear-gradient(180deg, rgba(2, 17, 29, .42), rgba(2, 17, 29, .24))'
+              : 'linear-gradient(180deg, rgba(247, 250, 253, .95), rgba(255, 255, 255, .92))',
+            boxShadow: darkMode
+              ? 'inset 0 1px 2px rgba(0, 0, 0, .3)'
+              : 'inset 0 1px 2px rgba(24, 51, 74, .06)',
+            transition: 'box-shadow 180ms ease, background 180ms ease, border-color 180ms ease',
             ...coarsePointerTarget,
             '@media (pointer: coarse)': {
               minHeight: 46,
               fontSize: '16px',
             },
+            '&:hover:not(.Mui-disabled):not(.Mui-focused) .MuiOutlinedInput-notchedOutline': {
+              borderColor: alpha(preset.primary, darkMode ? 0.42 : 0.34),
+            },
             '&.Mui-focused': {
-              background: darkMode ? 'rgba(3, 22, 36, .4)' : '#fff',
-              boxShadow: `0 0 0 4px ${alpha(preset.primary, darkMode ? 0.13 : 0.09)}`,
+              background: darkMode ? 'rgba(3, 22, 36, .55)' : '#fff',
+              boxShadow: `0 0 0 3px ${alpha(preset.primary, darkMode ? 0.22 : 0.14)}, 0 1px 2px ${alpha(preset.primaryDark, 0.12)}`,
+            },
+            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+              borderWidth: 1,
+              borderColor: preset.primary,
+            },
+            '&.Mui-error.Mui-focused': {
+              boxShadow: `0 0 0 3px ${alpha('#df4962', darkMode ? 0.24 : 0.16)}`,
+            },
+            '&.Mui-disabled': {
+              background: darkMode ? 'rgba(2, 17, 29, .2)' : 'rgba(236, 241, 245, .7)',
+              boxShadow: 'none',
             },
           },
           input: {
-            padding: compactMode ? '7px 9px' : '9px 11px',
+            padding: compactMode ? '6px 8px' : '7px 10px',
             '@media (pointer: coarse)': {
               padding: '11px 13px',
             },
@@ -306,8 +341,46 @@ const buildTheme = (darkMode, compactMode, preset) => {
         styleOverrides: {
           root: {
             fontSize: compactMode ? '0.77rem' : '0.8125rem',
+            fontWeight: 650,
             '&.Mui-focused': {
               color: darkMode ? preset.primaryLight : preset.primaryDark,
+              fontWeight: 750,
+            },
+          },
+        },
+      },
+      MuiSelect: {
+        styleOverrides: {
+          icon: {
+            transition: 'transform 180ms ease, color 180ms ease',
+          },
+          iconOpen: {
+            color: darkMode ? preset.primaryLight : preset.primary,
+          },
+        },
+      },
+      MuiMenu: {
+        styleOverrides: {
+          paper: {
+            marginTop: 4,
+            border: `1px solid ${darkMode ? 'rgba(168,197,222,.14)' : 'rgba(34,74,111,.12)'}`,
+            borderRadius: compactMode ? 10 : 12,
+            boxShadow: darkMode
+              ? '0 18px 44px rgba(0, 0, 0, .5)'
+              : '0 18px 44px rgba(24, 51, 74, .16)',
+          },
+        },
+      },
+      MuiMenuItem: {
+        styleOverrides: {
+          root: {
+            minHeight: compactMode ? 32 : 36,
+            borderRadius: 8,
+            marginInline: 4,
+            fontSize: compactMode ? '0.77rem' : '0.8125rem',
+            '&.Mui-selected': {
+              background: softAccent,
+              fontWeight: 700,
             },
           },
         },
@@ -353,7 +426,7 @@ const buildTheme = (darkMode, compactMode, preset) => {
       MuiTabs: {
         styleOverrides: {
           root: {
-            minHeight: compactMode ? 42 : 46,
+            minHeight: compactMode ? 38 : 41,
           },
           indicator: {
             height: 3,
@@ -365,9 +438,9 @@ const buildTheme = (darkMode, compactMode, preset) => {
       MuiTab: {
         styleOverrides: {
           root: {
-            minHeight: compactMode ? 42 : 46,
+            minHeight: compactMode ? 38 : 41,
             minWidth: 0,
-            padding: compactMode ? '6px 9px' : '7px 11px',
+            padding: compactMode ? '5px 8px' : '6px 10px',
             borderRadius: compactMode ? 8 : 10,
             fontSize: compactMode ? '0.7rem' : '0.73rem',
             '@media (pointer: coarse)': {
@@ -389,8 +462,8 @@ const buildTheme = (darkMode, compactMode, preset) => {
       MuiToggleButton: {
         styleOverrides: {
           root: {
-            minHeight: compactMode ? 36 : 40,
-            padding: compactMode ? '6px 8px' : '7px 10px',
+            minHeight: compactMode ? 32 : 36,
+            padding: compactMode ? '5px 7px' : '6px 9px',
             color: 'inherit',
             borderColor: darkMode ? 'rgba(168,197,222,.16)' : 'rgba(34,74,111,.14)',
             borderRadius: `${compactMode ? 8 : 10}px !important`,
@@ -494,9 +567,64 @@ const buildTheme = (darkMode, compactMode, preset) => {
       },
       MuiAlert: {
         styleOverrides: {
+          // Form feedback has to read as a distinct notification rather than
+          // another line of body copy, so every severity gets a tinted
+          // surface, a matching border and a leading accent bar instead of
+          // MUI's very pale default wash.
           root: {
+            position: 'relative',
+            alignItems: 'flex-start',
+            overflow: 'hidden',
+            paddingBlock: compactMode ? 8 : 10,
+            paddingInline: compactMode ? 12 : 14,
+            paddingInlineStart: compactMode ? 16 : 18,
+            border: '1px solid',
             borderRadius: compactMode ? 9 : 11,
-            fontSize: compactMode ? '0.72rem' : '0.76rem',
+            fontSize: compactMode ? '0.74rem' : '0.78rem',
+            fontWeight: 650,
+            lineHeight: 1.5,
+            '&::before': {
+              position: 'absolute',
+              insetInlineStart: 0,
+              insetBlock: 0,
+              width: 4,
+              content: '""',
+              background: 'currentColor',
+              opacity: 0.85,
+            },
+            '& .MuiAlert-icon': {
+              paddingTop: 2,
+              opacity: 1,
+            },
+            '& .MuiAlert-message': {
+              minWidth: 0,
+              paddingBlock: 0,
+              overflowWrap: 'anywhere',
+            },
+          },
+          standardError: {
+            color: darkMode ? '#ffd7de' : '#8d1c33',
+            backgroundColor: alpha('#df4962', darkMode ? 0.18 : 0.1),
+            borderColor: alpha('#df4962', darkMode ? 0.42 : 0.3),
+            '& .MuiAlert-icon': { color: darkMode ? '#ff8fa3' : '#c62a48' },
+          },
+          standardWarning: {
+            color: darkMode ? '#ffe6bd' : '#7a4a06',
+            backgroundColor: alpha('#e79519', darkMode ? 0.18 : 0.12),
+            borderColor: alpha('#e79519', darkMode ? 0.42 : 0.32),
+            '& .MuiAlert-icon': { color: darkMode ? '#ffbe5c' : '#b9740f' },
+          },
+          standardSuccess: {
+            color: darkMode ? '#b6f5dc' : '#0a5b43',
+            backgroundColor: alpha('#168d68', darkMode ? 0.2 : 0.1),
+            borderColor: alpha('#168d68', darkMode ? 0.42 : 0.3),
+            '& .MuiAlert-icon': { color: darkMode ? '#5fdcb0' : '#0f7a58' },
+          },
+          standardInfo: {
+            color: darkMode ? '#dcf1ff' : preset.primaryDark,
+            backgroundColor: alpha(preset.primary, darkMode ? 0.18 : 0.1),
+            borderColor: alpha(preset.primary, darkMode ? 0.42 : 0.3),
+            '& .MuiAlert-icon': { color: darkMode ? preset.primaryLight : preset.primary },
           },
         },
       },
@@ -514,9 +642,10 @@ export default function AppThemeProvider({ children }) {
   const { settings, resolvedDarkMode } = useSettings();
   const dispatch = useDispatch();
   const preset = getAdminThemePreset(settings.colorTheme);
+  const fontStack = getAdminFontStack(settings.fontFamily);
   const theme = React.useMemo(
-    () => buildTheme(resolvedDarkMode, Boolean(settings.compactMode), preset),
-    [preset, resolvedDarkMode, settings.compactMode]
+    () => buildTheme(resolvedDarkMode, Boolean(settings.compactMode), preset, fontStack),
+    [fontStack, preset, resolvedDarkMode, settings.compactMode]
   );
 
   React.useEffect(() => {

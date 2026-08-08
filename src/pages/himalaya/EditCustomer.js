@@ -246,6 +246,7 @@ export default function EditCustomer({ match, history }) {
                     <Grid item xs={12} sm={6}>
                       <TextField
                         label="Full name"
+                        placeholder="e.g. Ayesha Khan"
                         value={form.name}
                         onChange={(event) => setField('name', event.target.value)}
                         error={Boolean(errors.name)}
@@ -258,6 +259,7 @@ export default function EditCustomer({ match, history }) {
                     <Grid item xs={12} sm={6}>
                       <TextField
                         label="Phone number"
+                        placeholder="+92 3XX XXXXXXX"
                         type="tel"
                         value={form.phone}
                         onChange={(event) => setField('phone', normalizePhone(event.target.value))}
@@ -271,6 +273,7 @@ export default function EditCustomer({ match, history }) {
                     <Grid item xs={12}>
                       <TextField
                         label="Email address"
+                        placeholder="name@example.com"
                         type="email"
                         value={form.email}
                         onChange={(event) => setField('email', event.target.value)}
@@ -283,6 +286,7 @@ export default function EditCustomer({ match, history }) {
                     <Grid item xs={12}>
                       <TextField
                         label="Delivery address"
+                        placeholder="House / shop number, street, area, city"
                         value={form.address}
                         onChange={(event) => setField('address', event.target.value)}
                         error={Boolean(errors.address)}
