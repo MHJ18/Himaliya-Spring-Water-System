@@ -41,6 +41,13 @@ import { DEFAULT_COUNTRY_CODE } from '../../data/constants';
 import { validateCustomerForm, normalizePhone } from '../../utils/validation';
 import { getCustomerAvatar } from '../../utils/customerPhotos';
 import { compressImageFile } from '../../utils/imageCompression';
+import {
+  formSectionLabelSx,
+  modernFormHeaderSx,
+  modernFormSx,
+  modernPanelSx,
+  modernSubmitSx,
+} from './formStyles';
 
 const PAYMENT_SCHEDULES = [
   {
@@ -66,22 +73,14 @@ const initialForm = {
   paymentSchedule: 'monthly',
 };
 
-const panelBaseSx = {
-  overflow: 'hidden',
-  border: '1px solid',
-  borderColor: 'divider',
-  bgcolor: 'background.paper',
-  boxShadow: { xs: '0 12px 32px rgba(4, 18, 43, 0.08)', sm: '0 20px 60px rgba(4, 18, 43, 0.12)' },
-};
-
-const formPanelSx = {
-  ...panelBaseSx,
+const formPanelSx = (theme) => ({
+  ...modernPanelSx(theme),
   height: '100%',
-};
+});
 
-const listPanelSx = {
-  ...panelBaseSx,
-};
+const listPanelSx = (theme) => modernPanelSx(theme);
+
+const compactCustomerFormSx = (theme) => modernFormSx(theme);
 
 function DetailRow({ icon, label, children }) {
   return (
@@ -174,44 +173,48 @@ export default function AddCustomer({ history }) {
       <Grid container spacing={{ xs: 2, md: 3 }} alignItems="flex-start">
         <Grid item xs={12} lg={5}>
           <Card sx={formPanelSx}>
-            <Box
-              sx={{
-                p: { xs: 2.25, sm: 3 },
-                color: 'common.white',
-                background: 'linear-gradient(135deg, var(--hs-primary) 0%, var(--hs-secondary) 100%)',
-              }}
-            >
-              <Stack direction="row" spacing={1.5} alignItems="center">
-                <Box sx={{ width: 44, height: 44, borderRadius: 2.5, bgcolor: 'rgba(255,255,255,.15)', display: 'grid', placeItems: 'center' }}>
+            <Box sx={modernFormHeaderSx}>
+              <Stack direction="row" spacing={1.5} alignItems="center" sx={{ position: 'relative', zIndex: 1 }}>
+                <Box sx={{
+                  display: 'grid',
+                  width: 46,
+                  height: 46,
+                  bgcolor: 'rgba(255,255,255,.18)',
+                  border: '1px solid rgba(255,255,255,.26)',
+                  borderRadius: 2.5,
+                  placeItems: 'center',
+                }}
+                >
                   <PersonAddAltRounded />
                 </Box>
                 <Box>
-                  <Typography variant="h6">New delivery customer</Typography>
-                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,.75)' }}>
+                  <Typography variant="h6" sx={{ fontWeight: 800, lineHeight: 1.15 }}>New delivery customer</Typography>
+                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,.82)' }}>
                     Required fields are marked below.
                   </Typography>
                 </Box>
               </Stack>
             </Box>
-            <CardContent sx={{ p: { xs: 2.25, sm: 3 } }}>
+            <CardContent sx={{ p: { xs: 2.5, sm: 3 }, '&:last-child': { pb: { xs: 2.5, sm: 3 } } }}>
               <Box
                 component="form"
                 onSubmit={handleSubmit}
                 noValidate
-                sx={{ '& .MuiOutlinedInput-root': { minHeight: 40 } }}
+                sx={compactCustomerFormSx}
               >
-                <Stack spacing={1.5}>
-                  <Stack alignItems="center" spacing={0.75}>
+                <Stack spacing={2.5}>
+                  <Stack alignItems="center" spacing={1}>
                     <ButtonBase
                       component="label"
                       aria-label="Choose a customer photo"
                       focusRipple
-                      sx={{
+                      sx={(theme) => ({
                         position: 'relative',
                         borderRadius: '50%',
                         p: 0.5,
-                        '&:focus-visible': { outline: '3px solid', outlineColor: 'primary.main', outlineOffset: 3 },
-                      }}
+                        '&:hover .MuiAvatar-root': { filter: 'brightness(1.06)' },
+                        '&:focus-visible': { outline: '3px solid', outlineColor: theme.palette.primary.main, outlineOffset: 3 },
+                      })}
                     >
                       <input
                         id="customer-photo"
@@ -222,17 +225,35 @@ export default function AddCustomer({ history }) {
                       />
                       <Avatar
                         src={preview || undefined}
-                        sx={{
-                          width: 72,
-                          height: 72,
-                          bgcolor: 'primary.main',
-                          boxShadow: '0 12px 30px rgba(20,115,230,.3)',
-                        }}
+                        sx={(theme) => ({
+                          width: 84,
+                          height: 84,
+                          background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+                          border: '3px solid',
+                          borderColor: 'background.paper',
+                          boxShadow: `0 14px 32px ${alpha(theme.palette.primary.main, 0.3)}`,
+                          transition: 'filter 180ms ease',
+                        })}
                       >
-                        <AddAPhotoOutlined fontSize="large" />
+                        <AddAPhotoOutlined sx={{ fontSize: 30 }} />
                       </Avatar>
-                      <Box sx={{ position: 'absolute', right: -2, bottom: -2, width: 30, height: 30, borderRadius: '50%', bgcolor: 'background.paper', color: 'primary.main', display: 'grid', placeItems: 'center', boxShadow: 2 }}>
-                        <AddAPhotoOutlined sx={{ fontSize: 17 }} />
+                      <Box sx={{
+                        position: 'absolute',
+                        right: 0,
+                        bottom: 0,
+                        display: 'grid',
+                        width: 30,
+                        height: 30,
+                        color: 'primary.main',
+                        bgcolor: 'background.paper',
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        borderRadius: '50%',
+                        placeItems: 'center',
+                        boxShadow: 2,
+                      }}
+                      >
+                        <AddAPhotoOutlined sx={{ fontSize: 16 }} />
                       </Box>
                     </ButtonBase>
                     <Typography variant="caption" color="text.secondary" textAlign="center">
@@ -240,9 +261,12 @@ export default function AddCustomer({ history }) {
                     </Typography>
                   </Stack>
 
+                  <Box>
+                    <Typography component="span" sx={formSectionLabelSx}>Contact details</Typography>
+                    <Stack spacing={2}>
                   {/* Name and phone are both short; pairing them saves a row
                       without cramping either field. */}
-                  <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.5 }}>
+                  <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
                     <TextField
                       label="Full name"
                       placeholder="e.g. Ayesha Khan"
@@ -274,7 +298,8 @@ export default function AddCustomer({ history }) {
                     onChange={(event) => updateForm('address', event.target.value)}
                     required
                     multiline
-                    minRows={2}
+                    minRows={1}
+                    maxRows={2}
                     error={Boolean(errors.address)}
                     helperText={errors.address}
                     autoComplete="street-address"
@@ -291,70 +316,85 @@ export default function AddCustomer({ history }) {
                     autoComplete="email"
                     InputProps={{ startAdornment: <InputAdornment position="start"><AlternateEmailRounded /></InputAdornment> }}
                   />
+                    </Stack>
+                  </Box>
+
                   <Box>
-                    <Typography variant="body2" fontWeight={800} sx={{ mb: 0.75 }}>
-                      Payment schedule
-                    </Typography>
+                    <Typography component="span" sx={formSectionLabelSx}>Payment schedule</Typography>
                     {/* Choice cards rather than plain toggles: each option
                         states what it does, and the active one is carried by
                         border, tint and a check — not colour alone. */}
                     <Box
                       role="radiogroup"
                       aria-label="Customer payment schedule"
-                      sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1 }}
+                      sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.25 }}
                     >
                       {PAYMENT_SCHEDULES.map((option) => {
                         const selected = form.paymentSchedule === option.value;
                         const OptionIcon = option.icon;
                         return (
-                          <Box
+                          <ButtonBase
                             key={option.value}
                             component="button"
                             type="button"
                             role="radio"
                             aria-checked={selected}
+                            aria-label={`${option.label}. ${option.hint}`}
                             onClick={() => updateForm('paymentSchedule', option.value)}
                             sx={(theme) => ({
                               position: 'relative',
                               display: 'grid',
                               gridTemplateColumns: 'auto minmax(0, 1fr)',
-                              alignItems: 'start',
-                              gap: 1,
-                              p: 1.15,
-                              font: 'inherit',
+                              alignItems: 'center',
+                              justifyContent: 'stretch',
+                              gap: 0.9,
+                              minHeight: 48,
+                              px: 1.1,
+                              py: 0.85,
                               textAlign: 'left',
-                              cursor: 'pointer',
                               color: 'text.primary',
-                              bgcolor: selected ? alpha(theme.palette.primary.main, 0.1) : 'action.hover',
-                              border: '1.5px solid',
+                              background: selected
+                                ? `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.14)}, ${alpha(theme.palette.secondary.main, 0.08)})`
+                                : alpha(theme.palette.background.default, 0.72),
+                              border: '1px solid',
                               borderColor: selected ? 'primary.main' : 'divider',
-                              borderRadius: 2,
-                              boxShadow: selected ? `0 6px 18px ${alpha(theme.palette.primary.main, 0.18)}` : 'none',
+                              borderRadius: 2.25,
+                              boxShadow: selected ? `0 7px 20px ${alpha(theme.palette.primary.main, 0.14)}` : 'none',
+                              overflow: 'hidden',
                               transition: 'border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease',
-                              '&:hover': { borderColor: selected ? 'primary.main' : 'text.secondary' },
+                              '&::before': {
+                                position: 'absolute',
+                                inset: '8px auto 8px 0',
+                                width: 3,
+                                content: '""',
+                                bgcolor: 'primary.main',
+                                borderRadius: '0 4px 4px 0',
+                                opacity: selected ? 1 : 0,
+                              },
+                              '&:hover': {
+                                borderColor: selected ? 'primary.main' : alpha(theme.palette.primary.main, 0.5),
+                                bgcolor: selected ? undefined : 'action.hover',
+                              },
                               '&:focus-visible': { outline: '3px solid', outlineColor: alpha(theme.palette.primary.main, 0.4), outlineOffset: 2 },
                             })}
                           >
                             <Box sx={{
                               display: 'grid',
-                              width: 30,
-                              height: 30,
+                              width: 32,
+                              height: 32,
                               placeItems: 'center',
-                              color: selected ? 'primary.main' : 'text.secondary',
-                              bgcolor: 'background.paper',
+                              color: selected ? 'primary.contrastText' : 'text.secondary',
+                              bgcolor: selected ? 'primary.main' : 'background.paper',
                               border: '1px solid',
-                              borderColor: 'divider',
-                              borderRadius: 1.5,
+                              borderColor: selected ? 'primary.main' : 'divider',
+                              borderRadius: 1.75,
                               '& svg': { fontSize: 17 },
                             }}
                             >
                               <OptionIcon />
                             </Box>
-                            <Box sx={{ minWidth: 0, pr: 2 }}>
-                              <Typography variant="body2" fontWeight={750} noWrap>{option.label}</Typography>
-                              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', lineHeight: 1.35 }}>
-                                {option.hint}
-                              </Typography>
+                            <Box sx={{ minWidth: 0, pr: 1.75 }}>
+                              <Typography variant="body2" fontWeight={700} sx={{ lineHeight: 1.2 }}>{option.label}</Typography>
                             </Box>
                             {selected && (
                               <Box aria-hidden="true" sx={{
@@ -374,22 +414,21 @@ export default function AddCustomer({ history }) {
                                 <CheckRounded />
                               </Box>
                             )}
-                          </Box>
+                          </ButtonBase>
                         );
                       })}
                     </Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.75 }}>
-                      Monthly deliveries build an account balance; pay-on-delivery entries capture cash with each sale.
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.55, fontSize: '0.68rem', lineHeight: 1.25 }}>
+                      {PAYMENT_SCHEDULES.find((option) => option.value === form.paymentSchedule).hint}
                     </Typography>
                   </Box>
                   <Button
                     type="submit"
                     variant="contained"
-                    size="large"
                     disabled={saving}
                     startIcon={saving ? <CircularProgress size={18} color="inherit" /> : <PersonAddAltRounded />}
                     fullWidth
-                    sx={{ minHeight: 48 }}
+                    sx={modernSubmitSx}
                   >
                     {saving ? 'Saving customer…' : 'Add customer'}
                   </Button>
@@ -439,7 +478,7 @@ export default function AddCustomer({ history }) {
                     </InputAdornment>
                   ) : null,
                 }}
-                sx={{ mt: 2.5, '& .MuiOutlinedInput-root': { minHeight: 48 } }}
+                sx={{ mt: 2.5, '& .MuiOutlinedInput-root': { minHeight: 40, borderRadius: 1.5 } }}
               />
             </Box>
             <Divider />
@@ -575,23 +614,23 @@ export default function AddCustomer({ history }) {
               >
                 <Button
                   variant="contained"
-                  size="large"
-                  startIcon={<EditRounded />}
+                  startIcon={<EditRounded sx={{ fontSize: 18 }} />}
                   aria-label={`Edit ${selected.name}`}
                   onClick={() => history.push(`/app/customers/${selected.id}/edit`)}
                   sx={{
-                    minHeight: 48,
-                    minWidth: { xs: 0, sm: 210 },
-                    width: { xs: '100%', sm: 'auto' },
-                    maxWidth: '100%',
-                    px: { xs: 2, sm: 2.5 },
+                    minHeight: 38,
+                    px: 2,
+                    fontSize: '0.83rem',
+                    fontWeight: 700,
+                    borderRadius: 1.75,
+                    textTransform: 'none',
                     color: 'common.white',
                     background: 'linear-gradient(135deg, var(--hs-primary) 0%, var(--hs-secondary) 100%)',
-                    boxShadow: '0 12px 28px color-mix(in srgb, var(--hs-primary) 28%, transparent)',
-                    '&:hover': { filter: 'brightness(1.06)', boxShadow: '0 16px 32px color-mix(in srgb, var(--hs-primary) 34%, transparent)' },
+                    boxShadow: '0 4px 12px color-mix(in srgb, var(--hs-primary) 22%, transparent)',
+                    '&:hover': { filter: 'brightness(1.06)', boxShadow: '0 6px 16px color-mix(in srgb, var(--hs-primary) 28%, transparent)' },
                   }}
                 >
-                  Edit customer details
+                  Edit details
                 </Button>
               </Box>
             </Card>

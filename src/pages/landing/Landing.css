@@ -281,7 +281,7 @@
   background: rgba(241, 252, 255, 0.06);
   border: 1px solid rgba(213, 246, 251, 0.3);
   border-radius: 999px;
-  backdrop-filter: blur(12px);
+ 
   -webkit-text-fill-color: var(--hs-white) !important;
   transition: background 200ms ease, border-color 200ms ease, transform 200ms ease;
 }
@@ -533,10 +533,30 @@
 
 .refill-film-section {
   position: relative;
-  padding: 104px max(24px, calc((100vw - var(--hs-max)) / 2)) 116px;
+  padding: 104px max(24px, calc((100vw - var(--hs-max)) / 2)) 96px;
+  overflow: hidden;
   background:
     linear-gradient(90deg, transparent calc(50% - .5px), rgba(7, 59, 76, 0.065) 50%, transparent calc(50% + .5px)),
     #fbfdfc;
+}
+
+.refill-film-section::after {
+  position: absolute;
+  z-index: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 150px;
+  pointer-events: none;
+  content: '';
+  background:
+    radial-gradient(ellipse at 50% 110%, rgba(105, 231, 247, 0.16), transparent 62%),
+    linear-gradient(180deg, transparent, rgba(59, 140, 255, 0.025));
+}
+
+.refill-film-section > * {
+  position: relative;
+  z-index: 1;
 }
 
 .refill-film-section__heading {
@@ -690,7 +710,7 @@
 
 .bottle-film {
   position: relative;
-  height: 650px;
+  height: 700px;
   overflow: hidden;
   color: var(--hs-white);
   background:
@@ -727,13 +747,14 @@
   animation: film-projector-sweep 4.5s 3.5s ease-in-out both;
 }
 
-.bottle-film__svg {
+.bottle-film__video {
   position: relative;
   z-index: 1;
   display: block;
   width: 100%;
   height: calc(100% - 44px);
-  overflow: visible;
+  object-fit: contain;
+  background: transparent;
 }
 
 .bottle-film__timecode,
@@ -805,98 +826,6 @@
   animation: film-timeline 4.5s .15s linear both;
 }
 
-.bottle-film__stage-lines {
-  fill: none;
-  stroke: rgba(211, 247, 250, 0.14);
-  stroke-width: 1;
-  stroke-dasharray: 4 7;
-}
-
-.bottle-film__glass {
-  filter: drop-shadow(0 24px 28px rgba(0, 10, 14, 0.42));
-}
-
-.bottle-film__liquid {
-  transform: translateY(390px);
-  animation: jug-water-rise 2.7s .66s cubic-bezier(.2, .74, .2, 1) both;
-}
-
-.bottle-film__wave {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: water-surface-drift 2.2s ease-in-out 3.25s infinite alternate;
-}
-
-.bottle-film__wave--rear {
-  animation-direction: alternate-reverse;
-  animation-duration: 2.8s;
-}
-
-.bottle-film__stream {
-  opacity: 0;
-  animation: jug-stream-flow 4s .2s ease-in-out both;
-}
-
-.bottle-film__stream path:first-child {
-  stroke-dasharray: 28 7;
-  animation: stream-dash .42s linear infinite;
-}
-
-.bottle-film__cap {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: jug-cap-sequence 4.25s cubic-bezier(.22, 1, .36, 1) both;
-}
-
-.bottle-film__handle,
-.bottle-film__label,
-.bottle-film__highlight {
-  opacity: 0;
-  animation: film-object-reveal .8s .32s ease-out both;
-}
-
-.bottle-film__label {
-  animation-delay: 3.15s;
-}
-
-.bottle-film__glint {
-  opacity: 0;
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: film-glint .8s 3.72s ease-out both;
-}
-
-.bottle-film__caustic {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: caustic-shift 2.8s 3.2s ease-in-out infinite alternate;
-}
-
-.bottle-film__caustic--two {
-  animation-direction: alternate-reverse;
-}
-
-.bottle-film__bubble {
-  opacity: 0;
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: bubble-rise 2.5s 2.4s ease-in infinite;
-}
-
-.bottle-film__bubble--two {
-  animation-delay: 2.8s;
-  animation-duration: 2.1s;
-}
-
-.bottle-film__bubble--three {
-  animation-delay: 3.1s;
-  animation-duration: 2.8s;
-}
-
-.bottle-film__bubble--four {
-  animation-delay: 3.45s;
-  animation-duration: 2.25s;
-}
 
 .bottle-film:not(.is-playing) *,
 .bottle-film:not(.is-playing)::after {
@@ -907,19 +836,58 @@
 
 .pre-webgl-shell {
   position: relative;
+  margin-top: -28px;
   overflow: hidden;
   color: var(--hs-white);
   background:
-    linear-gradient(rgba(150, 225, 242, 0.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(150, 225, 242, 0.025) 1px, transparent 1px),
-    var(--hs-navy-950);
-  background-size: 64px 64px;
+    radial-gradient(ellipse at 50% -4%, rgba(94, 235, 219, 0.16), transparent 40%),
+    radial-gradient(circle at 88% 16%, rgba(64, 132, 245, 0.15), transparent 30%),
+    radial-gradient(circle at 6% 48%, rgba(58, 208, 190, 0.12), transparent 30%),
+    radial-gradient(circle at 92% 82%, rgba(64, 132, 245, 0.12), transparent 32%),
+    linear-gradient(rgba(182, 242, 239, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(182, 242, 239, 0.02) 1px, transparent 1px),
+    linear-gradient(168deg, #05202f 0%, #04182a 26%, #041424 58%, #030f1d 82%, #020b16 100%);
+  background-size: auto, auto, auto, auto, 80px 80px, 80px 80px, auto;
+  border-radius: 44px 44px 0 0;
+  box-shadow: 0 -28px 82px rgba(6, 60, 74, 0.28);
   isolation: isolate;
+}
+
+.pre-webgl-shell::before,
+.pre-webgl-shell::after {
+  position: absolute;
+  z-index: 0;
+  right: 0;
+  left: 0;
+  pointer-events: none;
+  content: '';
+}
+
+.pre-webgl-shell::before {
+  top: 0;
+  height: 180px;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(177, 247, 252, 0.22), transparent 62%),
+    linear-gradient(90deg, transparent 3%, rgba(105, 231, 247, 0.1) 30%, rgba(59, 140, 255, 0.12) 70%, transparent 97%);
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0.78) 34%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, 0.78) 34%, transparent 100%);
+}
+
+.pre-webgl-shell::after {
+  top: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent 4%, rgba(121, 242, 197, 0.7), var(--hs-cyan), rgba(59, 140, 255, 0.78), transparent 96%);
+  box-shadow: 0 16px 46px rgba(105, 231, 247, 0.3);
+}
+
+.pre-webgl-shell > :not(.pre-webgl-shell__atmosphere):not(.pre-webgl-shell__illustration) {
+  position: relative;
+  z-index: 1;
 }
 
 .pre-webgl-shell__atmosphere {
   position: absolute;
-  z-index: -1;
+  z-index: 0;
   inset: 0;
   overflow: hidden;
   pointer-events: none;
@@ -958,56 +926,74 @@
   animation-delay: -11s;
 }
 
+.pre-webgl-shell__illustration {
+  position: absolute;
+  z-index: 0;
+  top: 34px;
+  left: 50%;
+  width: max(1180px, 112vw);
+  height: 720px;
+  pointer-events: none;
+  opacity: 0.88;
+  mix-blend-mode: screen;
+  transform: translateX(-50%);
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 69%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 0%, #000 69%, transparent 100%);
+}
+
+.pre-webgl-shell__illustration svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.pre-webgl-shell__sun {
+  fill: rgba(152, 245, 228, 0.025);
+  stroke: rgba(170, 247, 234, 0.25);
+  stroke-width: 1;
+}
+
+.pre-webgl-shell__ridge {
+  stroke: rgba(167, 239, 232, 0.27);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.25;
+}
+
+.pre-webgl-shell__ridge--back {
+  stroke: rgba(130, 198, 226, 0.18);
+  stroke-width: 1;
+}
+
+.pre-webgl-shell__snow {
+  stroke: rgba(220, 255, 250, 0.38);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.2;
+}
+
+.pre-webgl-shell__spring {
+  stroke: rgba(102, 228, 220, 0.36);
+  stroke-linecap: round;
+  stroke-width: 1.6;
+}
+
+.pre-webgl-shell__water-lines {
+  stroke: rgba(113, 206, 226, 0.2);
+  stroke-linecap: round;
+  stroke-width: 1;
+}
+
+/* The live stats strip reuses the .ops-kpi card styling defined further
+   below (shared with the operations board), so only the grid wrapper is
+   defined here. */
 .landing-stats {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
   width: min(var(--hs-max), calc(100% - 48px));
   margin: 0 auto;
-  padding: 56px 0 20px;
-}
-
-.landing-stats > div {
-  min-height: 108px;
-  padding: 18px 20px;
-  background: rgba(241, 252, 255, 0.035);
-  border-top: 1px solid var(--hs-line-dark);
-  border-right: 1px solid var(--hs-line-dark);
-  border-bottom: 1px solid var(--hs-line-dark);
-  backdrop-filter: blur(14px);
-}
-
-.landing-stats > div:first-child {
-  border-left: 1px solid var(--hs-line-dark);
-  border-radius: 22px 0 0 22px;
-}
-
-.landing-stats > div:last-child {
-  border-radius: 0 22px 22px 0;
-}
-
-.landing-stats strong {
-  display: block;
-  color: var(--hs-white) !important;
-  font-family: var(--hs-display);
-  font-size: clamp(20px, 2.2vw, 28px);
-  font-weight: 800;
-  line-height: 1;
-  -webkit-text-fill-color: var(--hs-white) !important;
-}
-
-.landing-stats span {
-  display: block;
-  margin-top: 12px;
-  color: #c5d9e0 !important;
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.35;
-  -webkit-text-fill-color: #c5d9e0 !important;
-}
-
-.landing-stats .is-accent strong {
-  color: #83ecf8 !important;
-  -webkit-text-fill-color: #83ecf8 !important;
+  padding: 76px 0 24px;
 }
 
 .legacy-section-heading {
@@ -1070,10 +1056,914 @@
 }
 
 .scroll-story {
-  width: min(940px, calc(100% - 48px));
+  width: min(var(--hs-max), calc(100% - 48px));
   margin: 0 auto;
-  padding: 72px 0 60px;
+  padding: 82px 0 92px;
   scroll-margin-top: 80px;
+}
+
+.workflow-showcase {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(240px, 0.3fr) minmax(0, 1fr);
+  min-height: 0;
+  margin-top: 28px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 16% 8%, rgba(121, 242, 197, 0.13), transparent 31%),
+    linear-gradient(145deg, rgba(6, 30, 43, 0.72), rgba(5, 23, 39, 0.84));
+  border: 1px solid rgba(153, 230, 235, 0.24);
+  border-radius: 36px;
+  box-shadow:
+    0 38px 110px rgba(0, 14, 25, 0.33),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  isolation: isolate;
+}
+
+.workflow-showcase::before {
+  position: absolute;
+  z-index: -1;
+  right: -130px;
+  bottom: -210px;
+  width: 560px;
+  height: 560px;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(61, 174, 218, 0.18), transparent 68%);
+  border-radius: 50%;
+  content: '';
+}
+
+.workflow-sequence {
+  position: relative;
+  z-index: 2;
+  padding: 13px 16px;
+  background: linear-gradient(180deg, rgba(10, 47, 58, 0.74), rgba(5, 26, 42, 0.84));
+  border-right: 1px solid rgba(165, 230, 234, 0.15);
+}
+
+.workflow-sequence__intro {
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(171, 230, 234, 0.14);
+}
+
+.workflow-sequence__intro > span {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  color: #b3f8e6 !important;
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  -webkit-text-fill-color: #b3f8e6 !important;
+}
+
+.workflow-sequence__intro > span i,
+.workflow-dashboard__live i,
+.workflow-dashboard__sync i {
+  display: block;
+  width: 7px;
+  height: 7px;
+  background: var(--hs-mint);
+  border-radius: 50%;
+  box-shadow: 0 0 0 5px rgba(121, 242, 197, 0.1);
+}
+
+.workflow-sequence__intro p {
+  display: -webkit-box;
+  margin: 5px 0 8px;
+  overflow: hidden;
+  color: #cfe5e7 !important;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  -webkit-text-fill-color: #cfe5e7 !important;
+}
+
+.workflow-playback {
+  display: inline-flex;
+  gap: 9px;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 0 12px;
+  color: #e9ffff !important;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  background: rgba(173, 241, 240, 0.08);
+  border: 1px solid rgba(173, 241, 240, 0.2);
+  border-radius: 999px;
+  cursor: pointer;
+  -webkit-text-fill-color: #e9ffff !important;
+}
+
+.workflow-playback:hover {
+  background: rgba(173, 241, 240, 0.15);
+  border-color: rgba(173, 241, 240, 0.38);
+}
+
+.workflow-playback:focus-visible,
+.workflow-sequence__step button:focus-visible {
+  outline: 3px solid rgba(105, 231, 247, 0.74);
+  outline-offset: 3px;
+}
+
+.workflow-sequence ol {
+  display: grid;
+  gap: 0;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.workflow-sequence__step {
+  position: relative;
+  opacity: 0.54;
+  transition: opacity 260ms ease, transform 260ms ease;
+}
+
+.workflow-sequence__step + .workflow-sequence__step {
+  border-top: 1px solid rgba(171, 230, 234, 0.1);
+}
+
+.workflow-sequence__step.is-active {
+  opacity: 1;
+  transform: translateX(4px);
+}
+
+.workflow-sequence__step button {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 10px;
+  width: 100%;
+  min-height: 0;
+  padding: 4px 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.workflow-sequence__icon {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  margin-top: 1px;
+  color: #b9e9ed !important;
+  background: rgba(174, 235, 236, 0.07);
+  border: 1px solid rgba(174, 235, 236, 0.16);
+  border-radius: 13px;
+  place-items: center;
+  transition: color 240ms ease, background 240ms ease, border-color 240ms ease, box-shadow 240ms ease;
+  -webkit-text-fill-color: #b9e9ed !important;
+}
+
+.workflow-sequence__step.is-active .workflow-sequence__icon {
+  color: #092a35 !important;
+  background: linear-gradient(135deg, #c8fff1, var(--hs-cyan));
+  border-color: transparent;
+  box-shadow: 0 10px 28px rgba(58, 202, 213, 0.24);
+  -webkit-text-fill-color: #092a35 !important;
+}
+
+.workflow-sequence__copy {
+  display: grid;
+  min-width: 0;
+}
+
+.workflow-sequence__copy small {
+  color: #8bdce3 !important;
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  -webkit-text-fill-color: #8bdce3 !important;
+}
+
+.workflow-sequence__copy strong {
+  margin-top: 2px;
+  color: var(--hs-white) !important;
+  font-family: var(--hs-display);
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.05;
+  text-transform: uppercase;
+  -webkit-text-fill-color: var(--hs-white) !important;
+}
+
+.workflow-sequence__copy > span {
+  display: -webkit-box;
+  margin-top: 3px;
+  overflow: hidden;
+  color: #c5dadd !important;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.3;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  -webkit-text-fill-color: #c5dadd !important;
+}
+
+.workflow-sequence__step.is-active .workflow-sequence__copy > span {
+  -webkit-line-clamp: 2;
+}
+
+.workflow-dashboard {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  margin: 14px;
+  overflow: hidden;
+  color: #123947;
+  background:
+    radial-gradient(circle at 92% 2%, rgba(40, 179, 188, 0.11), transparent 32%),
+    linear-gradient(180deg, #f8fcfb 0%, #ebf7f6 100%);
+  border: 1px solid rgba(210, 244, 240, 0.92);
+  border-radius: 26px;
+  box-shadow:
+    0 30px 80px rgba(0, 13, 25, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.workflow-dashboard__topbar {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 20px;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 14px;
+  background: rgba(255, 255, 255, 0.7);
+  border-bottom: 1px solid rgba(17, 86, 100, 0.11);
+}
+
+.workflow-dashboard__brand {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  min-width: 0;
+}
+
+.workflow-dashboard__brand > span:first-child {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  color: #0b4a58;
+  background: linear-gradient(135deg, #c4faf2, #8fe9ec);
+  border-radius: 11px;
+  place-items: center;
+}
+
+.workflow-dashboard__brand > span:last-child {
+  display: grid;
+  line-height: 1;
+}
+
+.workflow-dashboard__brand strong,
+.workflow-dashboard__brand small {
+  color: #123947 !important;
+  -webkit-text-fill-color: #123947 !important;
+}
+
+.workflow-dashboard__brand strong {
+  font-family: var(--hs-display);
+  font-size: 15px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.workflow-dashboard__brand small {
+  margin-top: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.workflow-dashboard__modules {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+
+.workflow-dashboard__modules > span {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 8px;
+  color: #66808a !important;
+  font-size: 10px;
+  font-weight: 750;
+  white-space: nowrap;
+  border-radius: 9px;
+  -webkit-text-fill-color: #66808a !important;
+}
+
+.workflow-dashboard__modules > span.is-active {
+  color: #08798b !important;
+  background: rgba(23, 157, 172, 0.08);
+  -webkit-text-fill-color: #08798b !important;
+}
+
+.workflow-dashboard__status {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.workflow-dashboard__live {
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+  color: #47717b !important;
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  -webkit-text-fill-color: #47717b !important;
+}
+
+.workflow-dashboard__live i {
+  width: 6px;
+  height: 6px;
+  box-shadow: 0 0 0 4px rgba(72, 193, 141, 0.1);
+}
+
+.workflow-dashboard__bell {
+  position: relative;
+  display: grid;
+  width: 34px;
+  height: 34px;
+  color: #174d5a;
+  background: rgba(17, 92, 107, 0.055);
+  border: 1px solid rgba(17, 92, 107, 0.1);
+  border-radius: 11px;
+  place-items: center;
+}
+
+.workflow-dashboard__bell b {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  display: grid;
+  width: 18px;
+  height: 18px;
+  color: #fff !important;
+  font-size: 9px;
+  background: #ef6a64;
+  border: 2px solid #f7fcfb;
+  border-radius: 50%;
+  place-items: center;
+  -webkit-text-fill-color: #fff !important;
+}
+
+.workflow-showcase--phase-0.is-playing .workflow-dashboard__bell svg {
+  animation: workflow-bell-ring 560ms ease-in-out 2;
+  transform-origin: 50% 12%;
+}
+
+.workflow-showcase--phase-0.is-playing .workflow-dashboard__bell b {
+  animation: workflow-badge-pop 520ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.workflow-dashboard__heading {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 7px 16px 6px;
+}
+
+.workflow-dashboard__heading > div {
+  display: grid;
+}
+
+.workflow-dashboard__heading > div > span {
+  color: #188594 !important;
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  -webkit-text-fill-color: #188594 !important;
+}
+
+.workflow-dashboard__heading > div > strong {
+  margin-top: 4px;
+  color: #123441 !important;
+  font-family: var(--hs-display);
+  font-size: clamp(17px, 1.8vw, 21px);
+  font-weight: 850;
+  line-height: 1;
+  -webkit-text-fill-color: #123441 !important;
+}
+
+.workflow-dashboard__sync {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 10px;
+  color: #4a7178 !important;
+  font-size: 10px;
+  font-weight: 750;
+  white-space: nowrap;
+  background: rgba(35, 145, 152, 0.06);
+  border-radius: 999px;
+  -webkit-text-fill-color: #4a7178 !important;
+}
+
+.workflow-dashboard__sync i {
+  width: 6px;
+  height: 6px;
+  box-shadow: none;
+}
+
+.workflow-dashboard__metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0 18px;
+  border-top: 1px solid rgba(18, 79, 91, 0.1);
+  border-bottom: 1px solid rgba(18, 79, 91, 0.1);
+}
+
+.workflow-metric {
+  position: relative;
+  min-width: 0;
+  padding: 5px 10px 5px;
+}
+
+.workflow-metric + .workflow-metric {
+  border-left: 1px solid rgba(18, 79, 91, 0.1);
+}
+
+.workflow-metric > span,
+.workflow-metric > strong,
+.workflow-metric > small {
+  display: block;
+}
+
+.workflow-metric > span {
+  min-height: 0;
+  color: #66818a !important;
+  font-size: 11px;
+  font-weight: 750;
+  line-height: 1.2;
+  -webkit-text-fill-color: #66818a !important;
+}
+
+.workflow-metric > strong {
+  margin-top: 2px;
+  color: #133b47 !important;
+  font-family: var(--hs-display);
+  font-size: 21px;
+  font-weight: 850;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  -webkit-text-fill-color: #133b47 !important;
+}
+
+.workflow-metric > small {
+  width: max-content;
+  max-width: 100%;
+  margin-top: 7px;
+  padding: 3px 7px;
+  color: #34717a !important;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1.2;
+  background: rgba(39, 151, 159, 0.07);
+  border-radius: 999px;
+  transition: color 260ms ease, background 260ms ease, transform 260ms ease;
+  -webkit-text-fill-color: #34717a !important;
+}
+
+.workflow-showcase--phase-0 .workflow-metric--customers small,
+.workflow-showcase--phase-1 .workflow-metric--orders small,
+.workflow-showcase--phase-2 .workflow-metric--route small,
+.workflow-showcase--phase-3 .workflow-metric--bottles small {
+  color: #086b57 !important;
+  background: rgba(65, 196, 147, 0.18);
+  transform: translateY(-2px);
+  -webkit-text-fill-color: #086b57 !important;
+}
+
+.workflow-dashboard__insights {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(215px, 0.65fr);
+  min-width: 0;
+  min-height: 0;
+}
+
+.workflow-sales-chart {
+  min-width: 0;
+  padding: 10px 14px 8px;
+}
+
+.workflow-sales-chart header,
+.workflow-bottle-flow header,
+.workflow-activity header {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.workflow-sales-chart header > div {
+  display: grid;
+}
+
+.workflow-sales-chart header span,
+.workflow-bottle-flow header span,
+.workflow-activity header span {
+  color: #577780 !important;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  -webkit-text-fill-color: #577780 !important;
+}
+
+.workflow-sales-chart header strong {
+  margin-top: 3px;
+  color: #133b47 !important;
+  font-family: var(--hs-display);
+  font-size: 26px;
+  font-weight: 850;
+  line-height: 1;
+  -webkit-text-fill-color: #133b47 !important;
+}
+
+.workflow-sales-chart__growth {
+  padding: 4px 8px;
+  color: #08775f !important;
+  font-size: 10px !important;
+  background: rgba(52, 188, 139, 0.12);
+  border-radius: 999px;
+  -webkit-text-fill-color: #08775f !important;
+}
+
+.workflow-sales-chart svg {
+  display: block;
+  width: 100%;
+  height: 58px;
+  margin-top: 3px;
+  overflow: visible;
+}
+
+.workflow-sales-chart__grid {
+  fill: none;
+  stroke: rgba(37, 105, 117, 0.13);
+  stroke-width: 1;
+}
+
+.workflow-sales-chart__area {
+  fill: url(#landing-workflow-sales-area);
+  opacity: 0.46;
+  transition: opacity 800ms ease;
+}
+
+.workflow-sales-chart__line {
+  fill: none;
+  stroke: #1597a8;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0.18;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 4;
+  transition: stroke-dashoffset 900ms cubic-bezier(0.22, 1, 0.36, 1), stroke 400ms ease;
+  vector-effect: non-scaling-stroke;
+}
+
+.workflow-sales-chart__points {
+  fill: #f7fffe;
+  stroke: #1597a8;
+  stroke-width: 3;
+}
+
+.workflow-sales-chart__points circle:last-child {
+  transition: transform 680ms cubic-bezier(0.22, 1, 0.36, 1);
+  transform: scale(0.68);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.workflow-showcase--phase-3 .workflow-sales-chart__line {
+  stroke: #0fbaa5;
+  stroke-dashoffset: 0;
+}
+
+.workflow-showcase--phase-3 .workflow-sales-chart__area {
+  opacity: 0.78;
+}
+
+.workflow-showcase--phase-3 .workflow-sales-chart__points circle:last-child {
+  transform: scale(1.35);
+}
+
+.workflow-sales-chart__labels {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-top: -2px;
+}
+
+.workflow-sales-chart__labels span {
+  color: #708a91 !important;
+  font-size: 9px;
+  font-weight: 700;
+  text-align: center;
+  -webkit-text-fill-color: #708a91 !important;
+}
+
+.workflow-dashboard__side {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-width: 0;
+  border-left: 1px solid rgba(18, 79, 91, 0.1);
+}
+
+.workflow-bottle-flow {
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(18, 79, 91, 0.1);
+}
+
+.workflow-bottle-flow header strong {
+  color: #1d6571 !important;
+  font-size: 10px;
+  font-weight: 850;
+  text-transform: uppercase;
+  -webkit-text-fill-color: #1d6571 !important;
+}
+
+.workflow-bottle-flow__figure {
+  display: flex;
+  gap: 13px;
+  align-items: center;
+  margin-top: 9px;
+}
+
+.workflow-bottle-flow__ring {
+  position: relative;
+  display: grid;
+  flex: 0 0 auto;
+  width: 52px;
+  height: 52px;
+  background: conic-gradient(#159caf 0 64%, #78d8be 64% 100%);
+  border-radius: 50%;
+  place-items: center;
+  transition: transform 540ms cubic-bezier(0.22, 1, 0.36, 1), filter 540ms ease;
+}
+
+.workflow-bottle-flow__ring::after {
+  position: absolute;
+  width: 64px;
+  height: 64px;
+  background: #eff9f7;
+  border-radius: 50%;
+  content: '';
+}
+
+.workflow-bottle-flow__ring > span {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  text-align: center;
+}
+
+.workflow-bottle-flow__ring strong {
+  color: #153d48 !important;
+  font-family: var(--hs-display);
+  font-size: 23px;
+  line-height: 1;
+  -webkit-text-fill-color: #153d48 !important;
+}
+
+.workflow-bottle-flow__ring small {
+  margin-top: 2px;
+  color: #67828a !important;
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  -webkit-text-fill-color: #67828a !important;
+}
+
+.workflow-showcase--phase-3 .workflow-bottle-flow__ring {
+  filter: drop-shadow(0 9px 14px rgba(27, 158, 159, 0.19));
+  transform: scale(1.06) rotate(3deg);
+}
+
+.workflow-bottle-flow__legend {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.workflow-bottle-flow__legend > span {
+  display: grid;
+  grid-template-columns: 8px 1fr auto;
+  gap: 7px;
+  align-items: center;
+  color: #577780 !important;
+  font-size: 10px;
+  font-weight: 700;
+  -webkit-text-fill-color: #577780 !important;
+}
+
+.workflow-bottle-flow__legend i {
+  width: 7px;
+  height: 7px;
+  background: #159caf;
+  border-radius: 50%;
+}
+
+.workflow-bottle-flow__legend > span:last-child i {
+  background: #78d8be;
+}
+
+.workflow-bottle-flow__legend strong {
+  color: #173f49 !important;
+  font-size: 11px;
+  -webkit-text-fill-color: #173f49 !important;
+}
+
+.workflow-activity {
+  min-height: 0;
+  padding: 10px 14px 10px;
+}
+
+.workflow-activity header small {
+  color: #66828a !important;
+  font-size: 9px;
+  font-weight: 700;
+  -webkit-text-fill-color: #66828a !important;
+}
+
+.workflow-activity ol {
+  display: grid;
+  gap: 3px;
+  margin: 7px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.workflow-activity li {
+  display: grid;
+  grid-template-columns: 21px minmax(0, 1fr) auto;
+  gap: 7px;
+  align-items: center;
+  min-width: 0;
+  padding: 1px 0;
+  opacity: 0.42;
+  transition: opacity 280ms ease, transform 280ms ease;
+}
+
+.workflow-activity li > span:first-child {
+  display: grid;
+  width: 21px;
+  height: 21px;
+  color: #167b89;
+  background: rgba(17, 133, 147, 0.08);
+  border-radius: 9px;
+  place-items: center;
+}
+
+.workflow-activity li > span:nth-child(2) {
+  display: grid;
+  min-width: 0;
+}
+
+.workflow-activity li strong {
+  overflow: hidden;
+  color: #244b55 !important;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  -webkit-text-fill-color: #244b55 !important;
+}
+
+.workflow-activity li small,
+.workflow-activity li time {
+  color: #718b91 !important;
+  font-size: 8px;
+  font-weight: 650;
+  line-height: 1.2;
+  -webkit-text-fill-color: #718b91 !important;
+}
+
+.workflow-showcase--phase-0 .workflow-activity li:nth-child(1),
+.workflow-showcase--phase-1 .workflow-activity li:nth-child(2),
+.workflow-showcase--phase-2 .workflow-activity li:nth-child(3),
+.workflow-showcase--phase-3 .workflow-activity li:nth-child(4) {
+  opacity: 1;
+  transform: translateX(3px);
+}
+
+.workflow-notification {
+  position: absolute;
+  z-index: 8;
+  top: 72px;
+  right: 20px;
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  width: min(310px, calc(100% - 40px));
+  min-height: 70px;
+  padding: 10px 12px;
+  color: var(--hs-white);
+  background:
+    radial-gradient(circle at 4% 0%, rgba(116, 238, 215, 0.2), transparent 42%),
+    rgba(6, 35, 48, 0.94);
+  border: 1px solid rgba(136, 229, 225, 0.28);
+  border-radius: 17px;
+  box-shadow: 0 22px 50px rgba(0, 28, 40, 0.25);
+  backdrop-filter: blur(18px);
+}
+
+.workflow-notification__icon {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  color: #0b3e4a;
+  background: linear-gradient(135deg, #caffee, #81e6e6);
+  border-radius: 12px;
+  place-items: center;
+}
+
+.workflow-notification > span:nth-child(2) {
+  display: grid;
+  min-width: 0;
+}
+
+.workflow-notification strong,
+.workflow-notification small,
+.workflow-notification time {
+  color: inherit !important;
+  -webkit-text-fill-color: currentColor !important;
+}
+
+.workflow-notification strong {
+  overflow: hidden;
+  font-size: 11px;
+  font-weight: 850;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workflow-notification small {
+  margin-top: 3px;
+  color: #b9dadd !important;
+  font-size: 9px;
+  font-weight: 650;
+  -webkit-text-fill-color: #b9dadd !important;
+}
+
+.workflow-notification time {
+  color: #89dae0 !important;
+  font-size: 9px;
+  font-weight: 750;
+  -webkit-text-fill-color: #89dae0 !important;
+}
+
+.workflow-dashboard__progress {
+  position: absolute;
+  z-index: 10;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 4px;
+  overflow: hidden;
+  background: rgba(19, 117, 132, 0.08);
+}
+
+.workflow-dashboard__progress span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, #6ce2c2, #23b1be, #3f8ff4);
+  box-shadow: 0 0 16px rgba(36, 174, 190, 0.38);
+  transform-origin: left;
+}
+
+@keyframes workflow-bell-ring {
+  0%, 100% { transform: rotate(0); }
+  30% { transform: rotate(10deg); }
+  65% { transform: rotate(-8deg); }
+}
+
+@keyframes workflow-badge-pop {
+  0% { opacity: 0; transform: scale(0.45); }
+  70% { opacity: 1; transform: scale(1.18); }
+  100% { opacity: 1; transform: scale(1); }
 }
 
 .story-timeline {
@@ -1521,56 +2411,6 @@
   to { transform: scaleX(1); }
 }
 
-@keyframes film-object-reveal {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes jug-water-rise {
-  0% { transform: translateY(390px); }
-  78% { transform: translateY(-6px); }
-  90% { transform: translateY(3px); }
-  100% { transform: translateY(0); }
-}
-
-@keyframes water-surface-drift {
-  from { transform: translateX(-8px) rotate(-.5deg); }
-  to { transform: translateX(9px) rotate(.7deg); }
-}
-
-@keyframes jug-stream-flow {
-  0%, 8% { opacity: 0; transform: scaleY(.4); transform-origin: top; }
-  18%, 72% { opacity: 1; transform: scaleY(1); transform-origin: top; }
-  90%, 100% { opacity: 0; transform: scaleY(.88); transform-origin: top; }
-}
-
-@keyframes stream-dash {
-  to { stroke-dashoffset: -35; }
-}
-
-@keyframes jug-cap-sequence {
-  0%, 8% { transform: translate(0, 0) rotate(0); }
-  23%, 72% { transform: translate(86px, -42px) rotate(17deg); }
-  90%, 100% { transform: translate(0, 0) rotate(0); }
-}
-
-@keyframes caustic-shift {
-  from { opacity: .4; transform: translate(-12px, 8px) scale(.82); }
-  to { opacity: .78; transform: translate(14px, -10px) scale(1.15); }
-}
-
-@keyframes bubble-rise {
-  0% { opacity: 0; transform: translateY(38px) scale(.4); }
-  22% { opacity: .85; }
-  100% { opacity: 0; transform: translateY(-155px) scale(1.15); }
-}
-
-@keyframes film-glint {
-  0% { opacity: 0; transform: scale(.25) rotate(0); }
-  45% { opacity: .92; transform: scale(1) rotate(34deg); }
-  100% { opacity: 0; transform: scale(1.6) rotate(68deg); }
-}
-
 @keyframes atmosphere-drift {
   0%, 100% { transform: translate(0, 0) scale(1); }
   50% { transform: translate(42px, -30px) scale(1.08); }
@@ -1600,7 +2440,7 @@
   }
 
   .bottle-film {
-    height: 600px;
+    height: 640px;
   }
 }
 
@@ -1731,31 +2571,42 @@
   }
 
   .landing-stats {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
     width: calc(100% - 36px);
   }
 
-  .landing-stats > div,
-  .landing-stats > div:first-child,
-  .landing-stats > div:last-child {
-    border: 1px solid var(--hs-line-dark);
-    border-radius: 0;
+  .landing-stats > .ops-kpi {
+    border-radius: 22px;
   }
 
-  .landing-stats > div:first-child {
-    border-radius: 20px 0 0 0;
+  .workflow-showcase {
+    grid-template-columns: 1fr;
+    min-height: 0;
+    border-radius: 30px;
   }
 
-  .landing-stats > div:nth-child(2) {
-    border-radius: 0 20px 0 0;
+  .workflow-sequence {
+    padding: 24px;
+    border-right: 0;
+    border-bottom: 1px solid rgba(165, 230, 234, 0.15);
   }
 
-  .landing-stats > div:nth-child(3) {
-    border-radius: 0 0 0 20px;
+  .workflow-sequence ol {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 20px;
   }
 
-  .landing-stats > div:last-child {
-    border-radius: 0 0 20px 0;
+  .workflow-sequence__step:nth-child(2) {
+    border-top: 0;
+  }
+
+  .workflow-sequence__step button {
+    min-height: 96px;
+  }
+
+  .workflow-dashboard {
+    margin: 14px;
   }
 
   .scroll-story,
@@ -1784,6 +2635,13 @@
 }
 
 @media (max-width: 600px) {
+  /* The interactive "See every signup, order and sale…" workflow board is
+     dense and pointer-driven; drop the whole section on phones — the top live
+     KPI strip and the operations console already carry the live-data story. */
+  #delivery.scroll-story {
+    display: none;
+  }
+
   .landing-nav {
     min-height: 72px;
   }
@@ -1832,6 +2690,11 @@
     padding-bottom: 86px;
   }
 
+  .pre-webgl-shell {
+    margin-top: -20px;
+    border-radius: 30px 30px 0 0;
+  }
+
   .refill-film-section__heading {
     margin-bottom: 36px;
   }
@@ -1844,21 +2707,16 @@
     font-size: 15px;
   }
 
-  .product-film-frame__topline {
-    padding: 0 4px;
+  /* The refill video is heavy relative to its payoff on a small screen —
+     drop it and let the copy panel (with its own bullet-point summary of
+     what the film shows) carry the section alone. */
+  .product-film-frame {
+    display: none;
   }
 
-  .product-film-frame__topline > span {
-    max-width: 140px;
-  }
-
-  .product-film-frame__topline button {
-    padding: 0 12px;
-  }
-
-  .bottle-film {
-    height: min(610px, 150vw);
-    border-radius: 22px;
+  .refill-film-copy {
+    padding-top: 42px;
+    border-top: 0;
   }
 
   .refill-film-copy h3 {
@@ -1866,16 +2724,136 @@
   }
 
   .landing-stats {
-    padding-top: 64px;
+    padding-top: 70px;
   }
 
-  .landing-stats > div {
-    min-height: 126px;
-    padding: 20px 16px;
+  .landing-stats > .ops-kpi {
+    min-height: 128px;
+    padding: 14px 16px;
   }
 
-  .landing-stats strong {
+  .landing-stats .ops-kpi__body strong {
+    margin-top: 10px;
+    font-size: clamp(22px, 7vw, 28px);
+  }
+
+  .workflow-showcase {
+    margin-top: 30px;
+    border-radius: 26px;
+  }
+
+  .workflow-sequence {
+    padding: 20px;
+  }
+
+  .workflow-sequence ol {
+    grid-template-columns: 1fr;
+  }
+
+  .workflow-sequence__step:nth-child(2) {
+    border-top: 1px solid rgba(171, 230, 234, 0.1);
+  }
+
+  .workflow-sequence__step button {
+    min-height: 94px;
+  }
+
+  .workflow-dashboard {
+    padding-bottom: 88px;
+    margin: 8px;
+    border-radius: 20px;
+  }
+
+  .workflow-dashboard__topbar {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 8px;
+    padding: 0 10px;
+  }
+
+  .workflow-dashboard__brand > span:last-child small,
+  .workflow-dashboard__modules small,
+  .workflow-dashboard__live {
+    display: none;
+  }
+
+  .workflow-dashboard__modules {
+    gap: 1px;
+    justify-content: flex-end;
+  }
+
+  .workflow-dashboard__modules > span {
+    min-height: 30px;
+    padding: 0 5px;
+  }
+
+  .workflow-dashboard__heading {
+    padding: 18px 14px 14px;
+  }
+
+  .workflow-dashboard__heading > div > strong {
+    font-size: 22px;
+  }
+
+  .workflow-dashboard__sync {
+    display: none;
+  }
+
+  .workflow-dashboard__metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin: 0 14px;
+  }
+
+  .workflow-metric {
+    padding: 13px 10px;
+  }
+
+  .workflow-metric:nth-child(3) {
+    border-top: 1px solid rgba(18, 79, 91, 0.1);
+    border-left: 0;
+  }
+
+  .workflow-metric:nth-child(4) {
+    border-top: 1px solid rgba(18, 79, 91, 0.1);
+  }
+
+  .workflow-metric > span {
+    min-height: 27px;
+    font-size: 10px;
+  }
+
+  .workflow-metric > strong {
     font-size: 24px;
+  }
+
+  .workflow-dashboard__insights {
+    grid-template-columns: 1fr;
+  }
+
+  .workflow-sales-chart {
+    padding: 18px 14px 16px;
+  }
+
+  .workflow-sales-chart svg {
+    height: 178px;
+  }
+
+  .workflow-dashboard__side {
+    border-top: 1px solid rgba(18, 79, 91, 0.1);
+    border-left: 0;
+  }
+
+  .workflow-notification {
+    position: absolute;
+    top: auto;
+    right: 14px;
+    bottom: 18px;
+    left: 14px;
+    width: auto;
+    margin: 0;
+  }
+
+  .workflow-activity li time {
+    display: none;
   }
 
   .scroll-story {
@@ -1993,16 +2971,6 @@
     transition-duration: 0.01ms !important;
   }
 
-  .bottle-film__liquid,
-  .bottle-film__cap,
-  .bottle-film__handle,
-  .bottle-film__label,
-  .bottle-film__highlight {
-    opacity: 1;
-    transform: none;
-  }
-
-  .bottle-film__stream,
   .bottle-film::after {
     display: none;
   }
@@ -2027,32 +2995,26 @@
   to { background-position: 220% 0; }
 }
 
-.landing-stats > div {
-  position: relative;
-  overflow: hidden;
-  transition: background-color 240ms ease, transform 240ms ease;
+.landing-stats > .ops-kpi {
+  transition: border-color 240ms ease, box-shadow 240ms ease;
 }
 
-.landing-stats > div::before {
-  position: absolute;
-  top: 0;
-  right: 0;
-  left: 0;
-  height: 2px;
-  content: '';
-  background: linear-gradient(90deg, var(--hs-cyan), transparent);
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform 320ms ease;
+.landing-stats > .ops-kpi:hover {
+  border-color: rgba(105, 231, 247, 0.4);
+  box-shadow:
+    0 28px 70px rgba(0, 7, 15, 0.38),
+    0 0 34px rgba(105, 231, 247, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
-.landing-stats > div:hover {
-  background: rgba(241, 252, 255, 0.065);
-  transform: translateY(-3px);
+.landing-stats .ops-kpi__icon {
+  transition: box-shadow 240ms ease;
 }
 
-.landing-stats > div:hover::before {
-  transform: scaleX(1);
+.landing-stats > .ops-kpi:hover .ops-kpi__icon {
+  box-shadow:
+    0 0 24px rgba(105, 231, 247, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.09);
 }
 
 .landing-primary-action {
@@ -2117,14 +3079,13 @@
     animation: none;
   }
 
-  .landing-stats > div,
-  .landing-stats > div::before,
+  .landing-stats > .ops-kpi,
+  .landing-stats .ops-kpi__icon,
   .bento-card::after,
   .story-timeline-dot {
     transition: none;
   }
 
-  .landing-stats > div:hover,
   .story-panel:hover .story-timeline-dot {
     transform: none;
   }
@@ -2235,5 +3196,1061 @@
 
   .landing-cta__bubbles {
     display: none;
+  }
+}
+
+/* ============================================================
+   Operations analytics — full-bleed live dashboard
+   ============================================================ */
+.ops-showcase {
+  position: relative;
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  padding: 62px clamp(20px, 4vw, 64px) 62px;
+  overflow: hidden;
+  isolation: isolate;
+  /* Deep near-black band (real-time-analytics palette) with two soft brand
+     glows, so the live console reads as its own dark zone. */
+  background:
+    radial-gradient(circle at 78% 0%, rgba(74, 160, 255, 0.14), transparent 42%),
+    radial-gradient(circle at 6% 100%, rgba(108, 231, 207, 0.14), transparent 44%),
+    linear-gradient(172deg, #06121d 0%, #040d17 52%, #020912 100%);
+}
+
+/* thin light rules top and bottom so the band reads as its own surface */
+.ops-showcase::before,
+.ops-showcase::after {
+  position: absolute;
+  right: 0;
+  left: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(126, 232, 232, 0.34), transparent);
+  content: '';
+}
+
+.ops-showcase::before { top: 0; }
+.ops-showcase::after { bottom: 0; }
+
+/* ---- decorative vector artifacts ---- */
+.ops-artifacts {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.ops-artifacts__waves {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 46%;
+  stroke: rgba(122, 226, 226, 0.16);
+  stroke-width: 1.2;
+}
+
+.ops-artifacts__waves path:nth-child(2) { stroke: rgba(122, 226, 226, 0.12); }
+.ops-artifacts__waves path:nth-child(3) { stroke: rgba(96, 178, 255, 0.12); }
+.ops-artifacts__waves path:nth-child(4) { stroke: rgba(96, 178, 255, 0.09); }
+
+.ops-artifacts__rings {
+  position: absolute;
+  right: -78px;
+  bottom: -96px;
+  width: 340px;
+  height: 340px;
+  stroke: rgba(121, 242, 197, 0.16);
+  stroke-width: 1.2;
+  animation: ops-rings-spin 64s linear infinite;
+}
+
+.ops-artifacts__drop {
+  position: absolute;
+  top: 54px;
+  left: 3%;
+  width: 96px;
+  height: 120px;
+  stroke: rgba(126, 232, 232, 0.2);
+  stroke-width: 1.3;
+  animation: ops-drift 15s ease-in-out infinite;
+}
+
+.ops-artifacts__dots {
+  position: absolute;
+  right: 8%;
+  bottom: 16%;
+  width: 190px;
+  height: 150px;
+  background-image: radial-gradient(rgba(146, 236, 231, 0.34) 1.4px, transparent 1.4px);
+  background-size: 17px 17px;
+  opacity: 0.5;
+  mask-image: radial-gradient(circle at 50% 50%, #000 38%, transparent 74%);
+  -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 38%, transparent 74%);
+}
+
+.ops-artifacts__orb {
+  position: absolute;
+  display: block;
+  border-radius: 50%;
+  filter: blur(2px);
+}
+
+.ops-artifacts__orb--a {
+  top: 12%;
+  right: 26%;
+  width: 230px;
+  height: 230px;
+  background: radial-gradient(circle, rgba(72, 212, 196, 0.16), transparent 68%);
+  animation: ops-drift 19s ease-in-out infinite;
+}
+
+.ops-artifacts__orb--b {
+  bottom: 6%;
+  left: 16%;
+  width: 280px;
+  height: 280px;
+  background: radial-gradient(circle, rgba(63, 134, 246, 0.15), transparent 70%);
+  animation: ops-drift 24s ease-in-out infinite reverse;
+}
+
+@keyframes ops-rings-spin { to { transform: rotate(360deg); } }
+
+@keyframes ops-drift {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(14px, -16px); }
+}
+
+/* Stage: a non-clipping wrapper so the floating chips can overhang the board
+   edges while the board itself keeps overflow:hidden for its rounded corners. */
+.ops-stage {
+  position: relative;
+  z-index: 1;
+  max-width: 1640px;
+  margin: 0 auto;
+}
+
+.ops-board {
+  position: relative;
+  z-index: 1;
+  padding: 22px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 82% 2%, rgba(74, 160, 255, 0.16), transparent 40%),
+    radial-gradient(circle at 8% 98%, rgba(121, 242, 197, 0.14), transparent 42%),
+    linear-gradient(150deg, rgba(11, 40, 56, 0.72), rgba(6, 20, 34, 0.82));
+  border: 1px solid rgba(153, 230, 235, 0.2);
+  border-radius: 30px;
+  box-shadow:
+    0 40px 120px rgba(0, 10, 20, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  isolation: isolate;
+}
+
+/* indeterminate streaming loader across the very top edge of the board */
+.ops-board__stream {
+  position: absolute;
+  z-index: 5;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 3px;
+  overflow: hidden;
+  background: rgba(126, 232, 232, 0.08);
+}
+
+.ops-board__stream i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 32%;
+  background: linear-gradient(90deg, transparent, #6ce7cf 35%, #4aa0ff 75%, transparent);
+  animation: ops-stream 2.2s ease-in-out infinite;
+}
+
+/* live status ribbon — replaces the removed heading */
+.ops-ribbon {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  gap: 12px 18px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+  padding: 2px 2px 0;
+}
+
+.ops-ribbon__live {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  color: #8ff0e2 !important;
+  font-size: 12px;
+  font-weight: 850;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  -webkit-text-fill-color: #8ff0e2 !important;
+}
+
+.ops-ribbon__live i {
+  width: 8px;
+  height: 8px;
+  background: #6ce7cf;
+  border-radius: 50%;
+  box-shadow: 0 0 0 5px rgba(108, 231, 207, 0.16);
+  animation: ops-pulse 1.8s ease-in-out infinite;
+}
+
+.ops-ribbon__sync {
+  display: inline-flex;
+  gap: 10px;
+  align-items: center;
+  margin-right: auto;
+  color: #9fc9cf !important;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  -webkit-text-fill-color: #9fc9cf !important;
+}
+
+.ops-ribbon__bar {
+  position: relative;
+  width: 72px;
+  height: 5px;
+  overflow: hidden;
+  background: rgba(126, 232, 232, 0.12);
+  border-radius: 999px;
+}
+
+.ops-ribbon__bar i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 44%;
+  background: linear-gradient(90deg, #6ce7cf, #4aa0ff);
+  border-radius: 999px;
+  animation: ops-stream 1.8s ease-in-out infinite;
+}
+
+.ops-ribbon__stamp {
+  color: #86adb5 !important;
+  font-size: 11px;
+  font-weight: 600;
+  -webkit-text-fill-color: #86adb5 !important;
+}
+
+.ops-ribbon__stamp b {
+  color: #cdeef0 !important;
+  font-variant-numeric: tabular-nums;
+  -webkit-text-fill-color: #cdeef0 !important;
+}
+
+/* floating status chips that overhang the board (top-right, bottom-left) */
+.ops-floats {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  pointer-events: none;
+}
+
+.ops-float {
+  position: absolute;
+  display: inline-flex;
+  gap: 10px;
+  align-items: center;
+  padding: 9px 13px;
+  color: var(--hs-white);
+  background: rgba(6, 20, 32, 0.86);
+  border: 1px solid rgba(136, 229, 225, 0.24);
+  border-radius: 14px;
+  box-shadow: 0 18px 40px rgba(0, 12, 22, 0.55);
+  backdrop-filter: blur(12px);
+}
+
+/* Anchor to the board edge (bottom:100% / top:100%) so the chip overhangs
+   cleanly no matter its height, with just a small overlap onto the panel. */
+.ops-float--feed {
+  right: 44px;
+  bottom: 100%;
+  margin-bottom: -15px;
+  animation: ops-float-a 7s ease-in-out infinite;
+}
+
+.ops-float--riders {
+  top: 100%;
+  left: 44px;
+  margin-top: -15px;
+  animation: ops-float-b 8s ease-in-out infinite;
+}
+
+.ops-float__txt {
+  display: grid;
+  line-height: 1.15;
+}
+
+.ops-float__txt strong {
+  color: var(--hs-white) !important;
+  font-size: 13px;
+  font-weight: 850;
+  -webkit-text-fill-color: var(--hs-white) !important;
+}
+
+.ops-float__txt small {
+  margin-top: 2px;
+  color: #a3d3d6 !important;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  -webkit-text-fill-color: #a3d3d6 !important;
+}
+
+/* mini equalizer — reads as a live data/activity meter */
+.ops-eq {
+  display: inline-flex;
+  gap: 3px;
+  align-items: flex-end;
+  height: 18px;
+}
+
+.ops-eq i {
+  width: 3px;
+  height: 6px;
+  background: linear-gradient(180deg, #8ff6df, #23b1be);
+  border-radius: 2px;
+  animation: ops-eq 1s ease-in-out infinite;
+}
+
+.ops-eq i:nth-child(2) { animation-delay: 0.18s; }
+.ops-eq i:nth-child(3) { animation-delay: 0.36s; }
+.ops-eq i:nth-child(4) { animation-delay: 0.12s; }
+
+.ops-float__dots {
+  display: inline-flex;
+}
+
+.ops-float__dots i {
+  width: 22px;
+  height: 22px;
+  margin-left: -7px;
+  background: linear-gradient(135deg, #c9fff0, #69e7f7);
+  border: 2px solid #08161f;
+  border-radius: 50%;
+}
+
+.ops-float__dots i:first-child { margin-left: 0; }
+.ops-float__dots i:nth-child(2) { background: linear-gradient(135deg, #d6ffe8, #79f2c5); }
+.ops-float__dots i:nth-child(3) { background: linear-gradient(135deg, #d8ecff, #7fb6ff); }
+
+.ops-board__glow {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.ops-board__glow i {
+  position: absolute;
+  display: block;
+  border-radius: 50%;
+  filter: blur(6px);
+}
+
+.ops-board__glow i:nth-child(1) { top: -70px; left: 20%; width: 280px; height: 280px; background: radial-gradient(circle, rgba(121, 242, 197, 0.16), transparent 66%); }
+.ops-board__glow i:nth-child(2) { right: 14%; bottom: -90px; width: 340px; height: 340px; background: radial-gradient(circle, rgba(59, 140, 255, 0.15), transparent 68%); }
+.ops-board__glow i:nth-child(3) { top: 40%; left: 48%; width: 260px; height: 260px; background: radial-gradient(circle, rgba(105, 231, 247, 0.1), transparent 66%); }
+
+/* KPI strip */
+.ops-kpis {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.ops-kpi {
+  position: relative;
+  min-width: 0;
+  min-height: 96px;
+  padding: 14px 16px;
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(10, 47, 58, 0.7), rgba(6, 26, 42, 0.8));
+  border: 1px solid rgba(165, 230, 234, 0.16);
+  border-radius: 18px;
+}
+
+.ops-kpi__top {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+}
+
+.ops-kpi__icon {
+  display: grid;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  color: #0b3e4a;
+  background: linear-gradient(135deg, #caffee, #81e6e6);
+  border-radius: 9px;
+  place-items: center;
+}
+
+.ops-kpi__top small {
+  color: #8bdce3 !important;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  -webkit-text-fill-color: #8bdce3 !important;
+}
+
+.ops-kpi__body {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin: 9px 0 2px;
+}
+
+.ops-kpi__body strong {
+  color: var(--hs-white) !important;
+  font-family: var(--hs-display);
+  font-size: 26px;
+  font-weight: 850;
+  line-height: 1;
+  -webkit-text-fill-color: var(--hs-white) !important;
+}
+
+.ops-kpi__delta {
+  display: inline-flex;
+  gap: 3px;
+  align-items: center;
+  padding: 3px 7px;
+  color: #0a3b30 !important;
+  font-size: 10px;
+  font-weight: 850;
+  background: linear-gradient(135deg, #b6ffe9, #59e6cf);
+  border-radius: 999px;
+  -webkit-text-fill-color: #0a3b30 !important;
+}
+
+.ops-mini-radial {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+}
+
+.ops-kpi .ops-spark {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 58%;
+  height: 26px;
+  opacity: 0.7;
+}
+
+/* main grid */
+.ops-grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  grid-auto-rows: 164px;
+  gap: 14px;
+}
+
+.ops-card {
+  position: relative;
+  min-width: 0;
+  padding: 15px 16px;
+  overflow: hidden;
+  color: var(--hs-white);
+  background: linear-gradient(180deg, rgba(10, 47, 58, 0.7), rgba(6, 26, 42, 0.8));
+  border: 1px solid rgba(165, 230, 234, 0.16);
+  border-radius: 20px;
+}
+
+.ops-card--figure { grid-column: span 4; grid-row: span 2; display: grid; padding: 12px; background: #f5f8fa; border-color: rgba(210, 244, 240, 0.9); place-items: center; }
+.ops-card--trend { grid-column: span 4; }
+.ops-card--donut { grid-column: span 2; }
+.ops-card--bars { grid-column: span 2; }
+
+.ops-card__head { display: flex; gap: 9px; align-items: center; margin-bottom: 8px; }
+.ops-card__head--between { align-items: flex-start; justify-content: space-between; }
+.ops-card__icon { display: grid; flex-shrink: 0; width: 30px; height: 30px; color: #0b3e4a; background: linear-gradient(135deg, #caffee, #81e6e6); border-radius: 9px; place-items: center; }
+.ops-card__head > div small { display: block; color: #8bdce3 !important; font-size: 9px; font-weight: 850; letter-spacing: 0.09em; text-transform: uppercase; -webkit-text-fill-color: #8bdce3 !important; }
+.ops-card__head > div strong { display: block; margin-top: 2px; color: #d7ecee !important; font-size: 11px; font-weight: 750; -webkit-text-fill-color: #d7ecee !important; }
+.ops-card__headline small { display: block; color: #8bdce3 !important; font-size: 9px; font-weight: 850; letter-spacing: 0.09em; text-transform: uppercase; -webkit-text-fill-color: #8bdce3 !important; }
+.ops-card__headline strong { display: block; margin-top: 3px; color: var(--hs-white) !important; font-family: var(--hs-display); font-size: 20px; font-weight: 850; line-height: 1; -webkit-text-fill-color: var(--hs-white) !important; }
+.ops-card__delta { display: inline-flex; gap: 3px; align-items: center; padding: 3px 8px; color: #0a3b30 !important; font-size: 10px; font-weight: 850; background: linear-gradient(135deg, #b6ffe9, #59e6cf); border-radius: 999px; -webkit-text-fill-color: #0a3b30 !important; }
+
+/* figure */
+.ops-figure__halo { position: absolute; z-index: 0; width: 82%; aspect-ratio: 1; background: radial-gradient(circle, rgba(41, 201, 232, 0.16), transparent 62%); border-radius: 50%; }
+.ops-figure__img { position: relative; z-index: 1; display: block; width: 100%; max-width: 100%; max-height: 100%; height: auto; object-fit: contain; border-radius: 14px; mix-blend-mode: multiply; }
+.ops-figure__badge { position: absolute; z-index: 2; top: 12px; left: 12px; display: inline-flex; gap: 7px; align-items: center; padding: 7px 10px; color: var(--hs-white); background: rgba(6, 33, 46, 0.92); border: 1px solid rgba(136, 229, 225, 0.28); border-radius: 12px; box-shadow: 0 14px 30px rgba(0, 20, 32, 0.34); }
+.ops-figure__badge svg { flex-shrink: 0; color: #7ff0d4; }
+.ops-figure__badge strong { display: block; color: var(--hs-white) !important; font-size: 13px; font-weight: 850; line-height: 1; -webkit-text-fill-color: var(--hs-white) !important; }
+.ops-figure__badge small { display: block; margin-top: 2px; color: #a9dfe2 !important; font-size: 8px; font-weight: 700; -webkit-text-fill-color: #a9dfe2 !important; }
+
+/* trend */
+.ops-trend__svg { display: block; width: 100%; height: 92px; }
+
+/* donut */
+.ops-donut { display: flex; gap: 12px; align-items: center; }
+.ops-donut svg { flex-shrink: 0; width: 90px; height: 90px; }
+.ops-donut__total { fill: #f7fcff; font-family: var(--hs-display); font-size: 21px; font-weight: 850; }
+.ops-donut__unit { fill: #8bdce3; font-size: 9px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+.ops-donut__legend { display: grid; gap: 6px; min-width: 0; margin: 0; padding: 0; list-style: none; }
+.ops-donut__legend li { display: grid; grid-template-columns: 9px minmax(0, 1fr) auto; gap: 7px; align-items: center; }
+.ops-donut__legend i { width: 9px; height: 9px; border-radius: 3px; }
+.ops-donut__legend span { color: #c5dadd !important; font-size: 11px; font-weight: 600; -webkit-text-fill-color: #c5dadd !important; }
+.ops-donut__legend strong { color: var(--hs-white) !important; font-size: 12px; font-weight: 850; -webkit-text-fill-color: var(--hs-white) !important; }
+
+/* bars */
+.ops-bars { display: flex; gap: 8px; align-items: flex-end; justify-content: space-between; height: 92px; }
+.ops-bars__col { display: grid; flex: 1; grid-template-rows: 1fr auto; gap: 6px; justify-items: center; min-width: 0; height: 100%; }
+.ops-bars__track { display: flex; align-items: flex-end; justify-content: center; width: 100%; height: 100%; }
+.ops-bars__fill { display: block; width: 68%; max-width: 22px; min-height: 5px; background: linear-gradient(180deg, #6ce2c2, #23b1be); border-radius: 5px 5px 2px 2px; transition: height 700ms cubic-bezier(0.22, 1, 0.36, 1); }
+.ops-bars__col:first-child .ops-bars__fill { background: linear-gradient(180deg, #b6ffe9, #59e6cf); }
+.ops-bars__col small { color: #9fbcc0 !important; font-size: 9px; font-weight: 700; -webkit-text-fill-color: #9fbcc0 !important; }
+
+/* keyframes */
+@keyframes ops-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+@keyframes ops-stream {
+  0% { transform: translateX(-120%); }
+  100% { transform: translateX(360%); }
+}
+@keyframes ops-eq {
+  0%, 100% { height: 5px; }
+  50% { height: 18px; }
+}
+@keyframes ops-float-a {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+@keyframes ops-float-b {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(7px); }
+}
+
+/* responsive */
+@media (max-width: 1180px) {
+  .ops-grid { grid-auto-rows: 152px; }
+  .ops-card--figure { grid-column: span 6; }
+  .ops-card--trend { grid-column: span 6; }
+  .ops-card--donut { grid-column: span 3; }
+  .ops-card--bars { grid-column: span 3; }
+}
+
+@media (max-width: 820px) {
+  .ops-kpis { grid-template-columns: repeat(2, 1fr); }
+  .ops-grid { grid-template-columns: repeat(2, 1fr); grid-auto-rows: auto; }
+  .ops-card { min-height: 184px; }
+  .ops-card--figure { grid-column: span 1; grid-row: auto; min-height: 240px; }
+  .ops-card--trend { grid-column: 1 / -1; }
+  .ops-card--donut,
+  .ops-card--bars { grid-column: span 1; }
+  /* the overhanging chips need the dark margin around the board — drop them
+     once the board fills the width. */
+  .ops-floats { display: none; }
+}
+
+@media (max-width: 520px) {
+  .ops-kpis { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .ops-grid { grid-template-columns: 1fr; }
+  .ops-card--figure,
+  .ops-card--donut,
+  .ops-card--bars { grid-column: 1 / -1; }
+  .ops-board { padding: 16px; }
+}
+
+/* reduced motion — the page-wide killswitch neutralises these too, but pin the
+   live-console loops explicitly so intent is clear. */
+.himalaya-landing.reduce-motion .ops-artifacts__rings,
+.himalaya-landing.reduce-motion .ops-artifacts__drop,
+.himalaya-landing.reduce-motion .ops-artifacts__orb,
+.himalaya-landing.reduce-motion .ops-board__stream i,
+.himalaya-landing.reduce-motion .ops-ribbon__bar i,
+.himalaya-landing.reduce-motion .ops-ribbon__live i,
+.himalaya-landing.reduce-motion .ops-eq i,
+.himalaya-landing.reduce-motion .ops-float {
+  animation: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ops-artifacts__rings,
+  .ops-artifacts__drop,
+  .ops-artifacts__orb,
+  .ops-board__stream i,
+  .ops-ribbon__bar i,
+  .ops-ribbon__live i,
+  .ops-eq i,
+  .ops-float {
+    animation: none !important;
+  }
+
+  .ops-bars__fill,
+  .ops-donut circle,
+  .ops-mini-radial circle {
+    transition: none !important;
+  }
+}
+
+/* ── Feature cards ──────────────────────────────────────────────
+   Replaces the earlier workflow product-film. Four accent-tinted cards, each
+   carrying a live figure from the same feed as the KPI strip. One rule set
+   drives all four via --feature-accent, set inline per card, so the cards read
+   as one system rather than four hand-styled panels. */
+.feature-section {
+  width: min(var(--hs-max), calc(100% - 48px));
+  margin: 0 auto;
+  padding: 20px 0 84px;
+  scroll-margin-top: 80px;
+}
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 16px;
+  margin-top: 30px;
+}
+
+/* Resting state is flat and quiet; the accent shows up on the top rule, the
+   icon and on hover — closer to a product-page grid than a poster. */
+.feature-card {
+  position: relative;
+  padding: 26px 24px 24px;
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.014));
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 22px;
+  transition: transform 260ms cubic-bezier(.22, 1, .36, 1), border-color 260ms ease, box-shadow 260ms ease, background 260ms ease;
+}
+
+.feature-card::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 2px;
+  content: '';
+  background: linear-gradient(90deg, var(--feature-accent), transparent 85%);
+  opacity: 0.85;
+}
+
+.feature-card::after {
+  position: absolute;
+  top: -64px;
+  right: -64px;
+  width: 180px;
+  height: 180px;
+  content: '';
+  background: radial-gradient(circle, color-mix(in srgb, var(--feature-accent) 40%, transparent), transparent 72%);
+  opacity: 0.4;
+  transition: opacity 260ms ease;
+  pointer-events: none;
+}
+
+.feature-card:hover {
+  border-color: color-mix(in srgb, var(--feature-accent) 55%, transparent);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02));
+  box-shadow: 0 28px 68px rgba(0, 0, 0, 0.32);
+}
+
+.feature-card:hover::after {
+  opacity: 0.85;
+}
+
+.feature-card__icon {
+  position: relative;
+  display: grid;
+  width: 46px;
+  height: 46px;
+  margin-bottom: 18px;
+  color: var(--feature-accent);
+  background: linear-gradient(150deg, color-mix(in srgb, var(--feature-accent) 26%, transparent), color-mix(in srgb, var(--feature-accent) 6%, transparent));
+  border: 1px solid color-mix(in srgb, var(--feature-accent) 38%, transparent);
+  border-radius: 14px;
+  place-items: center;
+}
+
+.feature-card h3 {
+  position: relative;
+  margin: 0 0 8px;
+  color: var(--hs-white) !important;
+  font-family: var(--hs-display);
+  font-size: clamp(17px, 1.8vw, 20px);
+  font-weight: 750;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  -webkit-text-fill-color: var(--hs-white) !important;
+}
+
+.feature-card > p {
+  position: relative;
+  max-width: 520px;
+  margin: 0;
+  color: #a9bac2 !important;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.6;
+  -webkit-text-fill-color: #a9bac2 !important;
+}
+
+.feature-card__stat {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 9px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.feature-card__dot {
+  align-self: center;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--feature-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--feature-accent) 28%, transparent);
+  animation: feature-stat-pulse 2.1s ease-in-out infinite;
+}
+
+.feature-card__stat strong {
+  color: var(--hs-white) !important;
+  font-family: var(--hs-display);
+  font-size: 21px;
+  font-weight: 800;
+  -webkit-text-fill-color: var(--hs-white) !important;
+}
+
+.feature-card__stat span:last-child {
+  color: #8a9aa2 !important;
+  font-size: 11.5px;
+  font-weight: 600;
+  -webkit-text-fill-color: #8a9aa2 !important;
+}
+
+@keyframes feature-stat-pulse {
+  0%, 100% {
+    opacity: 1;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--feature-accent) 28%, transparent);
+  }
+
+  50% {
+    opacity: 0.55;
+    box-shadow: 0 0 0 5px color-mix(in srgb, var(--feature-accent) 12%, transparent);
+  }
+}
+
+@media (max-width: 640px) {
+  .feature-section {
+    width: calc(100% - 36px);
+    padding-bottom: 64px;
+  }
+
+  .feature-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .feature-card {
+    padding: 22px 20px;
+    border-radius: 20px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .feature-card,
+  .feature-card::after {
+    transition: none;
+  }
+
+  .feature-card__dot {
+    animation: none;
+  }
+}
+
+/* ── Connected core (orbit) ─────────────────────────────────────────────
+   Surfaces revolve around a central "core" like a galaxy (continuous slow
+   rotation), and one at a time is pulled toward the centre and released.
+   Structure per surface: .orbiter (revolves) > .reach (holds radius + pull) >
+   .node (counter-rotates so the label stays upright). Radius is a container
+   query unit so it tracks the square stage. All motion stops under
+   prefers-reduced-motion, falling back to a static, evenly-spaced ring. */
+.core-orbit {
+  width: min(var(--hs-max), calc(100% - 48px));
+  margin: 0 auto;
+  padding: 36px 0 92px;
+}
+
+.core-orbit__stage {
+  position: relative;
+  width: min(560px, 84vw);
+  aspect-ratio: 1;
+  margin: 46px auto 0;
+  container-type: size;
+  --orbit-r: 40cqmin;
+  --orbit-dur: 52s;
+  --pull-dur: 27s;
+}
+
+.core-orbit__field {
+  position: absolute;
+  inset: 0;
+}
+
+/* Faint radial spokes that trail the orbiting nodes (same period, so the six
+   spokes stay roughly under the six surfaces). */
+.core-orbit__field::after {
+  position: absolute;
+  inset: 0;
+  content: '';
+  border-radius: 50%;
+  background: repeating-conic-gradient(from -1deg, rgba(139, 225, 242, 0.08) 0 2deg, transparent 2deg 60deg);
+  -webkit-mask: radial-gradient(circle, transparent 19%, #000 33%, #000 69%, transparent 75%);
+          mask: radial-gradient(circle, transparent 19%, #000 33%, #000 69%, transparent 75%);
+  animation: core-orbit-revolve var(--orbit-dur) linear infinite;
+}
+
+.core-orbit__ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border: 1px solid rgba(139, 225, 242, 0.14);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.core-orbit__ring--1 { width: 44%; height: 44%; }
+
+.core-orbit__ring--2 {
+  width: 72%;
+  height: 72%;
+  border-style: dashed;
+  border-color: rgba(139, 225, 242, 0.11);
+  animation: core-orbit-ring-spin 60s linear infinite;
+}
+
+.core-orbit__ring--3 {
+  width: 100%;
+  height: 100%;
+  border-color: rgba(139, 225, 242, 0.07);
+}
+
+.core-orbit__sweep {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, rgba(114, 236, 255, 0.16), rgba(114, 236, 255, 0.02) 26%, transparent 44%);
+  -webkit-mask: radial-gradient(circle, transparent 21%, #000 34%, #000 70%, transparent 75%);
+          mask: radial-gradient(circle, transparent 21%, #000 34%, #000 70%, transparent 75%);
+  animation: core-orbit-sweep 10s linear infinite;
+}
+
+.core-orbit__center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 4;
+  display: grid;
+  gap: 3px;
+  width: clamp(112px, 27%, 150px);
+  padding: 18px 12px;
+  text-align: center;
+  place-items: center;
+  background: linear-gradient(160deg, rgba(11, 32, 48, 0.97), rgba(6, 20, 32, 0.97));
+  border: 1px solid rgba(114, 236, 255, 0.3);
+  border-radius: 18px;
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  transform: translate(-50%, -50%);
+}
+
+.core-orbit__center strong {
+  color: var(--hs-white) !important;
+  font-family: var(--hs-display);
+  font-size: clamp(17px, 2.4vw, 20px);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  -webkit-text-fill-color: var(--hs-white) !important;
+}
+
+.core-orbit__center small {
+  color: #7091a1 !important;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  -webkit-text-fill-color: #7091a1 !important;
+}
+
+.core-orbit__center-glow {
+  position: absolute;
+  inset: -44%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(114, 236, 255, 0.22), transparent 66%);
+  pointer-events: none;
+  animation: core-orbit-pulse 3.4s ease-in-out infinite;
+}
+
+/* Revolving layer: a zero-size point at the stage centre that spins. Each
+   orbiter is phase-offset by index so the six sit 60deg apart. */
+.core-orbit__orbiter {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 2;
+  width: 0;
+  height: 0;
+  animation: core-orbit-revolve var(--orbit-dur) linear infinite;
+  animation-delay: calc(var(--i) * var(--orbit-dur) / -6);
+}
+
+/* Radius + the periodic "pull toward the core" motion. */
+.core-orbit__reach {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: translateY(calc(-1 * var(--orbit-r)));
+  animation: core-orbit-pull var(--pull-dur) ease-in-out infinite;
+  animation-delay: calc(var(--i) * var(--pull-dur) / -6);
+}
+
+/* Counter-rotates the orbiter's spin (same duration + phase) so the pill stays
+   upright while it travels. Centred on the reach point with the independent
+   translate property (transform centring is unreliable here). */
+.core-orbit__node {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 14px 8px 9px;
+  white-space: nowrap;
+  background: rgba(9, 26, 42, 0.94);
+  border: 1px solid rgba(139, 225, 242, 0.2);
+  border-radius: 999px;
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.42);
+  translate: -50% -50%;
+  transition: border-color 200ms ease, box-shadow 200ms ease, scale 200ms ease;
+  animation: core-orbit-upright var(--orbit-dur) linear infinite;
+  animation-delay: calc(var(--i) * var(--orbit-dur) / -6);
+}
+
+.core-orbit__node i {
+  display: grid;
+  width: 27px;
+  height: 27px;
+  color: var(--node-accent, #8feaf5);
+  background: color-mix(in srgb, var(--node-accent, #8feaf5) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--node-accent, #8feaf5) 34%, transparent);
+  border-radius: 9px;
+  place-items: center;
+}
+
+.core-orbit__node b {
+  color: #dbeef4;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+@media (hover: hover) {
+  .core-orbit__node:hover {
+    border-color: color-mix(in srgb, var(--node-accent, #8feaf5) 60%, transparent);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.5);
+    scale: 1.06;
+  }
+}
+
+@keyframes core-orbit-revolve {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes core-orbit-upright {
+  to { rotate: -360deg; }
+}
+
+@keyframes core-orbit-ring-spin {
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+@keyframes core-orbit-sweep {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+@keyframes core-orbit-pulse {
+  0%, 100% { opacity: 0.5; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.06); }
+}
+
+/* Out at full radius most of the cycle, then a smooth dip toward the core and
+   back. Only ~a fifth of the cycle, so with six phase-offset copies roughly one
+   surface is pulled in at any moment. */
+@keyframes core-orbit-pull {
+  0%, 42% { transform: translateY(calc(-1 * var(--orbit-r))) scale(1); }
+  53% { transform: translateY(calc(-0.44 * var(--orbit-r))) scale(1.16); }
+  64%, 100% { transform: translateY(calc(-1 * var(--orbit-r))) scale(1); }
+}
+
+@media (max-width: 620px) {
+  .core-orbit {
+    padding-bottom: 68px;
+  }
+
+  .core-orbit__stage {
+    width: min(360px, 90vw);
+    margin-top: 34px;
+    --orbit-r: 39cqmin;
+  }
+
+  .core-orbit__node {
+    padding: 6px 10px 6px 7px;
+  }
+
+  .core-orbit__node b {
+    font-size: 11px;
+  }
+
+  .core-orbit__node i {
+    width: 23px;
+    height: 23px;
+  }
+}
+
+/* Reduced motion: no revolving or pulling — drop each surface at its static
+   evenly-spaced angle, upright. */
+@media (prefers-reduced-motion: reduce) {
+  .core-orbit__field::after,
+  .core-orbit__ring--2,
+  .core-orbit__sweep,
+  .core-orbit__center-glow {
+    animation: none;
+  }
+
+  .core-orbit__orbiter {
+    animation: none;
+    transform: rotate(calc(var(--i) * 60deg));
+  }
+
+  .core-orbit__reach {
+    animation: none;
+    transform: translateY(calc(-1 * var(--orbit-r)));
+  }
+
+  .core-orbit__node {
+    animation: none;
+    rotate: calc(var(--i) * -60deg);
   }
 }

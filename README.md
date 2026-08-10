@@ -92,6 +92,64 @@ npm start
 
 The application runs at [http://localhost:3000](http://localhost:3000).
 
+### 5. Enable background notifications (optional)
+
+Out of the box, alerts are shown only while the app is open. Delivering them while
+the browser is **closed** needs two things: a VAPID public key in the client build,
+and a server that signs and sends each push. The server is the `send-push` Supabase
+Edge Function in [`supabase/functions/send-push`](supabase/functions/send-push); the
+database trigger added in
+[`20260809120000_web_push_dispatch.sql`](supabase/migrations/20260809120000_web_push_dispatch.sql)
+invokes it automatically for every new notification.
+
+1. **Generate a VAPID key pair** (already done for the default `.env.example` key —
+   run this to mint your own):
+
+   ```bash
+   node scripts/generate-vapid-keys.js
+   ```
+
+2. **Set the public key** as a client build variable (locally in `.env`, and in
+   Netlify / your host and CI alongside the other `REACT_APP_*` values):
+
+   ```env
+   REACT_APP_VAPID_PUBLIC_KEY=<public key from step 1>
+   ```
+
+3. **Deploy the sender** and give it its secrets. `SUPABASE_URL` and
+   `SUPABASE_SERVICE_ROLE_KEY` are injected automatically; set the rest yourself:
+
+   ```bash
+   supabase functions deploy send-push
+   supabase secrets set \
+     VAPID_PRIVATE_KEY=<private key from step 1> \
+     PUSH_DISPATCH_SECRET=<a long random string> \
+     VAPID_SUBJECT=mailto:you@yourdomain.com
+   ```
+
+4. **Point the database trigger at the function.** In the Supabase SQL editor
+   (service role), store the function URL and the *same* `PUSH_DISPATCH_SECRET`:
+
+   ```sql
+   insert into private.push_dispatch_config (function_url, dispatch_secret)
+   values (
+     'https://<project-ref>.supabase.co/functions/v1/send-push',
+     '<the PUSH_DISPATCH_SECRET from step 3>'
+   )
+   on conflict (id) do update
+     set function_url = excluded.function_url,
+         dispatch_secret = excluded.dispatch_secret,
+         enabled = true,
+         updated_at = now();
+   ```
+
+Once the key is present the Settings → Notifications card reports *"Background
+delivery is configured."* To confirm end to end, enable notifications on a device,
+fully close the app, and have another account trigger an event (a new order, a
+delivery update). Endpoints that a push service reports as gone are deactivated
+automatically. To pause background delivery without redeploying, set
+`enabled = false` on that config row.
+
 ## Useful commands
 
 ```bash
@@ -122,6 +180,9 @@ npm audit --omit=dev       # Production dependency audit
 ## Deployment
 
 The repository includes Netlify SPA routing through `public/_redirects` and `netlify.toml`.
+Production builds on Netlify use its primary `URL` to generate the canonical link, `og:url`, and `sitemap.xml`.
+Vercel builds use `VERCEL_PROJECT_PRODUCTION_URL` (falling back to `VERCEL_URL`) for the same output when system environment variables are exposed.
+For another host or a local release build, set `SITE_URL` to the final public base URL before running the build.
 
 For a one-time local production deploy:
 
@@ -138,10 +199,13 @@ To enable automatic production deploys from GitHub, add these repository secrets
 
 - `NETLIFY_AUTH_TOKEN` — a Netlify personal access token
 - `NETLIFY_SITE_ID` — the site ID from Netlify site settings
+- `REACT_APP_SUPABASE_URL` and `REACT_APP_SUPABASE_ANON_KEY` — the browser-safe Supabase project values
 
-The included `.github/workflows/deploy-netlify.yml` then deploys every push to `main`. Add
-`REACT_APP_SUPABASE_URL` and `REACT_APP_SUPABASE_ANON_KEY` as GitHub Actions secrets so the production build can
-connect to Supabase. Netlify Functions use their own site environment variables (`SUPABASE_URL`,
+Add a repository variable named `SITE_URL` containing the final public origin, such as `https://water.example.com`.
+The CI build uses it for canonical metadata, the social URL, and `sitemap.xml`.
+
+The included `.github/workflows/deploy-netlify.yml` then deploys every push to `main`. Netlify Functions use their
+own site environment variables (`SUPABASE_URL`,
 `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY`); keep the service-role key in Netlify only and never expose it
 as a `REACT_APP_*` variable.
 

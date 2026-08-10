@@ -1,9 +1,9 @@
-const INVOICE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+import { createId } from './id';
 
 export function generateInvoiceNumber() {
-  let suffix = '';
-  for (let i = 0; i < 8; i += 1) {
-    suffix += INVOICE_CHARS[Math.floor(Math.random() * INVOICE_CHARS.length)];
-  }
+  // Invoice numbers unlock public verification pages. Generate them from a
+  // full secure UUID so future invoice URLs cannot be predicted or feasibly
+  // enumerated from prior ones. Treat the number as a capability secret.
+  const suffix = createId().replace(/-/g, '').toUpperCase();
   return `HSW-${suffix}`;
 }

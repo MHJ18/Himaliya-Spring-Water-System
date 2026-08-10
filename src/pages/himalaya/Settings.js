@@ -1,6 +1,9 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, {
+  useCallback, useEffect, useRef, useState,
+} from 'react';
 import {
   Alert,
+  Autocomplete,
   Box,
   Button,
   Card,
@@ -26,6 +29,8 @@ import {
   Tab,
   Tabs,
   TextField,
+  ToggleButton,
+  ToggleButtonGroup,
   Typography,
   useMediaQuery,
 } from '@mui/material';
@@ -151,8 +156,8 @@ function SettingsCard({
             className="settings-card__icon"
             sx={(theme) => ({
               display: 'grid',
-              width: 42,
-              height: 42,
+              width: 36,
+              height: 36,
               placeItems: 'center',
               color: theme.palette.mode === 'dark' ? 'primary.light' : 'primary.dark',
               bgcolor: alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.16 : 0.1),
@@ -160,6 +165,12 @@ function SettingsCard({
               borderColor: alpha(theme.palette.primary.main, 0.15),
               borderRadius: 2,
               boxShadow: `0 10px 24px ${alpha(theme.palette.primary.main, 0.1)}`,
+              '& svg': { fontSize: 20 },
+              'html.dashboard-compact &': {
+                width: 32,
+                height: 32,
+                '& svg': { fontSize: 18 },
+              },
             })}
           >
             {icon}
@@ -176,7 +187,7 @@ function SettingsCard({
             }}
           />
         ) : action}
-        titleTypographyProps={{ variant: 'h5' }}
+        titleTypographyProps={{ variant: 'h5', sx: { fontWeight: 600 } }}
         subheaderTypographyProps={{ variant: 'body2' }}
         sx={{
           pb: mobile ? 2 : 1,
@@ -218,18 +229,25 @@ function SettingsToggle({
       className={`settings-toggle${checked ? ' is-checked' : ''}`}
       sx={(theme) => ({
         display: 'flex',
-        minHeight: 68,
+        minHeight: 58,
         alignItems: 'center',
         justifyContent: 'space-between',
-        gap: 1.5,
-        my: 0.65,
-        p: 1.15,
+        gap: 1.25,
+        my: 0.5,
+        p: 1,
+        opacity: disabled ? 0.66 : 1,
         bgcolor: checked ? alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.12 : 0.07) : 'action.hover',
         border: '1px solid',
         borderColor: checked ? alpha(theme.palette.primary.main, 0.3) : 'divider',
         borderRadius: 2.25,
         transition: 'background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease',
         boxShadow: checked ? `0 8px 24px ${alpha(theme.palette.primary.main, 0.09)}` : 'none',
+        'html.dashboard-compact &': {
+          minHeight: 50,
+          gap: 1,
+          my: 0.35,
+          p: 0.7,
+        },
       })}
     >
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, minWidth: 0 }}>
@@ -237,29 +255,35 @@ function SettingsToggle({
           className="settings-toggle__icon"
           sx={(theme) => ({
             display: 'grid',
-            width: 40,
-            height: 40,
-            flex: '0 0 40px',
+            width: 34,
+            height: 34,
+            flex: '0 0 34px',
             placeItems: 'center',
             color: checked
               ? (theme.palette.mode === 'dark' ? 'primary.light' : 'primary.dark')
               : 'text.secondary',
             bgcolor: checked ? alpha(theme.palette.primary.main, 0.14) : 'action.selected',
             borderRadius: 1.75,
-            '& svg': { fontSize: 21 },
+            '& svg': { fontSize: 19 },
+            'html.dashboard-compact &': {
+              width: 30,
+              height: 30,
+              flexBasis: 30,
+              '& svg': { fontSize: 17 },
+            },
           })}
         >
           {icon}
         </Box>
         <Box sx={{ minWidth: 0 }}>
-          <Typography variant="body2" fontWeight={750} color="text.primary">{label}</Typography>
+          <Typography variant="body2" fontWeight={550} color="text.primary">{label}</Typography>
           <Typography variant="body2" color="text.secondary">{description}</Typography>
         </Box>
       </Box>
       <Stack direction="row" spacing={0.5} alignItems="center" sx={{ flex: '0 0 auto' }}>
         <Typography
           variant="body2"
-          sx={{ display: { xs: 'none', sm: 'block' }, minWidth: 20, color: checked ? 'primary.main' : 'text.secondary', fontWeight: 850 }}
+          sx={{ display: { xs: 'none', sm: 'block' }, minWidth: 20, color: checked ? 'primary.main' : 'text.secondary', fontWeight: 600 }}
         >
           {checked ? 'On' : 'Off'}
         </Typography>
@@ -270,19 +294,25 @@ function SettingsToggle({
           disabled={disabled}
           inputProps={{ 'aria-label': label }}
           sx={{
-            width: 52,
-            height: 30,
+            width: 48,
+            height: 28,
             p: 0,
             '& .MuiSwitch-switchBase': {
               p: '3px',
               '&.Mui-checked': {
                 color: '#fff',
-                transform: 'translateX(22px)',
+                transform: 'translateX(20px)',
                 '& + .MuiSwitch-track': { opacity: 1, bgcolor: 'primary.main' },
               },
             },
-            '& .MuiSwitch-thumb': { width: 24, height: 24, boxShadow: '0 3px 9px rgba(0,0,0,.22)' },
-            '& .MuiSwitch-track': { opacity: 1, bgcolor: 'action.disabled', borderRadius: 15 },
+            '& .MuiSwitch-thumb': { width: 22, height: 22, boxShadow: '0 3px 9px rgba(0,0,0,.22)' },
+            '& .MuiSwitch-track': { opacity: 1, bgcolor: 'action.disabled', borderRadius: 14 },
+            'html.dashboard-compact &': {
+              width: 44,
+              height: 24,
+              '& .MuiSwitch-thumb': { width: 18, height: 18 },
+              '& .MuiSwitch-track': { borderRadius: 12 },
+            },
           }}
         />
       </Stack>
@@ -367,6 +397,9 @@ export default function Settings() {
   const [currentAdminEmail, setCurrentAdminEmail] = useState('');
   const [currentAdmin, setCurrentAdmin] = useState(null);
   const [riders, setRiders] = useState([]);
+  const [savingAssignment, setSavingAssignment] = useState(false);
+  const previousSettingsRef = useRef(settings);
+  const assignmentSaveIdRef = useRef(0);
   const [databaseStats, setDatabaseStats] = useState(null);
   const [loadingDatabaseStats, setLoadingDatabaseStats] = useState(false);
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
@@ -439,7 +472,21 @@ export default function Settings() {
   }, [tab, loadDatabaseStats]);
 
   useEffect(() => {
-    setForm((current) => ({ ...current, ...settings }));
+    const previousSettings = previousSettingsRef.current;
+    const changedKeys = Object.keys(settings).filter(
+      (key) => settings[key] !== previousSettings[key]
+    );
+    previousSettingsRef.current = settings;
+    if (!changedKeys.length) return;
+
+    // Pull in cloud/context changes only for fields the operator has not
+    // already edited in this form. This keeps assignment autosave from
+    // discarding a different workflow change that is still awaiting Save.
+    setForm((current) => changedKeys.reduce((next, key) => (
+      current[key] === previousSettings[key]
+        ? { ...next, [key]: settings[key] }
+        : next
+    ), { ...current }));
   }, [settings]);
 
   const updateForm = (field) => (event) => {
@@ -492,6 +539,48 @@ export default function Settings() {
       orderCutoffTime: form.orderCutoffTime || '18:00',
     });
     toast.success('Order workflow saved.');
+  };
+
+  const saveAssignmentPreference = async (changes, message) => {
+    const saveId = assignmentSaveIdRef.current + 1;
+    assignmentSaveIdRef.current = saveId;
+    setForm((current) => ({ ...current, ...changes }));
+    setSavingAssignment(true);
+    const result = await updateSettings(changes);
+    if (saveId !== assignmentSaveIdRef.current) return result;
+
+    if (result && result.ok === false) {
+      setForm((current) => ({
+        ...current,
+        riderAssignmentMode: result.settings.riderAssignmentMode,
+        defaultRiderId: result.settings.defaultRiderId,
+        autoAssignNearestRider: result.settings.autoAssignNearestRider,
+      }));
+      setSavingAssignment(false);
+      toast.error(result.error?.message || 'Rider assignment settings could not be saved.');
+      return result;
+    }
+    setSavingAssignment(false);
+    toast.success(message);
+    return result;
+  };
+
+  const handleAssignmentModeChange = (event, nextMode) => {
+    if (event.defaultPrevented || !nextMode) return;
+    saveAssignmentPreference({
+      riderAssignmentMode: nextMode,
+      defaultRiderId: nextMode === 'auto' ? (form.defaultRiderId || '') : '',
+    }, nextMode === 'auto'
+      ? 'Automatic rider allocation is active.'
+      : 'Orders will wait for manual rider assignment.');
+  };
+
+  const handlePreferredRiderChange = (event, rider) => {
+    if (event.defaultPrevented) return;
+    saveAssignmentPreference(
+      { defaultRiderId: rider ? rider.id : '' },
+      rider ? `${rider.name} is now the preferred rider.` : 'The first suitable rider will be selected.',
+    );
   };
 
   const handleSaveNotifications = (event) => {
@@ -869,41 +958,107 @@ export default function Settings() {
                   onChange={(event) => setForm((current) => ({ ...current, autoAcceptOrders: event.target.checked }))}
                   icon={<AutorenewRoundedIcon />}
                 />
-                <Box sx={{ my: 1.25, p: 1.5, bgcolor: 'action.hover', border: '1px solid', borderColor: 'divider', borderRadius: 2.5 }}>
-                  <Typography variant="body2" fontWeight={800}>Rider assignment</Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    Choose whether accepted orders wait for dispatch or transfer to a rider automatically.
-                  </Typography>
+                <Box sx={(theme) => ({
+                  my: 1.25,
+                  p: 1.5,
+                  bgcolor: alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.07 : 0.035),
+                  border: '1px solid',
+                  borderColor: alpha(theme.palette.primary.main, 0.16),
+                  borderRadius: 2.5,
+                })}
+                >
+                  <Stack direction={{ xs: 'column', sm: 'row' }} spacing={0.5} justifyContent="space-between">
+                    <Box>
+                      <Typography variant="body2" fontWeight={560}>Rider assignment</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Choose whether accepted orders wait for dispatch or transfer to a rider automatically.
+                      </Typography>
+                    </Box>
+                    <Chip
+                      size="small"
+                      color={savingAssignment ? 'info' : (form.riderAssignmentMode || 'manual') === 'auto' ? 'success' : 'default'}
+                      label={savingAssignment
+                        ? 'Saving assignment…'
+                        : (form.riderAssignmentMode || 'manual') === 'auto' ? 'Auto-saved · active' : 'Auto-saved · manual'}
+                      aria-live="polite"
+                      sx={{ alignSelf: { xs: 'flex-start', sm: 'center' }, fontWeight: 600 }}
+                    />
+                  </Stack>
+                  <ToggleButtonGroup
+                    exclusive
+                    fullWidth
+                    disabled={savingAssignment}
+                    value={form.riderAssignmentMode || 'manual'}
+                    onChange={handleAssignmentModeChange}
+                    aria-label="Rider assignment mode"
+                    sx={{ mt: 1.25, gap: 1, '& .MuiToggleButtonGroup-grouped': { m: 0, border: '1px solid' } }}
+                  >
+                    <ToggleButton value="manual" aria-label="Manual rider assignment" sx={{ justifyContent: 'flex-start', gap: 1, textAlign: 'left' }}>
+                      <GroupsRoundedIcon fontSize="small" />
+                      <Box component="span" sx={{ display: 'grid' }}>
+                        <Box component="span" sx={{ fontWeight: 600 }}>Manual</Box>
+                        <Box component="span" sx={{ color: 'text.secondary', fontSize: '0.68rem', fontWeight: 400 }}>Dispatcher chooses</Box>
+                      </Box>
+                    </ToggleButton>
+                    <ToggleButton value="auto" aria-label="Automatic rider allocation" sx={{ justifyContent: 'flex-start', gap: 1, textAlign: 'left' }}>
+                      <AutorenewRoundedIcon fontSize="small" />
+                      <Box component="span" sx={{ display: 'grid' }}>
+                        <Box component="span" sx={{ fontWeight: 600 }}>Automatic</Box>
+                        <Box component="span" sx={{ color: 'text.secondary', fontSize: '0.68rem', fontWeight: 400 }}>Assign on acceptance</Box>
+                      </Box>
+                    </ToggleButton>
+                  </ToggleButtonGroup>
                   <Grid container spacing={2} sx={{ mt: 0.25 }}>
-                    <Grid item xs={12} sm={6}>
-                      <FormControl fullWidth>
-                        <InputLabel id="rider-assignment-mode-label">Assignment mode</InputLabel>
-                        <Select
-                          labelId="rider-assignment-mode-label"
-                          label="Assignment mode"
-                          value={form.riderAssignmentMode || 'manual'}
-                          onChange={updateForm('riderAssignmentMode')}
-                        >
-                          <MenuItem value="manual">Manual assignment</MenuItem>
-                          <MenuItem value="auto">Automatic transfer</MenuItem>
-                        </Select>
-                      </FormControl>
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                      <FormControl fullWidth disabled={(form.riderAssignmentMode || 'manual') !== 'auto'}>
-                        <InputLabel id="default-rider-label">Preferred rider</InputLabel>
-                        <Select
-                          labelId="default-rider-label"
-                          label="Preferred rider"
-                          value={form.defaultRiderId || ''}
-                          onChange={updateForm('defaultRiderId')}
-                        >
-                          <MenuItem value="">First available rider</MenuItem>
-                          {riders.map((rider) => <MenuItem key={rider.id} value={rider.id}>{rider.name}</MenuItem>)}
-                        </Select>
-                      </FormControl>
+                    <Grid item xs={12}>
+                      <Autocomplete
+                        fullWidth
+                        disabled={savingAssignment || (form.riderAssignmentMode || 'manual') !== 'auto'}
+                        options={riders}
+                        value={riders.find((rider) => rider.id === form.defaultRiderId) || null}
+                        onChange={handlePreferredRiderChange}
+                        isOptionEqualToValue={(option, value) => option.id === value.id}
+                        getOptionLabel={(option) => option.name}
+                        noOptionsText="No active rider accounts"
+                        renderOption={(props, rider) => (
+                          <Box component="li" {...props} key={rider.id} sx={{ display: 'flex !important', gap: 1.25 }}>
+                            <Box
+                              component="span"
+                              aria-hidden="true"
+                              sx={{
+                                width: 8,
+                                height: 8,
+                                flex: '0 0 8px',
+                                bgcolor: rider.available ? 'success.main' : 'text.disabled',
+                                borderRadius: '50%',
+                                boxShadow: rider.available ? '0 0 0 4px rgba(22, 141, 104, .12)' : 'none',
+                              }}
+                            />
+                            <Box component="span" sx={{ display: 'grid', minWidth: 0 }}>
+                              <Box component="span" sx={{ fontWeight: 600 }}>{rider.name}</Box>
+                              <Box component="span" sx={{ color: 'text.secondary', fontSize: '0.7rem' }}>
+                                {rider.available ? 'Available now' : 'Active · currently offline'}
+                              </Box>
+                            </Box>
+                          </Box>
+                        )}
+                        renderInput={(params) => (
+                          <TextField
+                            {...params}
+                            label="Preferred rider"
+                            placeholder="First suitable rider"
+                            helperText="Available riders are prioritised; an active rider is used as fallback."
+                          />
+                        )}
+                      />
                     </Grid>
                   </Grid>
+                  {(form.riderAssignmentMode || 'manual') === 'auto' && Boolean(riders.length) && (
+                    <Alert severity={riders.some((rider) => rider.available) ? 'success' : 'warning'} sx={{ mt: 1.5 }}>
+                      {riders.some((rider) => rider.available)
+                        ? `${riders.filter((rider) => rider.available).length} of ${riders.length} active riders available for automatic allocation.`
+                        : 'No rider is online. Automatic allocation will fall back to the preferred or least recently assigned active rider.'}
+                    </Alert>
+                  )}
                   {!riders.length && (
                     <Alert severity="info" sx={{ mt: 1.5 }}>
                       Create a Rider account in Users before enabling automatic transfer.
@@ -911,7 +1066,7 @@ export default function Settings() {
                   )}
                 </Box>
                 <Box sx={{ my: 1.25, p: 1.5, bgcolor: 'action.hover', border: '1px solid', borderColor: 'divider', borderRadius: 2.5 }}>
-                  <Typography variant="body2" fontWeight={800}>Rider operations</Typography>
+                  <Typography variant="body2" fontWeight={560}>Rider operations</Typography>
                   <Typography variant="caption" color="text.secondary">
                     Tune location updates, route assistance, and delivery handover controls.
                   </Typography>
@@ -965,10 +1120,14 @@ export default function Settings() {
                     icon={<Inventory2OutlinedIcon />}
                   />
                   <SettingsToggle
-                    label="Assign nearest available rider"
-                    description="Use the nearest active rider when automatic assignment is enabled."
+                    label="Balance automatic assignments"
+                    description="Rotate available riders by the least recent assignment instead of always preferring one rider."
                     checked={Boolean(form.autoAssignNearestRider)}
-                    onChange={(event) => setForm((current) => ({ ...current, autoAssignNearestRider: event.target.checked }))}
+                    disabled={savingAssignment || (form.riderAssignmentMode || 'manual') !== 'auto'}
+                    onChange={(event) => saveAssignmentPreference(
+                      { autoAssignNearestRider: event.target.checked },
+                      event.target.checked ? 'Balanced rider rotation enabled.' : 'Preferred-rider allocation enabled.',
+                    )}
                     icon={<MapRoundedIcon />}
                   />
                 </Box>
@@ -1204,7 +1363,7 @@ export default function Settings() {
                 />
 
                 <Box sx={{ my: 1.25, p: 1.5, bgcolor: 'action.hover', border: '1px solid', borderColor: 'divider', borderRadius: 2.5 }}>
-                  <Typography variant="body2" fontWeight={800}>Quiet hours</Typography>
+                  <Typography variant="body2" fontWeight={560}>Quiet hours</Typography>
                   <Typography variant="caption" color="text.secondary">
                     Hold device notifications overnight. They still appear in the notification center.
                   </Typography>
@@ -1352,7 +1511,7 @@ export default function Settings() {
                     }}
                   >
                     <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 0.3 }}>
-                      <Typography variant="body2" fontWeight={800}>{backend.label}</Typography>
+                      <Typography variant="body2" fontWeight={600}>{backend.label}</Typography>
                       <Chip
                         size="small"
                         variant="outlined"
@@ -1563,7 +1722,7 @@ export default function Settings() {
           </Alert>
           <Stack spacing={1.5}>
             <Box>
-              <Typography variant="body2" fontWeight={800}>What remains</Typography>
+              <Typography variant="body2" fontWeight={560}>What remains</Typography>
               <Typography variant="body2" color="text.secondary">
                 Owner, admin, manager, and rider login accounts are preserved so your team can sign in after the reset.
               </Typography>

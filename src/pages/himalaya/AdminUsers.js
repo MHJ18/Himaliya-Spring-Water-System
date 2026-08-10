@@ -47,6 +47,13 @@ import {
   ShieldOutlined,
   SupervisorAccountRounded,
 } from '@mui/icons-material';
+import {
+  formSectionLabelSx,
+  modernFormHeaderSx,
+  modernFormSx,
+  modernPanelSx,
+  modernSubmitSx,
+} from './formStyles';
 import { toast } from 'react-toastify';
 import PageShell from '../../components/PageShell/PageShell';
 import { mobileOptionalCellSx, responsiveTableContainerSx } from '../../components/tables/tableStyles';
@@ -72,12 +79,22 @@ const initialForm = {
   phone: '',
 };
 
-const cardSx = {
+// Every card on this page shares one panel treatment so the create-admin
+// form doesn't stand apart from the accounts tables next to it.
+const cardSx = (theme) => ({
   height: '100%',
-  border: '1px solid',
-  borderColor: 'divider',
-  bgcolor: 'background.paper',
-  boxShadow: '0 18px 55px rgba(4, 18, 43, .1)',
+  ...modernPanelSx(theme),
+});
+
+const adminFormHeaderSx = (theme) => modernFormHeaderSx(theme);
+
+const compactAdminFormSx = (theme) => modernFormSx(theme);
+
+const compactPlaceholderSx = {
+  '& .MuiInputBase-input::placeholder': {
+    fontSize: '0.74rem',
+    opacity: 0.66,
+  },
 };
 
 const ROLE_VISUALS = {
@@ -355,81 +372,103 @@ export default function AdminUsers() {
       <Grid container spacing={3} alignItems="stretch">
         <Grid item xs={12} lg={5}>
           <Card sx={cardSx}>
-            <Box sx={{ p: { xs: 2.25, sm: 3 }, color: 'common.white', background: 'linear-gradient(135deg, var(--hs-primary), var(--hs-secondary))' }}>
-              <Stack direction="row" spacing={1.5} alignItems="center">
-                <Avatar sx={{ bgcolor: 'rgba(255,255,255,.15)' }}><ShieldOutlined /></Avatar>
+            <Box sx={adminFormHeaderSx}>
+              <Stack direction="row" spacing={1.5} alignItems="center" sx={{ position: 'relative', zIndex: 1 }}>
+                <Avatar
+                  sx={{
+                    width: 46,
+                    height: 46,
+                    color: 'common.white',
+                    bgcolor: 'rgba(255,255,255,.18)',
+                    border: '1px solid rgba(255,255,255,.26)',
+                  }}
+                >
+                  <ShieldOutlined />
+                </Avatar>
                 <Box>
-                  <Typography variant="h6">Create team access</Typography>
-                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,.74)' }}>
+                  <Typography variant="h6" sx={{ fontWeight: 800, lineHeight: 1.15 }}>Create team access</Typography>
+                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,.82)' }}>
                     Administrators use the dashboard; riders use the separate mobile rider workspace.
                   </Typography>
                 </Box>
               </Stack>
             </Box>
-            <CardContent sx={{ p: { xs: 2.25, sm: 3 } }}>
-              <Box component="form" onSubmit={handleSubmit} noValidate>
-                <Stack spacing={2}>
+            <CardContent sx={{ p: { xs: 2.5, sm: 3 }, '&:last-child': { pb: { xs: 2.5, sm: 3 } } }}>
+              <Box component="form" onSubmit={handleSubmit} noValidate sx={compactAdminFormSx}>
+                <Stack spacing={2.5}>
                   {currentAdmin && currentAdmin.role !== 'Owner' && (
                     <Alert severity="info">Only an Owner can create or promote administrator accounts.</Alert>
                   )}
                   {formError && <Alert severity="error">{formError}</Alert>}
-                  <TextField
-                    label="Full name"
-                    placeholder="e.g. Bilal Ahmed"
-                    value={form.name}
-                    onChange={(event) => updateForm('name', event.target.value)}
-                    autoComplete="name"
-                    required
-                    InputProps={{ startAdornment: <InputAdornment position="start"><PersonOutlineRounded /></InputAdornment> }}
-                  />
-                  <TextField
-                    label="Email address"
-                    placeholder="name@himaliya.com"
-                    type="email"
-                    value={form.email}
-                    onChange={(event) => updateForm('email', event.target.value)}
-                    autoComplete="email"
-                    required
-                    InputProps={{ startAdornment: <InputAdornment position="start"><AlternateEmailRounded /></InputAdornment> }}
-                  />
-                  <TextField
-                    label="Temporary password"
-                    placeholder="At least 8 characters"
-                    type="password"
-                    value={form.password}
-                    onChange={(event) => updateForm('password', event.target.value)}
-                    autoComplete="new-password"
-                    required
-                    helperText="Minimum 8 characters. Ask the admin to change it after signing in."
-                    InputProps={{ startAdornment: <InputAdornment position="start"><PasswordRounded /></InputAdornment> }}
-                  />
-                  <TextField
-                    label="Phone number"
-                    placeholder="+92 3XX XXXXXXX"
-                    value={form.phone}
-                    onChange={(event) => updateForm('phone', event.target.value)}
-                    autoComplete="tel"
-                    InputProps={{ startAdornment: <InputAdornment position="start"><PhoneRounded /></InputAdornment> }}
-                  />
-                  <TextField
-                    select
-                    label="Access role"
-                    value={form.role}
-                    onChange={(event) => updateForm('role', event.target.value)}
-                    InputProps={{ startAdornment: <InputAdornment position="start"><AdminPanelSettingsRounded /></InputAdornment> }}
+                  <Box>
+                    <Typography component="span" sx={formSectionLabelSx}>Account details</Typography>
+                  <Box
+                    sx={{
+                      display: 'grid',
+                      gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))' },
+                      gap: 2,
+                    }}
                   >
-                    <MenuItem value="Admin">Admin</MenuItem>
-                    <MenuItem value="Manager">Manager</MenuItem>
-                    <MenuItem value="Owner">Owner</MenuItem>
-                    <MenuItem value="Rider">Rider</MenuItem>
-                  </TextField>
+                    <TextField
+                      label="Full name"
+                      placeholder="e.g. Bilal Ahmed"
+                      value={form.name}
+                      onChange={(event) => updateForm('name', event.target.value)}
+                      autoComplete="name"
+                      required
+                      InputProps={{ startAdornment: <InputAdornment position="start"><PersonOutlineRounded /></InputAdornment> }}
+                    />
+                    <TextField
+                      label="Phone number"
+                      placeholder="+92 3XX XXXXXXX"
+                      value={form.phone}
+                      onChange={(event) => updateForm('phone', event.target.value)}
+                      autoComplete="tel"
+                      InputProps={{ startAdornment: <InputAdornment position="start"><PhoneRounded /></InputAdornment> }}
+                    />
+                    <TextField
+                      label="Email address"
+                      placeholder="name@himaliya.com"
+                      type="email"
+                      value={form.email}
+                      onChange={(event) => updateForm('email', event.target.value)}
+                      autoComplete="email"
+                      required
+                      InputProps={{ startAdornment: <InputAdornment position="start"><AlternateEmailRounded /></InputAdornment> }}
+                    />
+                    <TextField
+                      select
+                      label="Access role"
+                      value={form.role}
+                      onChange={(event) => updateForm('role', event.target.value)}
+                      InputProps={{ startAdornment: <InputAdornment position="start"><AdminPanelSettingsRounded /></InputAdornment> }}
+                    >
+                      <MenuItem value="Admin">Admin</MenuItem>
+                      <MenuItem value="Manager">Manager</MenuItem>
+                      <MenuItem value="Owner">Owner</MenuItem>
+                      <MenuItem value="Rider">Rider</MenuItem>
+                    </TextField>
+                    <TextField
+                      label="Temporary password"
+                      placeholder="At least 8 characters"
+                      type="password"
+                      value={form.password}
+                      onChange={(event) => updateForm('password', event.target.value)}
+                      autoComplete="new-password"
+                      required
+                      helperText="Minimum 8 characters. Ask the admin to change it after signing in."
+                      InputProps={{ startAdornment: <InputAdornment position="start"><PasswordRounded /></InputAdornment> }}
+                      sx={{ gridColumn: { sm: '1 / -1' } }}
+                    />
+                  </Box>
+                  </Box>
                   <Button
                     type="submit"
                     variant="contained"
-                    size="large"
                     startIcon={creatingAdmin ? <CircularProgress size={18} color="inherit" /> : <PersonAddAltRounded />}
                     disabled={creatingAdmin || !currentAdmin || currentAdmin.role !== 'Owner'}
-                    sx={{ minHeight: 48 }}
+                    fullWidth
+                    sx={modernSubmitSx}
                   >
                     {creatingAdmin ? 'Creating secure account…' : form.role === 'Rider' ? 'Create rider' : 'Create admin'}
                   </Button>
@@ -511,7 +550,7 @@ export default function AdminUsers() {
         </Grid>
       </Grid>
 
-      <Card sx={{ ...cardSx, mt: 3, height: 'auto', overflow: 'visible' }}>
+      <Card sx={(theme) => ({ ...cardSx(theme), mt: 3, height: 'auto', overflow: 'visible' })}>
         <Box sx={{ p: { xs: 2.25, sm: 3 }, pb: 1.5 }}>
           <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', md: 'center' }} spacing={1.5}>
             <Box>
@@ -526,7 +565,7 @@ export default function AdminUsers() {
               onChange={(event) => setCustomerQuery(event.target.value)}
               placeholder="Search name, email or phone"
               aria-label="Search customer accounts"
-              sx={{ width: { xs: '100%', md: 280 } }}
+              sx={{ width: { xs: '100%', md: 280 }, ...compactPlaceholderSx }}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start"><SearchRounded fontSize="small" /></InputAdornment>

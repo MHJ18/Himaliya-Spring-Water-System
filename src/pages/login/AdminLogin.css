@@ -1,14 +1,24 @@
 .admin-login-page {
+  --admin-login-accent: var(--hs-auth-accent, var(--hs-primary, #078ead));
+  --admin-login-accent-alt: var(--hs-secondary, #405fd2);
+  --admin-login-surface: color-mix(in srgb, var(--hs-auth-panel, #071d2a) 92%, transparent);
+  --admin-login-field: rgba(226, 248, 255, 0.06);
+  --admin-login-border: color-mix(in srgb, var(--admin-login-accent) 24%, rgba(198, 237, 249, 0.16));
   position: relative;
   isolation: isolate;
   overflow: hidden;
   padding: clamp(20px, 3vw, 36px) clamp(16px, 3vw, 26px);
   background:
-    linear-gradient(rgba(131, 219, 237, 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(131, 219, 237, 0.035) 1px, transparent 1px),
-    radial-gradient(circle at 10% 8%, rgba(15, 186, 211, 0.2), transparent 28rem),
-    radial-gradient(circle at 90% 86%, rgba(37, 91, 181, 0.18), transparent 31rem),
-    linear-gradient(145deg, #061522 0%, #06111c 58%, #02070c 100%);
+    linear-gradient(color-mix(in srgb, var(--admin-login-accent) 5%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--admin-login-accent) 5%, transparent) 1px, transparent 1px),
+    radial-gradient(circle at 9% 8%, color-mix(in srgb, var(--admin-login-accent) 25%, transparent), transparent 30rem),
+    radial-gradient(circle at 91% 86%, color-mix(in srgb, var(--admin-login-accent-alt) 20%, transparent), transparent 33rem),
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--hs-auth-panel, #071d2a) 84%, #174162) 0%,
+      var(--hs-auth-panel, #071d2a) 52%,
+      color-mix(in srgb, var(--hs-auth-panel, #071d2a) 78%, black) 100%
+    );
   background-size: 54px 54px, 54px 54px, auto, auto, auto;
 }
 
@@ -175,13 +185,15 @@
   min-height: 0;
   padding: clamp(18px, 2.4vw, 24px);
   background:
-    linear-gradient(145deg, rgba(232, 252, 255, 0.055), rgba(93, 191, 211, 0.018)),
-    rgba(4, 18, 29, 0.93);
-  border-color: rgba(134, 223, 238, 0.17);
+    radial-gradient(circle at 95% 0%, color-mix(in srgb, var(--admin-login-accent-alt) 12%, transparent), transparent 15rem),
+    linear-gradient(145deg, rgba(232, 252, 255, 0.075), rgba(93, 191, 211, 0.018)),
+    var(--admin-login-surface);
+  border-color: var(--admin-login-border);
   border-radius: 28px;
   box-shadow:
-    0 34px 90px rgba(0, 0, 0, 0.44),
-    inset 0 1px 0 rgba(236, 253, 255, 0.035);
+    0 28px 76px rgba(0, 7, 18, 0.42),
+    0 0 0 1px color-mix(in srgb, var(--admin-login-accent) 5%, transparent),
+    inset 0 1px 0 rgba(236, 253, 255, 0.055);
   backdrop-filter: blur(22px);
 }
 
@@ -259,19 +271,19 @@
 
 .admin-login-card .water-login-input-wrap {
   min-height: 44px;
-  background: rgba(218, 249, 255, 0.04);
-  border-color: rgba(144, 221, 233, 0.14);
-  border-radius: 16px;
+  background: var(--admin-login-field);
+  border-color: color-mix(in srgb, var(--admin-login-accent) 20%, rgba(198, 237, 249, 0.18));
+  border-radius: 14px;
 }
 
 .admin-login-card .water-login-input-wrap:hover {
-  border-color: rgba(144, 221, 233, 0.25);
+  border-color: color-mix(in srgb, var(--admin-login-accent) 42%, rgba(198, 237, 249, 0.2));
 }
 
 .admin-login-card .water-login-input-wrap:focus-within {
-  background: rgba(218, 249, 255, 0.06);
-  border-color: rgba(93, 222, 239, 0.55);
-  box-shadow: 0 0 0 4px rgba(42, 184, 207, 0.1);
+  background: color-mix(in srgb, var(--admin-login-field) 88%, white 4%);
+  border-color: color-mix(in srgb, var(--admin-login-accent) 68%, white 10%);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--admin-login-accent) 17%, transparent);
 }
 
 .admin-login-card .water-login-input-icon {
@@ -287,7 +299,10 @@
 }
 
 .admin-login-card .water-login-input::placeholder {
-  color: #617f8d;
+  color: #89a5b2;
+  font-size: 0.75rem;
+  letter-spacing: 0.01em;
+  opacity: 0.76;
 }
 
 .admin-login-card .water-login-input:-webkit-autofill,
@@ -313,14 +328,14 @@
   color: #f3fdff;
   font-size: 0.82rem;
   font-weight: 800;
-  background: linear-gradient(105deg, #087c9e, #07a9bc);
+  background: linear-gradient(105deg, var(--admin-login-accent), var(--admin-login-accent-alt));
   border: 1px solid rgba(151, 239, 249, 0.19);
   border-radius: 999px;
-  box-shadow: 0 15px 34px rgba(6, 132, 157, 0.21);
+  box-shadow: 0 15px 34px color-mix(in srgb, var(--admin-login-accent) 28%, transparent);
 }
 
 .admin-login-card .water-login-submit:hover:not(:disabled) {
-  box-shadow: 0 19px 39px rgba(6, 132, 157, 0.29);
+  box-shadow: 0 19px 39px color-mix(in srgb, var(--admin-login-accent) 36%, transparent);
   transform: translateY(-2px);
 }
 

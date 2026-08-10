@@ -181,6 +181,62 @@ describe('Supabase session expiry', () => {
     delete global.fetch;
   });
 
+  it('requests a non-signup email OTP for an existing customer link', async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: () => Promise.resolve('{}'),
+    });
+    const { requestCustomerLinkEmailOtp } = require('../supabaseClient');
+
+    await requestCustomerLinkEmailOtp(' AYESHA@example.com ');
+
+    expect(global.fetch.mock.calls[0][0]).toBe('https://example.supabase.co/auth/v1/otp');
+    expect(JSON.parse(global.fetch.mock.calls[0][1].body)).toEqual({
+      email: 'ayesha@example.com',
+      create_user: false,
+    });
+    delete global.fetch;
+  });
+
+  it('keeps the same Auth identity when an email OTP rotates the session', async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: () => Promise.resolve(JSON.stringify({
+        access_token: 'otp-access',
+        refresh_token: 'otp-refresh',
+        expires_at: Math.floor(Date.now() / 1000) + 3600,
+        user: { id: 'customer-auth', email: 'ayesha@example.com' },
+      })),
+    });
+    const {
+      getStoredSession,
+      storeSession,
+      verifyCustomerLinkEmailOtp,
+    } = require('../supabaseClient');
+    storeSession({
+      access_token: 'password-access',
+      refresh_token: 'password-refresh',
+      expires_at: Math.floor(Date.now() / 1000) + 3600,
+      user: { id: 'customer-auth', email: 'ayesha@example.com' },
+    }, 'customer');
+
+    await verifyCustomerLinkEmailOtp('AYESHA@example.com', '123456');
+
+    expect(global.fetch.mock.calls[0][0]).toBe('https://example.supabase.co/auth/v1/verify');
+    expect(JSON.parse(global.fetch.mock.calls[0][1].body)).toEqual({
+      email: 'ayesha@example.com',
+      token: '123456',
+      type: 'email',
+    });
+    expect(getStoredSession()).toEqual(expect.objectContaining({
+      access_token: 'otp-access',
+      user: expect.objectContaining({ id: 'customer-auth' }),
+    }));
+    delete global.fetch;
+  });
+
   it('stores pending customer details without persisting the password', () => {
     const {
       getPendingCustomerProfile,

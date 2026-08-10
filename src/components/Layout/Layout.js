@@ -135,7 +135,7 @@ class Layout extends React.Component {
     const { sidebarOpened } = this.props;
 
     return (
-      <div className={[s.root, 'sidebar-' + this.props.sidebarPosition, 'sidebar-' + this.props.sidebarVisibility].join(' ')}>
+      <div className={[s.root, 'admin-shell', 'sidebar-' + this.props.sidebarPosition, 'sidebar-' + this.props.sidebarVisibility].join(' ')}>
         <button
           type="button"
           className={[s.sidebarBackdrop, sidebarOpened ? s.sidebarBackdropVisible : ''].join(' ')}

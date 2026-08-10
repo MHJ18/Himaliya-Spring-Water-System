@@ -908,7 +908,9 @@ body.dashboard-dark .studio-dashboard-shell {
   .studio-bottle-mix,
   .studio-collection,
   .studio-payments { grid-column: span 4; }
-  .studio-signal-card { grid-column: span 6; }
+  /* Stay at span 3 (the base rule) so the four metric cards keep reading as
+     one row through tablet widths — they only drop to a single column at
+     the ≤767px breakpoint below, where every card in the grid does. */
   .studio-sales-chart { grid-column: span 8; }
   .studio-trend-chart,
   .studio-collection-chart { grid-column: span 6; }

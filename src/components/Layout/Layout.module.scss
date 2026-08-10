@@ -1,7 +1,7 @@
 .root {
   position: relative;
   min-height: 100dvh;
-  background: var(--hs-page-bg, linear-gradient(135deg, #061827, #03111f));
+  background: var(--hs-selected-page-bg, var(--hs-page-bg, linear-gradient(135deg, #061827, #03111f)));
 }
 
 .wrap {
@@ -9,12 +9,12 @@
   min-width: 0;
   min-height: 100dvh;
   flex-direction: column;
-  margin-left: 286px;
+  margin-left: 262px;
   transition: margin 220ms ease;
 }
 
 :global(.sidebar-right) .wrap {
-  margin-right: 286px;
+  margin-right: 262px;
   margin-left: 0;
 }
 
@@ -49,7 +49,7 @@
   flex: 1;
   flex-direction: column;
   align-self: center;
-  padding: 18px 24px 24px;
+  padding: 16px 20px 22px;
 }
 
 .routeMotion {
@@ -64,28 +64,28 @@
 }
 
 .contentFooter {
-  margin-top: 28px;
+  margin-top: 24px;
   padding: 10px 2px 0;
   color: var(--hs-page-muted, #8499ad);
   font-size: 0.75rem;
 }
 
 :global(html[data-dashboard-layout='studio']) .root {
-  background: var(--hs-page-bg, #050506);
+  background: var(--hs-selected-page-bg, var(--hs-page-bg, #050506));
 }
 
 :global(html[data-dashboard-layout='studio']) .wrap {
-  margin-left: 282px;
+  margin-left: 258px;
 }
 
 :global(html[data-dashboard-layout='studio']) :global(.sidebar-right) .wrap {
-  margin-right: 282px;
+  margin-right: 258px;
   margin-left: 0;
 }
 
 :global(html[data-dashboard-layout='studio']) .content {
   max-width: 1800px;
-  padding-top: 14px;
+  padding-top: 12px;
 }
 
 :global(html[data-dashboard-layout='studio']) .contentFooter {
@@ -95,6 +95,32 @@
 @media (min-width: 960px) {
   .sidebarBackdrop {
     display: none;
+  }
+
+  :global(html.dashboard-compact) .wrap {
+    margin-left: 240px;
+  }
+
+  :global(html.dashboard-compact) :global(.sidebar-right) .wrap {
+    margin-right: 240px;
+    margin-left: 0;
+  }
+
+  :global(html.dashboard-compact[data-dashboard-layout='studio']) .wrap {
+    margin-left: 238px;
+  }
+
+  :global(html.dashboard-compact[data-dashboard-layout='studio']) :global(.sidebar-right) .wrap {
+    margin-right: 238px;
+    margin-left: 0;
+  }
+
+  :global(html.dashboard-compact) :global(.sidebar-hide) .wrap {
+    margin: 0;
+  }
+
+  :global(html.dashboard-compact) .content {
+    padding: 10px 14px 16px;
   }
 }
 

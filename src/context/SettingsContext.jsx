@@ -24,7 +24,12 @@ const LOCAL_INTERFACE_KEYS = [
 
 function readLocalInterfaceSettings() {
   try {
-    const saved = JSON.parse(window.localStorage.getItem(LOCAL_INTERFACE_SETTINGS_KEY) || '{}');
+    const stored = JSON.parse(window.localStorage.getItem(LOCAL_INTERFACE_SETTINGS_KEY) || '{}');
+    const saved = ['light', 'dark', 'system'].includes(stored.themeMode)
+      ? stored
+      : Object.prototype.hasOwnProperty.call(stored, 'darkMode')
+        ? { ...stored, themeMode: stored.darkMode ? 'dark' : 'light' }
+        : stored;
     return LOCAL_INTERFACE_KEYS.reduce((next, key) => (
       Object.prototype.hasOwnProperty.call(saved, key) ? { ...next, [key]: saved[key] } : next
     ), {});
@@ -44,8 +49,20 @@ function saveLocalInterfaceSettings(settings) {
   }
 }
 
+function normalizeInterfaceSettings(settings) {
+  const themeMode = ['light', 'dark', 'system'].includes(settings.themeMode)
+    ? settings.themeMode
+    : settings.darkMode ? 'dark' : 'light';
+  return {
+    ...settings,
+    themeMode,
+    darkMode: themeMode === 'dark',
+    backgroundPalette: getAdminBackgroundPalette(settings.backgroundPalette).id,
+  };
+}
+
 export function SettingsProvider({ children }) {
-  const [settings, setSettings] = useState(() => ({
+  const [settings, setSettings] = useState(() => normalizeInterfaceSettings({
     ...DEFAULT_SETTINGS,
     ...readLocalInterfaceSettings(),
   }));
@@ -72,7 +89,7 @@ export function SettingsProvider({ children }) {
     const loadSettings = () => {
       if (!hasStoredSessionType('admin')) return;
       settingsApi.get().then((data) => {
-        const next = { ...data, ...readLocalInterfaceSettings() };
+        const next = normalizeInterfaceSettings({ ...data, ...readLocalInterfaceSettings() });
         settingsRef.current = next;
         setSettings(next);
       }).catch(() => {});
@@ -103,7 +120,7 @@ export function SettingsProvider({ children }) {
 
   const resolvedDarkMode = settings.themeMode === 'system'
     ? systemDark
-    : settings.themeMode === 'dark' || settings.darkMode;
+    : settings.themeMode === 'dark';
 
   // formatCurrency/formatDate are called outside React too, so the regional
   // choice is pushed into the formatter module instead of read from context.
@@ -138,26 +155,27 @@ export function SettingsProvider({ children }) {
     const baseFontSize = settings.fontScale === 'large'
       ? 16
       : settings.fontScale === 'small' ? 14 : 15;
-    root.style.fontSize = `${baseFontSize - (settings.compactMode ? 1 : 0)}px`;
+    const workspaceFontSize = settings.compactMode
+      ? Math.max(13, baseFontSize - 1.5)
+      : baseFontSize;
+    root.style.fontSize = `${workspaceFontSize}px`;
     root.style.colorScheme = resolvedDarkMode ? 'dark' : 'light';
     root.style.setProperty('--hs-font-family', getAdminFontStack(settings.fontFamily));
-    // The palette overrides only the page background, so it composes with
-    // whichever accent preset is active.
+    // Keep the user's background on a dedicated token. Accent theme selectors
+    // also define --hs-page-bg on <body>, so sharing that token allowed the
+    // cascade to mask a newly selected palette in parts of the app shell.
     const backgroundPalette = getAdminBackgroundPalette(settings.backgroundPalette);
     root.dataset.bgPalette = backgroundPalette.id;
     root.dataset.bgEffect = backgroundPalette.effect || 'none';
     document.body.dataset.bgPalette = backgroundPalette.id;
     document.body.dataset.bgEffect = backgroundPalette.effect || 'none';
     const paletteBackground = resolvedDarkMode ? backgroundPalette.dark : backgroundPalette.light;
-    // Drive --hs-page-bg directly rather than a separate variable: the admin
-    // Layout paints var(--hs-page-bg) on its own root, so anything set only on
-    // <body> was covered by the app shell and never became visible.
     if (paletteBackground) {
-      root.style.setProperty('--hs-page-bg', paletteBackground);
-      document.body.style.setProperty('--hs-page-bg', paletteBackground);
+      root.style.setProperty('--hs-selected-page-bg', paletteBackground);
+      document.body.style.setProperty('--hs-selected-page-bg', paletteBackground);
     } else {
-      root.style.removeProperty('--hs-page-bg');
-      document.body.style.removeProperty('--hs-page-bg');
+      root.style.removeProperty('--hs-selected-page-bg');
+      document.body.style.removeProperty('--hs-selected-page-bg');
     }
     root.style.setProperty('--hs-primary', themePreset.primary);
     root.style.setProperty('--hs-primary-light', themePreset.primaryLight);
@@ -223,11 +241,26 @@ export function SettingsProvider({ children }) {
     saveLocalInterfaceSettings(next);
     settingsRef.current = next;
     setSettings(next);
-    settingsApi.save(next).catch(() => {
-      if (canPersistLocally) return;
-      if (settingsRef.current !== next) return;
-      settingsRef.current = previous;
-      setSettings(previous);
+    return settingsApi.save(next).then(() => ({
+      ok: true,
+      settings: next,
+    })).catch((error) => {
+      if (canPersistLocally) {
+        return {
+          ok: true,
+          localOnly: true,
+          settings: next,
+        };
+      }
+      if (settingsRef.current === next) {
+        settingsRef.current = previous;
+        setSettings(previous);
+      }
+      return {
+        ok: false,
+        error,
+        settings: previous,
+      };
     });
   }, [beginAppearanceTransition]);
 
@@ -235,7 +268,7 @@ export function SettingsProvider({ children }) {
     const current = settingsRef.current;
     const currentIsDark = current.themeMode === 'system'
       ? systemDark
-      : current.themeMode === 'dark' || current.darkMode;
+      : current.themeMode === 'dark';
     updateSettings({
       darkMode: !currentIsDark,
       themeMode: currentIsDark ? 'light' : 'dark',

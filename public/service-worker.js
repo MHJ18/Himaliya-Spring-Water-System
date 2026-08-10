@@ -15,6 +15,19 @@ const NOTIFICATION_TAG_PREFIX = 'himaliya';
 const DEFAULT_ICON = '/icon-192.png';
 const DEFAULT_BADGE = '/notification-badge.png';
 
+function resolveNotificationTarget(value) {
+  const fallback = new URL('/', self.location.origin);
+  try {
+    const target = new URL(String(value || '/'), self.location.origin);
+    if (!['http:', 'https:'].includes(target.protocol) || target.origin !== self.location.origin) {
+      return fallback;
+    }
+    return target;
+  } catch {
+    return fallback;
+  }
+}
+
 self.addEventListener('install', () => {
   // Take over immediately: a user who just granted permission should not have
   // to close every tab before the first notification can be shown.
@@ -27,6 +40,7 @@ self.addEventListener('activate', (event) => {
 
 function buildOptions(payload) {
   const data = payload && typeof payload === 'object' ? payload : {};
+  const targetUrl = resolveNotificationTarget(data.url);
   return {
     body: data.body || '',
     icon: data.icon || DEFAULT_ICON,
@@ -42,7 +56,7 @@ function buildOptions(payload) {
     // desktop ignores it entirely, so it is safe to always send.
     vibrate: data.silent ? undefined : (data.vibrate || [110, 60, 110]),
     data: {
-      url: data.url || '/',
+      url: `${targetUrl.pathname}${targetUrl.search}${targetUrl.hash}`,
       type: data.type || 'general',
       id: data.id || '',
     },
@@ -80,27 +94,28 @@ self.addEventListener('message', (event) => {
  * focus an existing tab where possible and fall back to opening one. */
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const target = (event.notification.data && event.notification.data.url) || '/';
+  const target = resolveNotificationTarget(
+    event.notification.data && event.notification.data.url,
+  );
 
   event.waitUntil((async () => {
-    const targetUrl = new URL(target, self.location.origin);
     const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
 
     const sameOrigin = windows.filter((client) => (
-      new URL(client.url).origin === targetUrl.origin
+      new URL(client.url).origin === target.origin
     ));
-    const exact = sameOrigin.find((client) => new URL(client.url).pathname === targetUrl.pathname);
+    const exact = sameOrigin.find((client) => new URL(client.url).pathname === target.pathname);
     const reusable = exact || sameOrigin[0];
 
     if (reusable) {
       await reusable.focus();
       // The SPA owns routing, so hand the path over instead of reloading it.
       if (!exact && 'navigate' in reusable) {
-        await reusable.navigate(targetUrl.href).catch(() => {});
+        await reusable.navigate(target.href).catch(() => {});
       }
       return;
     }
-    await self.clients.openWindow(targetUrl.href);
+    await self.clients.openWindow(target.href);
   })());
 });
 

@@ -17,12 +17,13 @@ import {
   beginCustomerProfileCompletion,
   finishCustomerEmailConfirmation,
   registerCustomer,
-  requestCustomerPhoneVerification,
+  requestCustomerLinkEmailVerification,
   signInCustomer,
-  verifyCustomerPhoneAndCompleteProfile,
+  verifyCustomerLinkEmailAndCompleteProfile,
 } from '../../services/api/customerPortalApi';
 import {
   consumeSessionExpiredNotice,
+  getPendingCustomerProfile,
   hasStoredSessionType,
   isCustomerEmailConfirmationCallback,
 } from '../../services/cloud/supabaseClient';
@@ -34,24 +35,27 @@ import './CustomerLogin.css';
 
 function CustomerLogin({ location, history }) {
   const { settings } = useSettings();
-  const [mode, setMode] = React.useState('signin');
+  const [restoredPendingProfile] = React.useState(() => (
+    hasStoredSessionType('customer') ? getPendingCustomerProfile() : null
+  ));
+  const [mode, setMode] = React.useState(() => (restoredPendingProfile ? 'signup' : 'signin'));
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState('');
   const [notice, setNotice] = React.useState('');
   const [profileCompletionRequired, setProfileCompletionRequired] = React.useState(() => (
-    Boolean(location.state && location.state.completeProfile)
+    Boolean((location.state && location.state.completeProfile) || restoredPendingProfile)
   ));
   const [handlingConfirmation, setHandlingConfirmation] = React.useState(() => (
     isCustomerEmailConfirmationCallback(location.hash, location.search)
   ));
-  const [phoneVerificationRequired, setPhoneVerificationRequired] = React.useState(false);
+  const [emailOtpRequired, setEmailOtpRequired] = React.useState(false);
   const [verificationSent, setVerificationSent] = React.useState(false);
   const [verificationCode, setVerificationCode] = React.useState('');
   const [form, setForm] = React.useState({
-    name: '',
-    email: '',
-    phone: '',
-    address: '',
+    name: (restoredPendingProfile && restoredPendingProfile.name) || '',
+    email: (restoredPendingProfile && restoredPendingProfile.email) || '',
+    phone: (restoredPendingProfile && restoredPendingProfile.phone) || '',
+    address: (restoredPendingProfile && restoredPendingProfile.address) || '',
     password: '',
   });
   const [sessionExpired] = React.useState(() => {
@@ -83,12 +87,12 @@ function CustomerLogin({ location, history }) {
           email: (result.session.user && result.session.user.email) || current.email,
           password: '',
         }));
-        setPhoneVerificationRequired(Boolean(result.phoneVerificationRequired));
+        setEmailOtpRequired(Boolean(result.emailOtpRequired));
         setVerificationSent(Boolean(result.verificationSent));
         setVerificationCode('');
-        if (result.phoneVerificationError) setError(result.phoneVerificationError);
-        setNotice(result.phoneVerificationRequired && result.verificationSent
-          ? `Email confirmed. Enter the SMS code sent to ${(result.pendingProfile && result.pendingProfile.phone) || 'your phone'}.`
+        if (result.emailOtpError) setError(result.emailOtpError);
+        setNotice(result.emailOtpRequired && result.verificationSent
+          ? `Enter the verification code sent to ${(result.pendingProfile && result.pendingProfile.email) || 'the email on your customer record'}.`
           : 'Email confirmed. Add your delivery details to finish setting up your profile.');
         history.replace('/customer/login', { completeProfile: true, emailConfirmed: true });
       })
@@ -119,13 +123,13 @@ function CustomerLogin({ location, history }) {
     setForm((current) => ({ ...current, [field]: value }));
   };
 
-  const passwordValid = form.password.length >= 8;
   const passwordChecks = [
     { key: 'length', label: 'At least 8 characters', met: form.password.length >= 8 },
     { key: 'case', label: 'Upper and lower case letters', met: /[a-z]/.test(form.password) && /[A-Z]/.test(form.password) },
     { key: 'number', label: 'At least one number', met: /\d/.test(form.password) },
     { key: 'symbol', label: 'At least one symbol (e.g. ! ? #)', met: /[^A-Za-z0-9]/.test(form.password) },
   ];
+  const passwordValid = passwordChecks.every((check) => check.met);
   const verificationCodeValid = /^\d{6,10}$/.test(verificationCode.trim());
   const formErrors = mode === 'signup'
     ? {
@@ -133,7 +137,7 @@ function CustomerLogin({ location, history }) {
       ...(!isValidPhone(form.phone) ? { phone: 'Enter a valid phone number (+92 and 10 digits).' } : {}),
       ...(!form.address.trim() ? { address: 'Delivery address is required.' } : {}),
       ...(!form.email.trim() ? { email: 'Email address is required.' } : (!/^\S+@\S+\.\S+$/.test(form.email.trim()) ? { email: 'Enter a valid email address.' } : {})),
-      ...(!profileCompletionRequired && !passwordValid ? { password: 'Password must contain at least 8 characters.' } : {}),
+      ...(!profileCompletionRequired && !passwordValid ? { password: 'Password must meet every listed security requirement.' } : {}),
     }
     : {
       ...(!form.email.trim() ? { identifier: 'Enter your email or phone number.' } : (!/^\S+@\S+\.\S+$/.test(form.email.trim()) && !isValidPhone(form.email) ? { identifier: 'Enter a valid email or phone number.' } : {})),
@@ -141,18 +145,18 @@ function CustomerLogin({ location, history }) {
     };
   const canSubmit = !loading
     && Object.keys(formErrors).length === 0
-    && (!phoneVerificationRequired || (verificationSent && verificationCodeValid));
+    && (!emailOtpRequired || (verificationSent && verificationCodeValid));
 
-  const applyPhoneVerificationState = (result) => {
+  const applyEmailVerificationState = (result) => {
     setProfileCompletionRequired(true);
     setMode('signup');
-    setPhoneVerificationRequired(true);
+    setEmailOtpRequired(true);
     setVerificationSent(Boolean(result.verificationSent));
     setVerificationCode('');
-    setError(result.phoneVerificationError || '');
+    setError(result.emailOtpError || '');
     setNotice(result.verificationSent
-      ? `Enter the SMS code sent to ${form.phone}.`
-      : 'Phone verification is required to link the existing customer history.');
+      ? `Enter the verification code sent to ${form.email}.`
+      : 'Email verification is required only because these details match an existing customer record.');
   };
 
   const switchMode = (nextMode) => {
@@ -178,12 +182,12 @@ function CustomerLogin({ location, history }) {
             phone: form.phone,
             address: form.address,
           };
-          if (phoneVerificationRequired) {
-            await verifyCustomerPhoneAndCompleteProfile(profileForm, verificationCode);
+          if (emailOtpRequired) {
+            await verifyCustomerLinkEmailAndCompleteProfile(profileForm, verificationCode);
           } else {
             const completion = await beginCustomerProfileCompletion(profileForm);
-            if (completion.phoneVerificationRequired) {
-              applyPhoneVerificationState(completion);
+            if (completion.emailOtpRequired) {
+              applyEmailVerificationState(completion);
               return;
             }
           }
@@ -196,8 +200,8 @@ function CustomerLogin({ location, history }) {
             setNotice(`Check ${registration.email} for a confirmation link to finish creating your account.`);
             return;
           }
-          if (registration && registration.phoneVerificationRequired) {
-            applyPhoneVerificationState(registration);
+          if (registration && registration.emailOtpRequired) {
+            applyEmailVerificationState(registration);
             return;
           }
           requiresSignIn = true;
@@ -226,18 +230,18 @@ function CustomerLogin({ location, history }) {
     }
   };
 
-  const resendPhoneCode = async () => {
+  const resendEmailCode = async () => {
     setLoading(true);
     setError('');
     setNotice('');
     try {
-      await requestCustomerPhoneVerification(form.phone);
+      await requestCustomerLinkEmailVerification(form.email);
       setVerificationSent(true);
       setVerificationCode('');
-      setNotice(`A new SMS code was sent to ${form.phone}.`);
+      setNotice(`A new verification code was sent to ${form.email}.`);
     } catch (err) {
       setVerificationSent(false);
-      setError(err.message || 'SMS verification could not be started.');
+      setError(err.message || 'Email verification could not be started.');
     } finally {
       setLoading(false);
     }
@@ -289,9 +293,9 @@ function CustomerLogin({ location, history }) {
           </div>
           <div className="customer-login-route" aria-hidden="true">
             <span className="is-complete"><i>01</i><b>Request</b></span>
-            {/* <u> is the indeterminate bar track; its ::before is the sliver
-                that runs across it on a continuous linear loop. */}
-            <span className="is-current"><i>02</i><b>Deliver</b><u /></span>
+            <span className="is-current">
+              <i>02</i><b>Deliver</b><span className="customer-login-route__motion" />
+            </span>
             <span><i>03</i><b>Track</b></span>
           </div>
         </motion.section>
@@ -368,7 +372,7 @@ function CustomerLogin({ location, history }) {
                           onChange={(e) => update('name', e.target.value)}
                           placeholder="e.g. Ayesha Khan"
                           autoComplete="name"
-                          disabled={phoneVerificationRequired}
+                          disabled={emailOtpRequired}
                           required
                         />
                       </div>
@@ -386,7 +390,7 @@ function CustomerLogin({ location, history }) {
                           onChange={(e) => update('phone', e.target.value)}
                           placeholder="+92 3XX XXXXXXX"
                           autoComplete="tel"
-                          disabled={phoneVerificationRequired}
+                          disabled={emailOtpRequired}
                           required
                         />
                       </div>
@@ -402,7 +406,7 @@ function CustomerLogin({ location, history }) {
                           onChange={(e) => update('address', e.target.value)}
                           placeholder="House, street, area, and city"
                           autoComplete="street-address"
-                          disabled={phoneVerificationRequired}
+                          disabled={emailOtpRequired}
                           required
                         />
                       </div>
@@ -424,18 +428,18 @@ function CustomerLogin({ location, history }) {
                   onChange={(e) => update('email', e.target.value)}
                   placeholder={mode === 'signup' ? 'name@example.com' : 'Email or +92 phone number'}
                   autoComplete="username"
-                  disabled={phoneVerificationRequired}
+                  disabled={emailOtpRequired}
                   required
                 />
               </div>
 
-              {phoneVerificationRequired && (
+              {emailOtpRequired && (
                 <React.Fragment>
-                  <label className="water-login-label" htmlFor="customer-phone-code">SMS verification code <span aria-hidden="true">*</span></label>
+                  <label className="water-login-label" htmlFor="customer-email-code">Email verification code <span aria-hidden="true">*</span></label>
                   <div className={`water-login-input-wrap${verificationCode && !verificationCodeValid ? ' is-invalid' : ''}`}>
-                    <span className="water-login-input-icon" aria-hidden="true"><Phone size={18} /></span>
+                    <span className="water-login-input-icon" aria-hidden="true"><AtSign size={18} /></span>
                     <input
-                      id="customer-phone-code"
+                      id="customer-email-code"
                       name="one-time-code"
                       className="water-login-input"
                       type="text"
@@ -454,12 +458,12 @@ function CustomerLogin({ location, history }) {
                     />
                   </div>
                   <p className={`customer-password-hint${verificationCodeValid ? ' is-valid' : ''}`}>
-                    {verificationSent ? 'Enter the 6–10 digit code from the SMS.' : 'SMS delivery must be configured before phone-only history can be linked.'}
+                    {verificationSent ? 'Enter the 6 to 10 digit code sent to the email already on this customer record.' : 'Verify the email already on the existing customer record before its history can be linked.'}
                   </p>
                   <button
                     type="button"
                     className="water-login-back"
-                    onClick={resendPhoneCode}
+                    onClick={resendEmailCode}
                     disabled={loading}
                   >
                     {verificationSent ? 'Send a new code' : 'Send verification code'}
@@ -505,10 +509,10 @@ function CustomerLogin({ location, history }) {
             </motion.div>
 
             <button type="submit" className="water-login-submit" disabled={!canSubmit} aria-busy={loading}>
-              <span>{loading ? 'Please wait...' : phoneVerificationRequired ? 'Verify phone and link history' : profileCompletionRequired ? 'Complete customer profile' : mode === 'signup' ? 'Create customer account' : 'Sign in and order'}</span>
+              <span>{loading ? 'Please wait...' : emailOtpRequired ? 'Verify email and link history' : profileCompletionRequired ? 'Complete customer profile' : mode === 'signup' ? 'Create customer account' : 'Sign in and order'}</span>
               {!loading && <ArrowRight size={18} aria-hidden="true" />}
             </button>
-            <p className="water-login-note">Existing invoices link only after the matching email or phone is verified through Supabase.</p>
+            <p className="water-login-note">If these details match an existing customer, the email already on file must be verified before history is linked.</p>
             {mode === 'signin' && <Link className="water-login-forgot" to="/forgot-password?account=customer">Forgot password?</Link>}
           </form>
 

@@ -4,7 +4,7 @@
   display: flex;
   justify-content: flex-end;
   width: 100%;
-  padding: 14px 24px 0;
+  padding: 10px 18px 0;
   pointer-events: none;
 }
 
@@ -15,10 +15,10 @@
 
 .toolbar {
   display: flex;
-  min-height: 54px;
+  min-height: 50px;
   align-items: center;
   gap: 2px;
-  padding: 5px 7px 5px 12px;
+  padding: 4px 6px 4px 10px;
   color: var(--hs-header-text, #eef7ff) !important;
   background: var(--hs-header-bg, rgba(15, 27, 45, 0.88)) !important;
   border: 1px solid var(--hs-header-border, rgba(181, 211, 238, 0.12));
@@ -32,8 +32,8 @@
    language, account chevron) so they read as a single coherent group instead
    of a mix of MUI's default/"small" sizes and one-off !important overrides. */
 .toolbar :global(.MuiIconButton-root) {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   transition: background-color 180ms ease, transform 180ms ease;
 }
 
@@ -43,9 +43,9 @@
 
 .toolbar :global(.MuiIconButton-root .MuiSvgIcon-root),
 .toolbar > button > :global(.MuiSvgIcon-root) {
-  width: 20px;
-  height: 20px;
-  font-size: 20px;
+  width: 19px;
+  height: 19px;
+  font-size: 19px;
   transition: transform 180ms ease;
 }
 
@@ -76,11 +76,11 @@
 .searchForm {
   position: relative;
   display: flex;
-  width: clamp(220px, 23vw, 310px);
-  min-height: 42px;
+  width: clamp(200px, 22vw, 280px);
+  min-height: 38px;
   align-items: center;
   gap: 8px;
-  padding: 0 11px;
+  padding: 0 10px;
   color: inherit;
   background: rgba(131, 177, 216, 0.08);
   border: 1px solid rgba(170, 207, 236, 0.1);
@@ -95,8 +95,8 @@
 }
 
 .searchIcon {
-  width: 20px !important;
-  height: 20px !important;
+  width: 18px !important;
+  height: 18px !important;
   color: var(--hs-primary-light, #8db2cc);
 }
 
@@ -104,7 +104,7 @@
   flex: 1;
   min-width: 0;
   color: inherit !important;
-  font-size: 0.8375rem !important;
+  font-size: 0.79rem !important;
 }
 
 .searchInput input::placeholder {
@@ -206,7 +206,7 @@
 
 .accountButton {
   display: flex;
-  min-height: 44px;
+  min-height: 40px;
   align-items: center;
   gap: 8px;
   padding: 3px 8px 3px 4px;
@@ -226,14 +226,14 @@
 }
 
 .avatar {
-  width: 36px !important;
-  height: 36px !important;
+  width: 32px !important;
+  height: 32px !important;
 }
 
 .accountCopy {
   display: grid;
-  min-width: 100px;
-  max-width: 150px;
+  min-width: 90px;
+  max-width: 140px;
   text-align: left;
 }
 
@@ -284,8 +284,8 @@
 
 .languageButton {
   display: inline-flex;
-  min-width: 62px;
-  min-height: 44px;
+  min-width: 56px;
+  min-height: 40px;
   align-items: center;
   justify-content: center;
   gap: 5px;
@@ -339,18 +339,87 @@
 }
 
 :global(html[data-dashboard-layout='studio']) .header {
-  padding-top: 12px;
+  padding-top: 8px;
 }
 
 :global(html[data-dashboard-layout='studio']) .toolbar {
   width: 100%;
-  min-height: 54px;
+  min-height: 50px;
   color: var(--hs-header-custom-text, #f7f8fa) !important;
   background: var(--hs-header-custom, #08090b) !important;
   border-color: rgba(255, 255, 255, 0.1);
   border-radius: 12px !important;
   box-shadow: none !important;
   backdrop-filter: none;
+}
+
+@media (min-width: 960px) {
+  :global(html.dashboard-compact) .header {
+    padding: 7px 14px 0;
+  }
+
+  :global(html.dashboard-compact) .toolbar,
+  :global(html.dashboard-compact[data-dashboard-layout='studio']) .toolbar {
+    min-height: 44px;
+    padding: 3px 5px 3px 8px;
+  }
+
+  :global(html.dashboard-compact) .toolbar :global(.MuiIconButton-root) {
+    width: 32px;
+    height: 32px;
+  }
+
+  :global(html.dashboard-compact) .toolbar :global(.MuiIconButton-root .MuiSvgIcon-root),
+  :global(html.dashboard-compact) .toolbar > button > :global(.MuiSvgIcon-root) {
+    width: 17px;
+    height: 17px;
+    font-size: 17px;
+  }
+
+  :global(html.dashboard-compact) .searchForm {
+    width: clamp(180px, 20vw, 250px);
+    min-height: 34px;
+    gap: 6px;
+    padding-inline: 8px;
+  }
+
+  :global(html.dashboard-compact) .searchInput {
+    font-size: 0.73rem !important;
+  }
+
+  :global(html.dashboard-compact) .accountButton,
+  :global(html.dashboard-compact) .languageButton {
+    min-height: 34px;
+  }
+
+  :global(html.dashboard-compact) .avatar {
+    width: 28px !important;
+    height: 28px !important;
+  }
+
+  :global(html.dashboard-compact) .accountCopy {
+    min-width: 78px;
+    max-width: 124px;
+  }
+
+  :global(html.dashboard-compact) .accountCopy strong {
+    font-size: 0.72rem;
+  }
+
+  :global(html.dashboard-compact) .accountCopy small {
+    font-size: 0.61rem;
+  }
+
+  @media (pointer: coarse) {
+    :global(html.dashboard-compact) .toolbar :global(.MuiIconButton-root),
+    :global(html.dashboard-compact) .accountButton,
+    :global(html.dashboard-compact) .languageButton {
+      width: auto;
+      min-width: 44px;
+      height: 44px;
+      min-height: 44px;
+    }
+  }
 }
 
 :global(html[data-dashboard-layout='studio']) .searchForm {

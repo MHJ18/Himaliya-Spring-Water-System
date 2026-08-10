@@ -118,112 +118,91 @@ export const ADMIN_FONT_OPTIONS = [
   },
 ];
 
-// Background palettes. `theme` keeps whatever the accent preset supplies; the
-// rest override the page background only, so they compose with any accent.
-// `effect` drives an optional animated overlay layer (see _dark-mode.scss).
+// A deliberately small set of quiet workspace gradients. Backgrounds stay
+// independent from the accent theme, so users can pair any of these with any
+// button/chart colour without introducing another strong visual layer.
 export const ADMIN_BACKGROUND_PALETTES = [
+  // Light values carry a visible multi-stop gradient plus two radial accents.
+  // Cards sit on `background.paper`, so a tinted page behind them reads as
+  // depth rather than noise, and the tints stay light enough to keep dark
+  // body text well past the 4.5:1 contrast floor.
   {
-    id: 'theme',
-    name: 'Match accent',
-    description: 'Follow the accent palette',
+    id: 'sky',
+    name: 'Sky mist',
+    description: 'Blue gradient wash with a bright horizon',
     effect: 'none',
-    swatches: ['#078ead', '#63d7e8', '#f4f8fb'],
+    swatches: ['#3d86e8', '#9cc6ff', '#e4efff'],
+    light: 'radial-gradient(circle at 84% -10%, rgba(78, 150, 255, 0.42), transparent 32rem), radial-gradient(circle at 4% 104%, rgba(120, 190, 255, 0.32), transparent 30rem), linear-gradient(145deg, #eef5ff 0%, #dcebff 46%, #cbe0ff 100%)',
+    dark: 'radial-gradient(circle at 84% -10%, rgba(78, 139, 222, 0.24), transparent 30rem), radial-gradient(circle at 4% 104%, rgba(52, 108, 190, 0.2), transparent 28rem), linear-gradient(145deg, #07111f 0%, #0b1728 52%, #081220 100%)',
   },
+  {
+    id: 'aqua',
+    name: 'Aqua breeze',
+    description: 'Teal-to-mint gradient with a cool finish',
+    effect: 'none',
+    swatches: ['#17a89a', '#7fdccf', '#dcf5f0'],
+    light: 'radial-gradient(circle at 12% -8%, rgba(38, 199, 181, 0.4), transparent 31rem), radial-gradient(circle at 94% 104%, rgba(86, 205, 232, 0.3), transparent 29rem), linear-gradient(145deg, #e8faf6 0%, #d3f1eb 48%, #c9ecf4 100%)',
+    dark: 'radial-gradient(circle at 12% -8%, rgba(45, 176, 162, 0.22), transparent 29rem), radial-gradient(circle at 94% 104%, rgba(48, 150, 180, 0.18), transparent 28rem), linear-gradient(145deg, #071410 0%, #081b1a 50%, #081621 100%)',
+  },
+  {
+    id: 'lavender',
+    name: 'Lavender haze',
+    description: 'Violet into blue with a soft glow',
+    effect: 'none',
+    swatches: ['#7c5cf0', '#b9a6ff', '#e9e2ff'],
+    light: 'radial-gradient(circle at 86% -10%, rgba(134, 104, 250, 0.38), transparent 31rem), radial-gradient(circle at 2% 104%, rgba(180, 150, 255, 0.32), transparent 29rem), linear-gradient(145deg, #f3eeff 0%, #e6dcff 48%, #d8e5ff 100%)',
+    dark: 'radial-gradient(circle at 86% -10%, rgba(139, 119, 230, 0.24), transparent 29rem), radial-gradient(circle at 2% 104%, rgba(110, 92, 200, 0.2), transparent 28rem), linear-gradient(145deg, #100d1b 0%, #151329 50%, #0d1422 100%)',
+  },
+  // Multi-hue washes — three distinct colours blended in one gradient,
+  // rather than the light-to-dark tint of a single hue used above.
   {
     id: 'aurora',
     name: 'Aurora',
-    description: 'Drifting colour bloom',
-    effect: 'aurora',
-    swatches: ['#7c5ac8', '#29c9e8', '#f6f4ff'],
-    light: 'radial-gradient(circle at 12% 0%, rgba(124, 90, 200, 0.18), transparent 30rem), radial-gradient(circle at 88% 10%, rgba(41, 201, 232, 0.16), transparent 28rem), linear-gradient(140deg, #fbfaff 0%, #eef3ff 52%, #f2fbfd 100%)',
-    dark: 'radial-gradient(circle at 12% 0%, rgba(124, 90, 200, 0.3), transparent 30rem), radial-gradient(circle at 88% 10%, rgba(41, 201, 232, 0.2), transparent 28rem), linear-gradient(140deg, #0a0a16 0%, #0d1428 52%, #07131c 100%)',
-  },
-  {
-    id: 'mesh',
-    name: 'Mesh',
-    description: 'Soft four-point colour mesh',
-    effect: 'mesh',
-    swatches: ['#f5a06f', '#68a3ff', '#fff7f2'],
-    light: 'radial-gradient(at 0% 0%, rgba(245, 160, 111, 0.2), transparent 45%), radial-gradient(at 100% 0%, rgba(104, 163, 255, 0.18), transparent 45%), radial-gradient(at 0% 100%, rgba(74, 203, 146, 0.14), transparent 45%), radial-gradient(at 100% 100%, rgba(170, 124, 243, 0.16), transparent 45%), #fdfbf9',
-    dark: 'radial-gradient(at 0% 0%, rgba(245, 160, 111, 0.2), transparent 45%), radial-gradient(at 100% 0%, rgba(104, 163, 255, 0.2), transparent 45%), radial-gradient(at 0% 100%, rgba(74, 203, 146, 0.14), transparent 45%), radial-gradient(at 100% 100%, rgba(170, 124, 243, 0.18), transparent 45%), #0a0c12',
-  },
-  {
-    id: 'dawn',
-    name: 'Dawn',
-    description: 'Warm horizon wash',
-    effect: 'glow',
-    swatches: ['#dc643b', '#bd3f77', '#fff6f1'],
-    light: 'radial-gradient(circle at 50% -10%, rgba(220, 100, 59, 0.16), transparent 26rem), linear-gradient(180deg, #fff7f3 0%, #fdeee9 46%, #f7f2fb 100%)',
-    dark: 'radial-gradient(circle at 50% -10%, rgba(220, 100, 59, 0.24), transparent 26rem), linear-gradient(180deg, #150c0a 0%, #170f16 46%, #0b0910 100%)',
-  },
-  {
-    id: 'grid',
-    name: 'Blueprint',
-    description: 'Technical grid with a cool wash',
-    effect: 'grid',
-    swatches: ['#2563eb', '#0891b2', '#f2f6fc'],
-    light: 'linear-gradient(rgba(37, 99, 235, 0.05) 1px, transparent 1px) 0 0 / 3rem 3rem, linear-gradient(90deg, rgba(37, 99, 235, 0.05) 1px, transparent 1px) 0 0 / 3rem 3rem, linear-gradient(150deg, #f6f9ff 0%, #eef4fb 100%)',
-    dark: 'linear-gradient(rgba(96, 165, 250, 0.07) 1px, transparent 1px) 0 0 / 3rem 3rem, linear-gradient(90deg, rgba(96, 165, 250, 0.07) 1px, transparent 1px) 0 0 / 3rem 3rem, linear-gradient(150deg, #060c16 0%, #050a12 100%)',
-  },
-  {
-    id: 'paper',
-    name: 'Paper',
-    description: 'Flat neutral, no colour cast',
+    description: 'Teal, violet, and pink in one soft blend',
     effect: 'none',
-    swatches: ['#e4e4e7', '#a1a1aa', '#ffffff'],
-    light: 'linear-gradient(180deg, #ffffff 0%, #f4f4f5 100%)',
-    dark: 'linear-gradient(180deg, #0b0b0d 0%, #141416 100%)',
+    swatches: ['#14b8a6', '#8b5cf6', '#ec4899'],
+    light: 'radial-gradient(circle at 10% -10%, rgba(20, 184, 166, 0.38), transparent 30rem), radial-gradient(circle at 50% 42%, rgba(139, 92, 246, 0.22), transparent 34rem), radial-gradient(circle at 94% 106%, rgba(236, 72, 153, 0.34), transparent 29rem), linear-gradient(150deg, #eafcf8 0%, #eee8ff 50%, #ffe7f3 100%)',
+    dark: 'radial-gradient(circle at 10% -10%, rgba(20, 150, 140, 0.22), transparent 28rem), radial-gradient(circle at 50% 42%, rgba(120, 90, 220, 0.16), transparent 32rem), radial-gradient(circle at 94% 106%, rgba(200, 60, 130, 0.18), transparent 27rem), linear-gradient(150deg, #08120f 0%, #100e1c 50%, #190f16 100%)',
   },
-  // Light-first palettes. Their dark values stay deliberately deep so the
-  // option still behaves if someone switches the workspace to dark mode.
   {
-    id: 'porcelain',
-    name: 'Porcelain',
-    description: 'Soft white with a cool edge',
+    id: 'citrus',
+    name: 'Citrus dawn',
+    description: 'Green, amber, and orange rising together',
     effect: 'none',
-    swatches: ['#ffffff', '#f1f5f9', '#e2e8f0'],
-    light: 'radial-gradient(circle at 20% 0%, rgba(148, 187, 233, 0.14), transparent 30rem), linear-gradient(165deg, #ffffff 0%, #f6f9fc 55%, #eef3f8 100%)',
-    dark: 'linear-gradient(165deg, #0e1116 0%, #141922 100%)',
+    swatches: ['#22c55e', '#eab308', '#f97316'],
+    light: 'radial-gradient(circle at 8% -10%, rgba(34, 197, 94, 0.36), transparent 30rem), radial-gradient(circle at 50% 42%, rgba(234, 179, 8, 0.26), transparent 33rem), radial-gradient(circle at 96% 104%, rgba(249, 115, 22, 0.34), transparent 29rem), linear-gradient(150deg, #eafcef 0%, #fff8e1 50%, #fff0e0 100%)',
+    dark: 'radial-gradient(circle at 8% -10%, rgba(34, 170, 90, 0.2), transparent 28rem), radial-gradient(circle at 50% 42%, rgba(200, 150, 10, 0.16), transparent 31rem), radial-gradient(circle at 96% 104%, rgba(220, 100, 20, 0.2), transparent 27rem), linear-gradient(150deg, #0a140c 0%, #171208 50%, #1a1008 100%)',
   },
   {
-    id: 'cream',
-    name: 'Warm cream',
-    description: 'Soft paper warmth, easy on the eyes',
-    effect: 'glow',
-    swatches: ['#fdf8f0', '#f5e9d7', '#e8d5b7'],
-    light: 'radial-gradient(circle at 78% 4%, rgba(230, 190, 138, 0.2), transparent 28rem), linear-gradient(165deg, #fffdf9 0%, #fbf4e9 52%, #f5ecdc 100%)',
-    dark: 'linear-gradient(165deg, #171310 0%, #1e1813 100%)',
-  },
-  {
-    id: 'mist',
-    name: 'Light grey',
-    description: 'Neutral grey with a gentle lift',
+    id: 'meadow',
+    name: 'Fresh meadow',
+    description: 'Spring green rising into lime',
     effect: 'none',
-    swatches: ['#fafafa', '#ededf0', '#dcdce1'],
-    light: 'linear-gradient(165deg, #fcfcfd 0%, #f2f2f5 50%, #e8e8ed 100%)',
-    dark: 'linear-gradient(165deg, #101012 0%, #17171a 100%)',
+    swatches: ['#3ba55d', '#8fd99a', '#dcf3dd'],
+    light: 'radial-gradient(circle at 10% -10%, rgba(64, 190, 110, 0.4), transparent 31rem), radial-gradient(circle at 95% 104%, rgba(158, 220, 110, 0.34), transparent 29rem), linear-gradient(145deg, #eefaef 0%, #dcf2e0 48%, #e2f5d6 100%)',
+    dark: 'radial-gradient(circle at 10% -10%, rgba(58, 160, 96, 0.24), transparent 29rem), radial-gradient(circle at 95% 104%, rgba(120, 176, 80, 0.18), transparent 28rem), linear-gradient(145deg, #08150d 0%, #0c1c12 50%, #0b1a0e 100%)',
   },
   {
-    id: 'sage',
-    name: 'Sage',
-    description: 'Pale green, calm and low contrast',
-    effect: 'aurora',
-    swatches: ['#f4f9f4', '#dcece0', '#c3ddcb'],
-    light: 'radial-gradient(circle at 14% 2%, rgba(120, 180, 140, 0.16), transparent 28rem), linear-gradient(165deg, #fbfefb 0%, #f0f7f1 54%, #e6f0e8 100%)',
-    dark: 'linear-gradient(165deg, #0d1310 0%, #121a15 100%)',
+    id: 'twilight',
+    name: 'Deep twilight',
+    description: 'Indigo and magenta for a rich desk',
+    effect: 'none',
+    swatches: ['#5b4bd6', '#a07af0', '#e0d9ff'],
+    light: 'radial-gradient(circle at 92% -12%, rgba(120, 88, 240, 0.42), transparent 32rem), radial-gradient(circle at 0% 100%, rgba(228, 110, 200, 0.32), transparent 30rem), linear-gradient(150deg, #eeeaff 0%, #ded6ff 44%, #f0dcf6 100%)',
+    dark: 'radial-gradient(circle at 92% -12%, rgba(108, 82, 220, 0.28), transparent 30rem), radial-gradient(circle at 0% 100%, rgba(190, 84, 168, 0.2), transparent 28rem), linear-gradient(150deg, #0d0a1c 0%, #150f2b 50%, #1a0f24 100%)',
   },
   {
-    id: 'blush',
-    name: 'Blush',
-    description: 'Warm pink-white, soft and bright',
-    effect: 'glow',
-    swatches: ['#fff7f7', '#fbe9e9', '#f3d5d5'],
-    light: 'radial-gradient(circle at 82% 0%, rgba(232, 160, 170, 0.18), transparent 28rem), linear-gradient(165deg, #fffbfb 0%, #fdf1f2 52%, #f8e6e8 100%)',
-    dark: 'linear-gradient(165deg, #170f11 0%, #1e1417 100%)',
+    id: 'slate',
+    name: 'Graphite',
+    description: 'Neutral grey gradient, minimal and calm',
+    effect: 'none',
+    swatches: ['#5c6b7a', '#a8b6c4', '#e3e8ee'],
+    light: 'radial-gradient(circle at 80% -10%, rgba(104, 128, 152, 0.28), transparent 31rem), radial-gradient(circle at 4% 104%, rgba(140, 160, 182, 0.24), transparent 29rem), linear-gradient(145deg, #f2f5f8 0%, #e4eaf0 48%, #dae2ea 100%)',
+    dark: 'radial-gradient(circle at 80% -10%, rgba(96, 118, 142, 0.2), transparent 29rem), radial-gradient(circle at 4% 104%, rgba(70, 88, 108, 0.18), transparent 28rem), linear-gradient(145deg, #0d1014 0%, #141922 50%, #101419 100%)',
   },
 ];
 
-export const DEFAULT_ADMIN_BACKGROUND = 'theme';
+export const DEFAULT_ADMIN_BACKGROUND = 'sky';
 
 export function getAdminBackgroundPalette(value) {
   return ADMIN_BACKGROUND_PALETTES.find((palette) => palette.id === value)

@@ -8,7 +8,8 @@
   "scripts": {
     "build": "cross-env PUBLIC_URL=/ GENERATE_SOURCEMAP=false NODE_OPTIONS=--openssl-legacy-provider node scripts/build.js",
     "build:github-pages": "cross-env PUBLIC_URL=/Himaliya-Spring-Water-System/ GENERATE_SOURCEMAP=false NODE_OPTIONS=--openssl-legacy-provider node scripts/build.js",
-    "deploy:netlify": "npm run build && npx --yes netlify-cli deploy --prod --dir=build",
+    "deploy:netlify": "npm run build && npx --yes netlify-cli@27.1.1 deploy --prod --dir=build",
+    "lint": "eslint src --ext .js,.jsx",
     "start": "cross-env NODE_OPTIONS=--openssl-legacy-provider node scripts/start.js",
     "test": "node scripts/test.js"
   },

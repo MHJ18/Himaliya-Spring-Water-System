@@ -8,145 +8,26 @@ import {
 } from 'motion/react';
 import {
   ArrowRight,
-  ChartNoAxesCombined,
   Check,
-  ClipboardPenLine,
   Droplets,
   LogIn,
   Menu,
   Play,
   RefreshCw,
   ShieldCheck,
-  Truck,
-  UserRoundPlus,
-  UsersRound,
-  WalletCards,
   X,
 } from 'lucide-react';
 import BottleFillFilm from './BottleFillFilm';
+import FeatureCards from './FeatureCards';
+import ConnectedCore from './ConnectedCore';
+import OperationsShowcase from './OperationsShowcase';
+import LiveStatsStrip from './LiveStatsStrip';
 import './Landing.css';
 
 const fluidSimulationModule = import('../../components/fluid/FluidSimulation');
 const FluidSimulation = React.lazy(() => fluidSimulationModule);
 const enterEase = [0.22, 1, 0.36, 1];
 const viewportOnce = { once: true, amount: 0.25 };
-
-const deliverySteps = [
-  {
-    step: '01',
-    title: 'Add the customer once',
-    detail: 'Phone, address and bottle deposit—every home and office gets a proper account in under a minute.',
-    tag: '2 min setup',
-    icon: UserRoundPlus,
-  },
-  {
-    step: '02',
-    title: 'Log each delivery on the route',
-    detail: 'Bottles out, empties in and cash collected. Your driver records it before moving to the next stop.',
-    tag: 'Same-day entry',
-    icon: Truck,
-  },
-  {
-    step: '03',
-    title: 'Know who owes what—instantly',
-    detail: 'Balances, purchase history and monthly revenue update automatically. No end-of-month surprises.',
-    tag: 'Live ledger',
-    icon: WalletCards,
-  },
-];
-
-// Each card draws its own subject: a filled-in sales sheet, a ledger of
-// customers, bottles cycling out and back, and a revenue trend.
-const salesEntryVisual = (
-  <svg viewBox="0 0 150 64" fill="none">
-    <rect x="4" y="4" width="76" height="56" rx="8" stroke="currentColor" strokeOpacity=".4" strokeWidth="1.5" />
-    <path d="M18 20h48M18 32h48M18 44h28" stroke="currentColor" strokeOpacity=".7" strokeWidth="3" strokeLinecap="round" />
-    <circle cx="116" cy="32" r="20" stroke="currentColor" strokeOpacity=".32" strokeWidth="1.5" />
-    <path d="m106 32 7 7 14-15" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
-const ledgerVisual = (
-  <svg viewBox="0 0 150 64" fill="none">
-    {[4, 26, 48].map((top, row) => (
-      <g key={top}>
-        <circle cx="11" cy={top + 6} r="7" stroke="currentColor" strokeOpacity=".55" strokeWidth="1.5" />
-        <path
-          d={`M26 ${top + 3}h${[52, 40, 46][row]}M26 ${top + 10}h${[30, 22, 26][row]}`}
-          stroke="currentColor"
-          strokeOpacity=".55"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-        />
-        <rect x={150 - [34, 28, 31][row]} y={top} width={[34, 28, 31][row]} height="13" rx="6.5" fill="currentColor" fillOpacity={row === 0 ? '.3' : '.16'} />
-      </g>
-    ))}
-  </svg>
-);
-
-const gallonVisual = (
-  <svg viewBox="0 0 150 64" fill="none">
-    <path d="M20 6h14v5l6 9v34a4 4 0 0 1-4 4H18a4 4 0 0 1-4-4V20l6-9V6Z" stroke="currentColor" strokeOpacity=".6" strokeWidth="1.5" />
-    <path d="M14 30h26v24a4 4 0 0 1-4 4H18a4 4 0 0 1-4-4V30Z" fill="currentColor" fillOpacity=".3" />
-    <path d="M116 6h14v5l6 9v34a4 4 0 0 1-4 4h-18a4 4 0 0 1-4-4V20l6-9V6Z" stroke="currentColor" strokeOpacity=".38" strokeWidth="1.5" />
-    <path d="M62 22a14 14 0 0 1 26-4" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-    <path d="m89 8 .5 10-9.5-2" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-    <path d="M88 42a14 14 0 0 1-26 4" stroke="currentColor" strokeOpacity=".55" strokeWidth="3" strokeLinecap="round" />
-    <path d="m61 56-.5-10 9.5 2" stroke="currentColor" strokeOpacity=".55" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-);
-
-const analyticsVisual = (
-  <svg viewBox="0 0 150 64" fill="none">
-    <path d="M4 58h142" stroke="currentColor" strokeOpacity=".28" strokeWidth="1.5" />
-    <path d="M8 50 38 36 64 42 92 18 118 25 144 6V58H8Z" fill="currentColor" fillOpacity=".14" />
-    <path d="M8 50 38 36 64 42 92 18 118 25 144 6" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
-    <circle cx="92" cy="18" r="4.5" fill="currentColor" />
-    <circle cx="144" cy="6" r="4.5" fill="currentColor" />
-  </svg>
-);
-
-const bentoFeatures = [
-  {
-    title: 'Daily sales entry',
-    detail: 'Record deliveries and payments in seconds—built for drivers, not accountants.',
-    icon: ClipboardPenLine,
-    metrics: ['Fast entry', 'Cash + credit'],
-    size: 'wide',
-    visual: salesEntryVisual,
-  },
-  {
-    title: 'Customer ledger',
-    detail: 'Search by name or phone. See deposits and outstanding balances at a glance.',
-    icon: UsersRound,
-    metrics: ['Deposits', 'Balances'],
-    size: 'standard',
-    visual: ledgerVisual,
-  },
-  {
-    title: '19L gallon tracking',
-    detail: 'See full gallons sent, empties collected and containers still with customers.',
-    icon: RefreshCw,
-    metrics: ['Full out', 'Empty in', 'Due back'],
-    size: 'standard',
-    visual: gallonVisual,
-  },
-  {
-    title: 'Monthly analytics',
-    detail: 'Revenue trends, bottle movement and active customers—export reports when needed.',
-    icon: ChartNoAxesCombined,
-    metrics: ['Revenue', 'Bottle flow'],
-    size: 'wide',
-    visual: analyticsVisual,
-  },
-];
-
-const stats = [
-  ['500+', 'homes & offices served'],
-  ['24', 'Sialkot Cantt routes daily'],
-  ['19L', 'refill delivery'],
-  ['Same day', 'sales & balance updates'],
-];
 
 function Landing() {
   const reduceMotion = useReducedMotion();
@@ -346,105 +227,49 @@ function Landing() {
           <i /><i /><i />
         </div>
 
-        <motion.section
-          className="landing-stats"
-          aria-label="Service statistics"
-          initial={reduceMotion ? false : { opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={viewportOnce}
-          transition={{ duration: 0.5, ease: enterEase }}
-        >
-          {stats.map(([value, label], index) => (
-            <div key={label} className={index === stats.length - 1 ? 'is-accent' : ''}>
-              <strong>{value}</strong>
-              <span>{label}</span>
-            </div>
-          ))}
-        </motion.section>
+        <div className="pre-webgl-shell__illustration" aria-hidden="true">
+          <svg viewBox="0 0 1440 720" fill="none" focusable="false">
+            <circle className="pre-webgl-shell__sun" cx="1174" cy="112" r="68" />
 
-        <section id="delivery" className="scroll-story" aria-labelledby="delivery-title">
-          <motion.div
-            className="legacy-section-heading legacy-section-heading--center"
-            initial={reduceMotion ? false : { opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={viewportOnce}
-            transition={{ duration: 0.5, ease: enterEase }}
-          >
-            <span>How it works</span>
-            <h2 id="delivery-title">From doorstep to dashboard in three steps.</h2>
-            <p>Built for how water delivery teams actually work—fast entries, clear accounts, no clutter.</p>
-          </motion.div>
+            <path
+              className="pre-webgl-shell__ridge pre-webgl-shell__ridge--back"
+              d="M-48 354 132 226l112 80 138-168 154 170 150-92 144 112 180-168 156 148 126-92 196 144"
+              vectorEffect="non-scaling-stroke"
+            />
+            <path
+              className="pre-webgl-shell__ridge"
+              d="M-52 422 168 284l120 82 162-148 172 164 154-108 140 118 194-162 174 138 142-82 172 112"
+              vectorEffect="non-scaling-stroke"
+            />
 
-          <ol className="story-timeline">
-            {deliverySteps.map(({ step, title, detail, tag, icon: Icon }, index) => (
-              <motion.li
-                key={step}
-                initial={reduceMotion ? false : { opacity: 0, x: index % 2 === 0 ? -24 : 24 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={viewportOnce}
-                transition={{ delay: index * 0.08, duration: 0.48, ease: enterEase }}
-              >
-                <div className="story-timeline-rail" aria-hidden="true">
-                  <span className="story-timeline-dot">{step}</span>
-                  {index < deliverySteps.length - 1 && <span className="story-timeline-line" />}
-                </div>
-                <motion.article
-                  className="story-panel"
-                  whileHover={reduceMotion ? {} : { y: -5, transition: { duration: 0.2 } }}
-                >
-                  <div className="story-panel__icon"><Icon size={22} aria-hidden="true" /></div>
-                  <div className="story-panel__copy">
-                    <span className="story-tag">{tag}</span>
-                    <h3>{title}</h3>
-                    <p>{detail}</p>
-                  </div>
-                  <span className="story-panel__arrow" aria-hidden="true"><ArrowRight size={18} /></span>
-                </motion.article>
-              </motion.li>
-            ))}
-          </ol>
-        </section>
+            <path
+              className="pre-webgl-shell__snow"
+              d="m338 192 44-54 42 51-21-12-20 21-18-21-17 13-10 2Zm724 14 48-46 43 41-20-8-18 18-17-18-19 10-17 3Z"
+              vectorEffect="non-scaling-stroke"
+            />
+            <path
+              className="pre-webgl-shell__spring"
+              d="M450 218c-28 76 74 93 18 157-38 43-17 87 54 106 84 23 99 79 30 129"
+              vectorEffect="non-scaling-stroke"
+            />
 
-        <section id="features" className="operations-section" aria-labelledby="features-title">
-          <motion.div
-            className="legacy-section-heading"
-            initial={reduceMotion ? false : { opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={viewportOnce}
-            transition={{ duration: 0.5, ease: enterEase }}
-          >
-            <span>Built for your business</span>
-            <h2 id="features-title">Everything a water delivery team needs.</h2>
-            <p>Not a generic CRM—a focused workspace for Himaliya Spring Water operations in Sialkot Cantt.</p>
-          </motion.div>
+            <g className="pre-webgl-shell__water-lines">
+              <path d="M-34 462c170-42 292 43 458 8 159-34 294-25 452 15 174 44 322-45 598-5" vectorEffect="non-scaling-stroke" />
+              <path d="M-42 505c164-39 302 41 466 9 166-33 304-20 466 18 162 38 323-45 594-8" vectorEffect="non-scaling-stroke" />
+              <path d="M-28 550c186-36 312 39 478 6 159-31 300-12 458 21 166 35 319-40 560-10" vectorEffect="non-scaling-stroke" />
+              <path d="M-48 598c183-33 315 34 490 4 166-29 311-4 464 24 173 31 318-35 570-5" vectorEffect="non-scaling-stroke" />
+              <path d="M-24 650c184-29 326 28 494 0 165-27 300 1 456 27 173 29 324-28 554-3" vectorEffect="non-scaling-stroke" />
+            </g>
+          </svg>
+        </div>
 
-          <div className="bento-grid">
-            {bentoFeatures.map(({ icon: Icon, title, detail, metrics, size, visual }, index) => (
-              <motion.article
-                key={title}
-                className={`bento-card bento-card--${size}`}
-                initial={reduceMotion ? false : { opacity: 0, y: 24 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={viewportOnce}
-                transition={{ delay: index * 0.06, duration: 0.46, ease: enterEase }}
-                whileHover={reduceMotion ? {} : { y: -7, transition: { duration: 0.2 } }}
-              >
-                <div className="bento-card__topline">
-                  <span className="operation-icon" aria-hidden="true"><Icon size={22} /></span>
-                  <small>0{index + 1}</small>
-                </div>
-                <h3>{title}</h3>
-                <p>{detail}</p>
-                <div className="bento-card__visual" aria-hidden="true">
-                  {visual}
-                </div>
-                <div className="bento-card__metrics">
-                  {metrics.map((metric) => <span key={metric}>{metric}</span>)}
-                </div>
-              </motion.article>
-            ))}
-          </div>
-        </section>
+        <LiveStatsStrip />
+
+        <FeatureCards />
+
+        <ConnectedCore />
+
+        <OperationsShowcase />
 
         <motion.section
           className="landing-cta"

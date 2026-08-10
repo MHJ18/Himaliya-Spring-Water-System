@@ -155,6 +155,7 @@ function Sidebar({
   return (
     <Box
       component="aside"
+      id="admin-primary-navigation"
       className={[
         s.root,
         sidebarOpened ? s.drawerOpen : '',

@@ -5,8 +5,7 @@ import LightModeRoundedIcon from '@mui/icons-material/LightModeRounded';
 import { useSettings } from '../../context/SettingsContext';
 
 export default function DarkModeToggle() {
-  const { settings, toggleDarkMode } = useSettings();
-  const isDark = settings.themeMode === 'dark' || settings.darkMode;
+  const { resolvedDarkMode: isDark, toggleDarkMode } = useSettings();
 
   return (
     <Tooltip title={isDark ? 'Use light theme' : 'Use dark theme'}>

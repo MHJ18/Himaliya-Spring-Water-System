@@ -2,6 +2,7 @@ import { jsPDF } from 'jspdf';
 import * as autoTableModule from 'jspdf-autotable';
 import { DEFAULT_SETTINGS } from '../data/constants';
 import { formatCurrency, formatDate } from './formatters';
+import { generateInvoiceNumber } from './invoiceNumber';
 import { normalizeInvoiceHistory, resolveInvoiceDocument } from './invoiceTotals';
 
 const autoTable = autoTableModule.default || autoTableModule.autoTable || autoTableModule;
@@ -9,6 +10,20 @@ const autoTable = autoTableModule.default || autoTableModule.autoTable || autoTa
 function safeText(value, fallback = '—') {
   const text = value === null || value === undefined ? '' : String(value).trim();
   return text || fallback;
+}
+
+// Invoice numbers are unpredictable secrets (see invoiceNumber.js) and can run
+// 30+ characters, so their on-page size can't be a fixed constant — it has to
+// shrink with length or long numbers spill past the page edge. Courier is a
+// fixed-pitch face (~0.6em per glyph at any weight), so the size that makes a
+// string exactly fill a given width can be solved arithmetically instead of
+// needing a real text-measurement pass.
+function fitMonoFontSize(text, maxWidthMm, { min = 6.5, max = 11 } = {}) {
+  const chars = Math.max(String(text).length, 1);
+  const pointsPerChar = 0.6;
+  const mmPerPoint = 0.3528;
+  const size = maxWidthMm / (chars * pointsPerChar * mmPerPoint);
+  return Math.min(max, Math.max(min, size));
 }
 
 function drawCompanyLogo(doc, x, y, size) {
@@ -36,7 +51,10 @@ function buildLocalInvoice(customer, historyItems = [], company = DEFAULT_SETTIN
   const amountPaid = normalizedHistory.reduce((sum, item) => sum + item.amountPaid, 0);
   const totalAmount = normalizedHistory.reduce((sum, item) => sum + item.balanceDue, 0);
   const totalQty = normalizedHistory.reduce((sum, item) => sum + item.quantity, 0);
-  const invoiceNumber = `HSW-${String(customer.id || customer.phone || customer.name || Date.now()).slice(-6).toUpperCase()}`;
+  // Local (non-persisted) invoices still populate the public verify URL printed
+  // on the PDF, so they need the same unguessable, capability-secret-grade
+  // number as server-created invoices rather than one derived from customer data.
+  const invoiceNumber = generateInvoiceNumber();
 
   return {
     invoiceNumber,
@@ -107,97 +125,126 @@ export function exportInvoicePdf(invoice) {
   const isMonthlyAccountInvoice = history.length > 0
     && history.every((item) => item.paymentSchedule !== 'on_delivery');
   const showPaidColumn = history.some((item) => item.paymentSchedule === 'on_delivery');
-  const paymentSummaryLabel = isMonthlyAccountInvoice ? 'Account payments' : 'Payments applied';
 
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+  // Design tokens — kept in one place so the header, panels, table and
+  // footer all read as one consistent system instead of ad-hoc colors.
   const accent = [37, 99, 235];
-  const muted = [100, 116, 139];
   const ink = [15, 23, 42];
+  const muted = [100, 116, 139];
+  const subtle = [148, 163, 184];
+  const border = [226, 232, 240];
+  const surface = [248, 250, 252];
+  const headerBg = [224, 236, 255];
+  const headerMuted = [65, 90, 133];
+
+  const pageLeft = 14;
+  const pageRight = 196;
+  const contentWidth = pageRight - pageLeft;
 
   doc.setFillColor(255, 255, 255);
   doc.rect(0, 0, 210, 297, 'F');
 
-  doc.setFillColor(7, 17, 31);
-  doc.rect(0, 0, 210, 38, 'F');
-  drawCompanyLogo(doc, 14, 8, 22);
+  // ---- Header -------------------------------------------------------
+  doc.setFillColor(headerBg[0], headerBg[1], headerBg[2]);
+  doc.rect(0, 0, 210, 40, 'F');
+  doc.setFillColor(accent[0], accent[1], accent[2]);
+  doc.rect(0, 40, 210, 1.2, 'F');
 
-  doc.setTextColor(255, 255, 255);
+  drawCompanyLogo(doc, pageLeft, 9, 22);
+
+  doc.setTextColor(ink[0], ink[1], ink[2]);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(18);
-  doc.text(safeText(company.name, 'Himaliya Spring Water'), 42, 17);
+  doc.text(safeText(company.name, 'Himaliya Spring Water'), 42, 18);
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8.5);
-  doc.setTextColor(190, 233, 255);
-  doc.text('Premium water delivery and customer account record', 42, 23);
+  doc.setTextColor(headerMuted[0], headerMuted[1], headerMuted[2]);
+  doc.text('Premium water delivery and customer account record', 42, 24.5);
   doc.text(
-    `${safeText(company.address, 'Sialkot Cantt')} | ${safeText(company.phone, '')}`,
+    `${safeText(company.address, 'Sialkot Cantt')}   |   ${safeText(company.phone, '')}`,
     42,
-    29
+    30,
   );
 
-  doc.setFillColor(239, 248, 255);
-  doc.roundedRect(147, 8, 49, 23, 3, 3, 'F');
-  doc.setTextColor(accent[0], accent[1], accent[2]);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8);
-  doc.text('INVOICE', 151, 15);
-  doc.setTextColor(ink[0], ink[1], ink[2]);
-  doc.setFontSize(10.5);
-  doc.text(invoiceNumber, 151, 21);
-  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9.5);
+  doc.setTextColor(accent[0], accent[1], accent[2]);
+  doc.text('INVOICE', pageRight, 15, { align: 'right' });
+
+  // ---- Bill to / prepared by -----------------------------------------
+  const billToTop = 48;
+  doc.setFont('helvetica', 'bold');
   doc.setFontSize(7.5);
   doc.setTextColor(muted[0], muted[1], muted[2]);
-  doc.text(billDate.toLocaleDateString('en-PK'), 151, 27);
-  if (summary.dueDate) {
-    doc.setFontSize(6.5);
-    doc.text(`Due: ${new Date(summary.dueDate).toLocaleDateString('en-PK')}`, 151, 30);
-  }
-
-  doc.setDrawColor(accent[0], accent[1], accent[2]);
-  doc.setLineWidth(0.5);
-  doc.line(14, 41, 196, 41);
+  doc.text('BILL TO', pageLeft, billToTop);
 
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8);
-  doc.setTextColor(muted[0], muted[1], muted[2]);
-  doc.text('BILL TO', 14, 49);
-  doc.text('PREPARED BY', 110, 49);
-
+  doc.setFontSize(12.5);
   doc.setTextColor(ink[0], ink[1], ink[2]);
-  doc.setFontSize(11);
-  doc.text(safeText(customer.name, 'Customer'), 14, 56);
-  doc.text(safeText(preparedBy.name, 'Admin'), 110, 56);
+  doc.text(safeText(customer.name, 'Customer'), pageLeft, billToTop + 7);
 
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
+  doc.setFontSize(8.5);
   doc.setTextColor(muted[0], muted[1], muted[2]);
-  doc.text(`Phone: ${safeText(customer.phone)}`, 14, 62);
-  doc.text(`Address: ${safeText(customer.address)}`, 14, 67);
-  doc.text(`Role: ${safeText(preparedBy.role, 'Owner')}`, 110, 62);
-  doc.text(`Email: ${safeText(preparedBy.email)}`, 110, 67);
+  doc.text(`Phone: ${safeText(customer.phone)}`, pageLeft, billToTop + 13);
+  doc.text(`Address: ${safeText(customer.address)}`, pageLeft, billToTop + 18);
 
-  const summaryY = 75;
-  [
-    { label: 'Sales', value: String(summary.entryCount || history.length) },
-    { label: 'Gross', value: formatCurrency(summary.grossAmount) },
-    { label: paymentSummaryLabel, value: formatCurrency(summary.amountPaid) },
-    { label: 'Amount due', value: formatCurrency(summary.totalAmount) },
-  ].forEach((item, index) => {
-    const x = 14 + (index * 46);
-    doc.setDrawColor(226, 232, 240);
-    doc.setFillColor(248, 250, 252);
-    doc.roundedRect(x, summaryY, 43, 14, 2, 2, 'FD');
-    doc.setTextColor(muted[0], muted[1], muted[2]);
-    doc.setFontSize(7);
-    doc.text(item.label.toUpperCase(), x + 4, summaryY + 5);
+  doc.setFont('helvetica', 'italic');
+  doc.setFontSize(7.5);
+  doc.setTextColor(subtle[0], subtle[1], subtle[2]);
+  doc.text(
+    `Prepared by ${safeText(preparedBy.name, 'Admin')} · ${safeText(preparedBy.role, 'Owner')}`,
+    pageLeft,
+    billToTop + 24.5,
+  );
+  doc.text(`Email: ${safeText(preparedBy.email)}`, pageLeft, billToTop + 29);
+  const billToBottom = billToTop + 29;
+
+  // ---- Invoice detail panel (the invoice number now gets a full row of
+  // its own, sized to the panel width, instead of being crammed into a
+  // small badge — that mismatch is what pushed it off the page before) ---
+  const panelX = 110;
+  const panelW = pageRight - panelX;
+  const panelY = 47;
+  const panelRowH = 12;
+  const panelRows = [
+    { label: 'Invoice no.', value: invoiceNumber, mono: true },
+    { label: 'Issue date', value: billDate.toLocaleDateString('en-PK') },
+  ];
+  if (summary.dueDate) {
+    panelRows.push({ label: 'Due date', value: new Date(summary.dueDate).toLocaleDateString('en-PK') });
+  }
+  const panelH = (panelRows.length * panelRowH) + 6;
+
+  doc.setDrawColor(border[0], border[1], border[2]);
+  doc.setFillColor(surface[0], surface[1], surface[2]);
+  doc.roundedRect(panelX, panelY, panelW, panelH, 2.5, 2.5, 'FD');
+
+  panelRows.forEach((row, index) => {
+    const rowTop = panelY + 7 + (index * panelRowH);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(ink[0], ink[1], ink[2]);
-    doc.setFontSize(10);
-    doc.text(item.value, x + 4, summaryY + 11);
-    doc.setFont('helvetica', 'normal');
-  });
+    doc.setFontSize(6.8);
+    doc.setTextColor(muted[0], muted[1], muted[2]);
+    doc.text(row.label.toUpperCase(), panelX + 5, rowTop);
 
+    if (row.mono) {
+      doc.setFont('courier', 'bold');
+      doc.setFontSize(fitMonoFontSize(row.value, panelW - 10));
+    } else {
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+    }
+    doc.setTextColor(ink[0], ink[1], ink[2]);
+    doc.text(String(row.value), panelX + 5, rowTop + 5.5);
+  });
+  const panelBottom = panelY + panelH;
+
+  const tableStartY = Math.max(billToBottom, panelBottom) + 14;
+
+  // ---- Line-item table -------------------------------------------------
   const tableHead = showPaidColumn
     ? ['Date', 'Bottle', 'Qty', 'Unit', 'Gross', 'Paid on delivery', 'Due']
     : ['Date', 'Bottle', 'Qty', 'Unit', 'Gross', 'Due'];
@@ -219,28 +266,29 @@ export function exportInvoicePdf(invoice) {
     : [tableHead.map((value, index) => (index === 0 ? 'No transactions recorded' : ''))];
 
   autoTable(doc, {
-    startY: 95,
-    margin: { left: 14, right: 14 },
+    startY: tableStartY,
+    margin: { left: pageLeft, right: 210 - pageRight },
     theme: 'plain',
     head: [tableHead],
     body: tableBody,
     styles: {
       font: 'helvetica',
       fontSize: 8,
-      cellPadding: 2.35,
+      cellPadding: { top: 2.6, right: 2.5, bottom: 2.6, left: 2.5 },
       textColor: ink,
-      lineColor: [226, 232, 240],
+      lineColor: border,
       lineWidth: 0.15,
     },
     headStyles: {
-      fillColor: [248, 250, 252],
+      fillColor: surface,
       textColor: ink,
       fontStyle: 'bold',
-      lineWidth: { bottom: 0.4 },
+      fontSize: 7.5,
+      lineWidth: { bottom: 0.6 },
       lineColor: accent,
     },
     alternateRowStyles: {
-      fillColor: [255, 255, 255],
+      fillColor: [250, 251, 253],
     },
     columnStyles: showPaidColumn ? {
       0: { cellWidth: 25 },
@@ -264,53 +312,69 @@ export function exportInvoicePdf(invoice) {
   let cursorY = tableEndY + 8;
 
   if (history.length > visibleHistory.length) {
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(7.5);
     doc.setTextColor(muted[0], muted[1], muted[2]);
-    doc.setFontSize(8);
-    doc.text(`Showing ${visibleHistory.length} of ${history.length} line items.`, 14, cursorY);
+    doc.text(`Showing ${visibleHistory.length} of ${history.length} line items.`, pageLeft, cursorY);
     cursorY += 6;
   }
 
-  doc.setDrawColor(226, 232, 240);
-  doc.line(14, cursorY, 196, cursorY);
-  cursorY += 8;
+  // ---- Totals callout + policy notes -----------------------------------
+  const totalBoxW = 68;
+  const totalBoxH = 18;
+  const totalBoxX = pageRight - totalBoxW;
 
+  doc.setFillColor(ink[0], ink[1], ink[2]);
+  doc.roundedRect(totalBoxX, cursorY, totalBoxW, totalBoxH, 2.5, 2.5, 'F');
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10);
-  doc.setTextColor(ink[0], ink[1], ink[2]);
-  doc.text('Amount due', 14, cursorY);
-  doc.text(formatCurrency(summary.totalAmount), 196, cursorY, { align: 'right' });
+  doc.setFontSize(7.5);
+  doc.setTextColor(subtle[0], subtle[1], subtle[2]);
+  doc.text('AMOUNT DUE', totalBoxX + 6, cursorY + 7);
+  doc.setFontSize(14);
+  doc.setTextColor(255, 255, 255);
+  doc.text(formatCurrency(summary.totalAmount), totalBoxX + 6, cursorY + 14.5);
 
-  cursorY += 10;
+  let noteY = cursorY + 4;
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8.5);
+  doc.setFontSize(8);
   doc.setTextColor(muted[0], muted[1], muted[2]);
-  doc.text(
+  const notes = [
     isMonthlyAccountInvoice
       ? 'Payment terms: monthly account. No daily-paid column is included.'
       : 'Payment terms: cash on delivery or monthly account.',
-    14,
-    cursorY,
-  );
-  cursorY += 5;
-  doc.text('Policies: sanitized bottles, sealed delivery, and routine water quality checks.', 14, cursorY);
-  cursorY += 5;
-  doc.text('Returns: empty bottles should be returned on the next delivery.', 14, cursorY);
+    'Policies: sanitized bottles, sealed delivery, and routine water quality checks.',
+    'Returns: empty bottles should be returned on the next delivery.',
+  ];
+  notes.forEach((line) => {
+    doc.text(line, pageLeft, noteY);
+    noteY += 5;
+  });
 
+  cursorY = Math.max(cursorY + totalBoxH, noteY) + 8;
+
+  // ---- Verify chip -------------------------------------------------
   const verifyUrl = getVerifyUrl(invoiceNumber);
-  cursorY += 10;
-  doc.setTextColor(accent[0], accent[1], accent[2]);
+  const verifyBoxH = 16;
+  doc.setDrawColor(border[0], border[1], border[2]);
+  doc.setFillColor(surface[0], surface[1], surface[2]);
+  doc.roundedRect(pageLeft, cursorY, contentWidth, verifyBoxH, 2, 2, 'FD');
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8.5);
-  doc.text('Verify this invoice online:', 14, cursorY);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(muted[0], muted[1], muted[2]);
-  doc.text(verifyUrl, 14, cursorY + 5);
+  doc.setFontSize(7.5);
+  doc.setTextColor(accent[0], accent[1], accent[2]);
+  doc.text('VERIFY THIS INVOICE ONLINE', pageLeft + 6, cursorY + 6.5);
+  doc.setFont('courier', 'normal');
+  doc.setFontSize(fitMonoFontSize(verifyUrl, contentWidth - 12, { min: 6.5, max: 9 }));
+  doc.setTextColor(ink[0], ink[1], ink[2]);
+  doc.text(verifyUrl, pageLeft + 6, cursorY + 12.5);
 
-  doc.setDrawColor(226, 232, 240);
-  doc.line(14, 278, 196, 278);
+  // ---- Footer -------------------------------------------------------
+  doc.setDrawColor(border[0], border[1], border[2]);
+  doc.line(pageLeft, 278, pageRight, 278);
+  doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
-  doc.text('Thank you for choosing Himaliya Spring Water.', 14, 284);
-  doc.text('Authorized company record', 196, 284, { align: 'right' });
+  doc.setTextColor(muted[0], muted[1], muted[2]);
+  doc.text('Thank you for choosing Himaliya Spring Water.', pageLeft, 284);
+  doc.text('Authorized company record', pageRight, 284, { align: 'right' });
 
   doc.save(`invoice-${String(invoiceNumber).toLowerCase()}.pdf`);
 }

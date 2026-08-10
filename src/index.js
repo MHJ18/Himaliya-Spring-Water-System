@@ -5,6 +5,7 @@ import { Provider } from 'react-redux'
 import ReduxThunk from 'redux-thunk'
 import * as serviceWorker from './serviceWorker';
 import {
+  ensureBackgroundPushSubscribed,
   listenForSubscriptionChanges,
   registerNotificationWorker,
 } from './services/notifications/pushNotifications';
@@ -38,3 +39,7 @@ serviceWorker.unregister();
 // blocks the app from starting.
 registerNotificationWorker();
 listenForSubscriptionChanges();
+// Devices that granted permission before a VAPID key existed have no push
+// subscription yet; register one now so background delivery reaches them too.
+// No-ops without a key or without prior permission, so it never prompts.
+ensureBackgroundPushSubscribed();

@@ -18,6 +18,25 @@ const SUBSCRIPTION_SYNC_KEY = 'hs_push_subscription_endpoint';
 
 let registrationPromise = null;
 
+export function normalizeNotificationUrl(value, origin) {
+  const fallback = '/';
+  const baseOrigin = origin || (
+    typeof window !== 'undefined' && window.location ? window.location.origin : ''
+  );
+  if (!baseOrigin) return fallback;
+
+  try {
+    const base = new URL(baseOrigin);
+    const target = new URL(String(value || fallback), base);
+    if (!['http:', 'https:'].includes(target.protocol) || target.origin !== base.origin) {
+      return fallback;
+    }
+    return `${target.pathname}${target.search}${target.hash}`;
+  } catch {
+    return fallback;
+  }
+}
+
 export function isNotificationSupported() {
   return typeof window !== 'undefined' && 'Notification' in window;
 }
@@ -89,10 +108,12 @@ export async function showNotification({
 }) {
   if (!isNotificationSupported() || window.Notification.permission !== 'granted') return 'blocked';
 
+  const safeUrl = normalizeNotificationUrl(url);
+
   const payload = {
     title,
     body,
-    url,
+    url: safeUrl,
     type,
     id,
     tag: tag || `himaliya-${type}`,
@@ -114,7 +135,7 @@ export async function showNotification({
         silent,
         timestamp: payload.timestamp,
         vibrate: silent ? undefined : [110, 60, 110],
-        data: { url, type, id },
+        data: { url: safeUrl, type, id },
       });
       return 'service-worker';
     } catch (error) {
@@ -132,7 +153,7 @@ export async function showNotification({
     });
     notification.onclick = () => {
       window.focus();
-      if (url && url !== window.location.pathname) window.location.assign(url);
+      if (safeUrl !== window.location.pathname) window.location.assign(safeUrl);
       notification.close();
     };
     return 'page';
@@ -210,6 +231,18 @@ export async function subscribeToBackgroundPush() {
     console.warn('Background push subscription failed.', error);
     return null;
   }
+}
+
+/* Opportunistically register a background-push endpoint for a device that
+ * already granted notification permission. This matters the moment a VAPID key
+ * is first deployed: every previously-enabled device only has page-level
+ * permission and no push subscription, and the "Enable" button is disabled once
+ * permission is granted, so nothing else would ever create one. It never
+ * prompts — subscribing is skipped unless permission is already 'granted' — and
+ * reuses any existing subscription, so it is safe to call on every page load. */
+export async function ensureBackgroundPushSubscribed() {
+  if (!isBackgroundPushConfigured() || getPermission() !== 'granted') return null;
+  return subscribeToBackgroundPush();
 }
 
 export async function unsubscribeFromBackgroundPush() {

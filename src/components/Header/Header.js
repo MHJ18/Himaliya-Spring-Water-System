@@ -119,7 +119,13 @@ function Header({
   return (
     <Box component="header" className={s.header}>
       <Box className={s.mobileIdentity}>
-        <IconButton color="inherit" onClick={toggleSidebar} aria-label="Open navigation menu">
+        <IconButton
+          color="inherit"
+          onClick={toggleSidebar}
+          aria-label={isSidebarOpened ? 'Close navigation menu' : 'Open navigation menu'}
+          aria-expanded={isSidebarOpened}
+          aria-controls="admin-primary-navigation"
+        >
           <MenuRoundedIcon />
         </IconButton>
         <Typography component="span" className={s.mobileBrand}>

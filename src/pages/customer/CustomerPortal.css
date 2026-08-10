@@ -46,7 +46,7 @@
   gap: 1rem;
   max-width: 1180px;
   margin: 0 auto 1.5rem;
-  padding: clamp(1rem, 3vw, 1.5rem);
+  padding: clamp(1.15rem, 3.2vw, 1.75rem);
   background: linear-gradient(145deg, rgba(9, 36, 60, .86), rgba(6, 21, 38, .88));
   border: 1px solid rgba(125,223,255,.18);
   border-radius: 1.65rem;
@@ -240,7 +240,7 @@
   box-shadow:
     0 10px 30px rgba(var(--stat-tint), .1),
     0 2px 6px rgba(8, 30, 46, .04);
-  transition: transform 220ms cubic-bezier(.22, 1, .36, 1), box-shadow 220ms ease, border-color 220ms ease;
+  transition: box-shadow 220ms ease, border-color 220ms ease, background-color 220ms ease;
 }
 
 .customer-stat-tile.is-cyan { --stat-tint: 63, 201, 227; }
@@ -253,7 +253,6 @@
   box-shadow:
     0 16px 40px rgba(var(--stat-tint), .16),
     0 3px 8px rgba(8, 30, 46, .05);
-  transform: translateY(-3px);
 }
 
 .customer-stat-tile:focus-visible {
@@ -274,7 +273,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .customer-stat-tile { transition: none; }
-  .customer-stat-tile:hover { transform: none; }
 }
 
 .customer-portal-stats article,
@@ -309,20 +307,18 @@
 .customer-portal-card {
   min-width: 0;
   padding: clamp(1rem, 2vw, 1.35rem);
-  transition: transform 220ms cubic-bezier(.22, 1, .36, 1), box-shadow 220ms ease, border-color 220ms ease;
+  transition: box-shadow 220ms ease, border-color 220ms ease;
 }
 
 @media (hover: hover) and (pointer: fine) {
   .customer-portal-card:hover {
     border-color: color-mix(in srgb, var(--customer-accent) 30%, rgba(125, 223, 255, .14));
     box-shadow: 0 30px 72px rgba(0, 11, 24, .34);
-    transform: translateY(-2px);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .customer-portal-card { transition: none; }
-  .customer-portal-card:hover { transform: none; }
 }
 /* Ordering a refill is the primary job, so it gets the widest tile; the
    notification rail sits beside it, and history/invoices split the row below. */
@@ -371,6 +367,23 @@
 }
 
 .customer-form textarea { min-height: 5.5rem; resize: vertical; }
+.customer-form input::placeholder,
+.customer-form textarea::placeholder,
+.customer-profile-form input::placeholder,
+.customer-profile-form--page input::placeholder,
+.customer-profile-form--page textarea::placeholder {
+  color: rgba(92, 122, 137, .76);
+  font-size: .7rem;
+  font-weight: 500;
+  opacity: 1;
+}
+.customer-theme--dark .customer-form input::placeholder,
+.customer-theme--dark .customer-form textarea::placeholder,
+.customer-theme--dark .customer-profile-form input::placeholder,
+.customer-theme--dark .customer-profile-form--page input::placeholder,
+.customer-theme--dark .customer-profile-form--page textarea::placeholder {
+  color: rgba(155, 194, 208, .72);
+}
 .customer-bottle-picker {
   min-width: 0;
   margin: 0;
@@ -596,13 +609,15 @@
    flex-basis keeps the list out of the card's intrinsic height, which is what
    lets the neighbour decide the row. */
 .customer-notifications-card,
-.customer-order-history-card {
+.customer-order-history-card,
+.customer-invoices-card {
   display: flex;
   flex-direction: column;
 }
 
 .customer-notifications-card .customer-notification-list,
-.customer-order-history-card .customer-order-list {
+.customer-order-history-card .customer-order-list,
+.customer-invoices-card .customer-invoice-list {
   flex: 1 1 0;
   min-height: 11rem;
   max-height: none;
@@ -1810,9 +1825,20 @@
 .customer-header--midnight .customer-portal-header { background: linear-gradient(128deg, #101827 0%, #1b2944 58%, #263957 100%); }
 .customer-header--violet .customer-portal-header { background: linear-gradient(128deg, #34245f 0%, #5d3ca0 58%, #7c5ac8 100%); }
 .customer-header--emerald .customer-portal-header { background: linear-gradient(128deg, #0b463c 0%, #11705b 58%, #159978 100%); }
-.customer-cards--clean .customer-portal-card { background: var(--customer-card-custom); border-color: var(--customer-card-custom-border); }
-.customer-cards--tinted .customer-portal-card { background: color-mix(in srgb, var(--customer-accent) 8%, var(--customer-card-custom)); border-color: color-mix(in srgb, var(--customer-accent) 24%, var(--customer-card-custom-border)); }
-.customer-cards--glass .customer-portal-card { background: color-mix(in srgb, var(--customer-card-custom) 72%, transparent); border-color: color-mix(in srgb, var(--customer-accent) 22%, var(--customer-card-custom-border)); backdrop-filter: blur(22px) saturate(1.15); }
+.customer-cards--clean .customer-portal-card { --customer-card-surface: var(--customer-card-custom); background: var(--customer-card-surface); border-color: var(--customer-card-custom-border); }
+.customer-cards--tinted .customer-portal-card { --customer-card-surface: color-mix(in srgb, var(--customer-accent) 8%, var(--customer-card-custom)); background: var(--customer-card-surface); border-color: color-mix(in srgb, var(--customer-accent) 24%, var(--customer-card-custom-border)); }
+.customer-cards--glass .customer-portal-card { --customer-card-surface: color-mix(in srgb, var(--customer-card-custom) 72%, transparent); background: var(--customer-card-surface); border-color: color-mix(in srgb, var(--customer-accent) 22%, var(--customer-card-custom-border)); backdrop-filter: blur(22px) saturate(1.15); }
+@media (hover: hover) and (pointer: fine) {
+  .customer-portal-card:hover {
+    background:
+      linear-gradient(var(--customer-card-surface), var(--customer-card-surface)) padding-box,
+      linear-gradient(135deg, color-mix(in srgb, var(--customer-accent) 72%, white), color-mix(in srgb, var(--customer-accent-2) 54%, transparent) 58%, transparent 86%) border-box;
+    border-color: transparent;
+    box-shadow:
+      0 14px 30px color-mix(in srgb, var(--customer-accent) 10%, transparent),
+      0 6px 16px rgba(8, 30, 46, .12);
+  }
+}
 .customer-accent--blue .customer-btn--primary,
 .customer-accent--violet .customer-btn--primary,
 .customer-accent--emerald .customer-btn--primary { color: #fff; background: linear-gradient(135deg, var(--customer-accent), var(--customer-accent-2)); }
@@ -1838,7 +1864,7 @@
   box-shadow:
     0 10px 30px rgba(var(--stat-tint, 63, 201, 227), .1),
     0 2px 6px rgba(8, 30, 46, .04);
-  transition: transform 220ms cubic-bezier(.22, 1, .36, 1), border-color 220ms ease, box-shadow 220ms ease;
+  transition: border-color 220ms ease, box-shadow 220ms ease;
 }
 .customer-theme--dark .customer-portal-stats button {
   color: #eefbff;
@@ -1847,11 +1873,13 @@
     0 2px 6px rgba(0, 9, 22, .18);
 }
 .customer-portal-stats button:hover {
-  transform: translateY(-3px);
-  border-color: rgba(var(--stat-tint, 63, 201, 227), .42);
+  background:
+    linear-gradient(var(--customer-card-custom), var(--customer-card-custom)) padding-box,
+    linear-gradient(135deg, rgba(var(--stat-tint, 63, 201, 227), .78), rgba(var(--stat-tint, 63, 201, 227), .16) 58%, rgba(var(--stat-tint, 63, 201, 227), .5)) border-box;
+  border-color: transparent;
   box-shadow:
-    0 16px 40px rgba(var(--stat-tint, 63, 201, 227), .16),
-    0 3px 8px rgba(8, 30, 46, .05);
+    0 18px 42px rgba(var(--stat-tint, 63, 201, 227), .17),
+    0 5px 14px rgba(8, 30, 46, .07);
 }
 .customer-portal-stats button:focus-visible { outline: 3px solid rgba(var(--stat-tint, 63, 201, 227), .5); outline-offset: 3px; }
 .customer-stat-icon {
@@ -1889,6 +1917,8 @@
 .customer-theme--dark .customer-stat-ring__track { stroke: rgba(var(--stat-tint, 63, 201, 227), .26); }
 
 @media (prefers-reduced-motion: reduce) {
+  .customer-portal-stats .customer-stat-tile,
+  .customer-portal-card,
   .customer-stat-ring__value { transition: none; }
 }
 

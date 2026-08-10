@@ -49,7 +49,16 @@ export default function PublicInvoice({ match }) {
 
         {loading && <LoadingState label="Loading invoice..." compact variant="table" />}
         {!loading && error && <p className="public-invoice-status public-invoice-status--error">{error}</p>}
-        {!loading && invoice && <InvoiceView invoice={invoice} />}
+        {!loading && invoice && (
+          <React.Fragment>
+            {invoice.public_redacted && (
+              <p className="public-invoice-status">
+                Privacy-safe verification summary. Customer details remain on the original invoice.
+              </p>
+            )}
+            <InvoiceView invoice={invoice} showStatus />
+          </React.Fragment>
+        )}
       </div>
     </main>
   );

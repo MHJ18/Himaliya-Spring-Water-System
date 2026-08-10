@@ -401,9 +401,16 @@
   border-color: rgba(125, 223, 255, .55);
   box-shadow: 0 0 0 4px rgba(85, 200, 255, .16);
 }
+.customer-messages-compose textarea::placeholder {
+  color: rgba(159, 195, 209, .72);
+  font-size: .75rem;
+  font-weight: 500;
+  opacity: 1;
+}
 .customer-theme--light .customer-messages-compose textarea {
   border-color: rgba(18, 104, 132, .16);
 }
+.customer-theme--light .customer-messages-compose textarea::placeholder { color: rgba(76, 111, 126, .72); }
 .customer-theme--light .customer-messages-compose textarea:focus {
   border-color: rgba(8, 142, 180, .55);
   box-shadow: 0 0 0 4px rgba(8, 142, 180, .14);

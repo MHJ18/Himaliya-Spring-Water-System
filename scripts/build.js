@@ -85,6 +85,8 @@ checkBrowsers(paths.appPath, isInteractive)
         console.log(chalk.green('Compiled successfully.\n'));
       }
 
+      writeProductionSeoFiles();
+
       console.log('File sizes after gzip:\n');
       printFileSizesAfterBuild(
         stats,
@@ -186,4 +188,133 @@ function copyPublicFolder() {
     dereference: true,
     filter: file => file !== paths.appHtml,
   });
+}
+
+function normalizeSiteUrl(value) {
+  if (!value || !value.trim()) return null;
+
+  let siteUrl;
+  try {
+    siteUrl = new URL(value.trim());
+  } catch (error) {
+    throw new Error(`SITE_URL must be an absolute URL. Received: ${value}`);
+  }
+
+  if (siteUrl.protocol !== 'https:' && siteUrl.protocol !== 'http:') {
+    throw new Error(`SITE_URL must use http or https. Received: ${value}`);
+  }
+
+  siteUrl.username = '';
+  siteUrl.password = '';
+  siteUrl.search = '';
+  siteUrl.hash = '';
+  siteUrl.pathname = `${siteUrl.pathname.replace(/\/+$/, '')}/`;
+  return siteUrl.toString();
+}
+
+function escapeMarkup(value) {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function withHttps(value) {
+  if (!value || !value.trim()) return null;
+  const trimmed = value.trim();
+  return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+}
+
+function writeProductionSeoFiles() {
+  // Hosted builds expose their canonical production URL. SITE_URL keeps the
+  // same workflow portable to other hosts and to local release builds.
+  const netlifyUrl = String(process.env.NETLIFY).toLowerCase() === 'true'
+    ? process.env.URL
+    : null;
+  const vercelHost = process.env.VERCEL_PROJECT_PRODUCTION_URL
+    || process.env.VERCEL_URL;
+  const vercelUrl = withHttps(vercelHost);
+  const configuredUrl = process.env.SITE_URL || netlifyUrl || vercelUrl;
+  const siteUrl = normalizeSiteUrl(configuredUrl);
+
+  if (!siteUrl) {
+    console.log(chalk.yellow(
+      'SEO: no production site URL is available; canonical metadata and sitemap.xml were skipped.\n'
+    ));
+    return;
+  }
+
+  const description = 'Order 19L spring water refills for homes and offices in Sialkot Cantt. Track deliveries, bottles, invoices, and balances with Himaliya Spring Water.';
+  const shareImageUrl = new URL('icon-512.png', siteUrl).toString();
+  const safeSiteUrl = escapeMarkup(siteUrl);
+  const safeShareImageUrl = escapeMarkup(shareImageUrl);
+  const safeDescription = escapeMarkup(description);
+  const seoMarkup = [
+    `    <link rel="canonical" href="${safeSiteUrl}">`,
+    `    <meta property="og:url" content="${safeSiteUrl}">`,
+    `    <meta property="og:image" content="${safeShareImageUrl}">`,
+    '    <meta property="og:image:type" content="image/png">',
+    '    <meta property="og:image:width" content="512">',
+    '    <meta property="og:image:height" content="512">',
+    '    <meta property="og:image:alt" content="Himaliya Spring Water droplet logo">',
+    `    <meta name="twitter:image" content="${safeShareImageUrl}">`,
+    '    <meta name="twitter:image:alt" content="Himaliya Spring Water droplet logo">',
+  ].join('\n');
+  const structuredMarkup = [
+    `    <div data-seo-structured-data itemscope itemtype="https://schema.org/WebSite" itemid="${safeSiteUrl}#website">`,
+    `      <link itemprop="url" href="${safeSiteUrl}">`,
+    '      <meta itemprop="name" content="Himaliya Spring Water">',
+    `      <meta itemprop="description" content="${safeDescription}">`,
+    '      <meta itemprop="inLanguage" content="en-PK">',
+    `      <div itemprop="publisher" itemscope itemtype="https://schema.org/LocalBusiness" itemid="${safeSiteUrl}#business">`,
+    '        <meta itemprop="name" content="Himaliya Spring Water">',
+    `        <link itemprop="url" href="${safeSiteUrl}">`,
+    `        <meta itemprop="description" content="${safeDescription}">`,
+    `        <link itemprop="image" href="${safeShareImageUrl}">`,
+    `        <link itemprop="logo" href="${safeShareImageUrl}">`,
+    '        <div itemprop="address" itemscope itemtype="https://schema.org/PostalAddress">',
+    '          <meta itemprop="addressLocality" content="Sialkot Cantt">',
+    '          <meta itemprop="addressCountry" content="PK">',
+    '        </div>',
+    '        <div itemprop="areaServed" itemscope itemtype="https://schema.org/Place">',
+    '          <meta itemprop="name" content="Sialkot Cantt">',
+    '        </div>',
+    '      </div>',
+    '    </div>',
+  ].join('\n');
+  const indexPath = path.join(paths.appBuild, 'index.html');
+  const indexHtml = fs.readFileSync(indexPath, 'utf8');
+
+  if (!/<\/head>/i.test(indexHtml) || !/<\/body>/i.test(indexHtml)) {
+    throw new Error('SEO metadata could not be written because build/index.html is missing a closing head or body tag.');
+  }
+
+  fs.writeFileSync(
+    indexPath,
+    indexHtml
+      .replace(/<\/head>/i, `${seoMarkup}\n  </head>`)
+      .replace(/<\/body>/i, `${structuredMarkup}\n  </body>`),
+    'utf8'
+  );
+
+  const sitemapUrl = `${siteUrl}sitemap.xml`;
+  const sitemap = [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+    '  <url>',
+    `    <loc>${safeSiteUrl}</loc>`,
+    '  </url>',
+    '</urlset>',
+    '',
+  ].join('\n');
+  fs.writeFileSync(path.join(paths.appBuild, 'sitemap.xml'), sitemap, 'utf8');
+
+  const robotsPath = path.join(paths.appBuild, 'robots.txt');
+  const robots = fs.existsSync(robotsPath)
+    ? fs.readFileSync(robotsPath, 'utf8').trimEnd()
+    : 'User-agent: *\nAllow: /';
+  fs.writeFileSync(robotsPath, `${robots}\nSitemap: ${sitemapUrl}\n`, 'utf8');
+  console.log(chalk.green(`SEO: wrote canonical metadata and sitemap.xml for ${siteUrl}\n`));
 }

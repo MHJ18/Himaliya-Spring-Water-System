@@ -86,7 +86,7 @@ function InterfaceCard({
         )}
         title={title}
         subheader={subtitle}
-        titleTypographyProps={{ variant: 'h5' }}
+        titleTypographyProps={{ variant: 'h5', sx: { fontWeight: 600 } }}
         subheaderTypographyProps={{ variant: 'body2' }}
         action={mobile ? (
           <ExpandMoreRoundedIcon
@@ -157,7 +157,7 @@ function InterfaceToggle({
           {icon}
         </Box>
         <Box sx={{ minWidth: 0 }}>
-          <Typography variant="body2" fontWeight={800}>{label}</Typography>
+          <Typography variant="body2" fontWeight={550}>{label}</Typography>
           <Typography component="p" variant="caption" color="text.secondary">{description}</Typography>
         </Box>
       </Stack>
@@ -224,7 +224,7 @@ function ThemePicker({ value, onChange }) {
 
 // Each card previews the real gradient it applies, so the swatch is a sample
 // rather than a decorative chip.
-function BackgroundPicker({ value, onChange }) {
+function BackgroundPicker({ value, onChange, darkMode }) {
   const reduceMotion = useReducedMotion();
   const selectedValue = ADMIN_BACKGROUND_PALETTES.some((palette) => palette.id === value)
     ? value
@@ -260,7 +260,7 @@ function BackgroundPicker({ value, onChange }) {
                 <span
                   className="settings-background-card__preview"
                   aria-hidden="true"
-                  style={palette.light ? { background: palette.light } : undefined}
+                  style={{ background: darkMode ? palette.dark : palette.light }}
                 />
                 <strong>{palette.name}</strong>
                 <small>{palette.description}</small>
@@ -276,8 +276,9 @@ function BackgroundPicker({ value, onChange }) {
 BackgroundPicker.propTypes = {
   value: PropTypes.string,
   onChange: PropTypes.func.isRequired,
+  darkMode: PropTypes.bool,
 };
-BackgroundPicker.defaultProps = { value: DEFAULT_ADMIN_BACKGROUND };
+BackgroundPicker.defaultProps = { value: DEFAULT_ADMIN_BACKGROUND, darkMode: false };
 
 const SIDEBAR_PALETTES = [
   { id: 'midnight', name: 'Midnight', description: 'Deep black with soft white text', values: { sidebarColor: '#111214', sidebarTextColor: '#e7e9ed' } },
@@ -366,7 +367,7 @@ function DashboardChoice({
 }
 
 export default function UiSettings() {
-  const { settings, updateSettings } = useSettings();
+  const { settings, resolvedDarkMode, updateSettings } = useSettings();
   const mobile = useMediaQuery((theme) => theme.breakpoints.down('sm'), { noSsr: true });
   // Keep one card open so the page never renders as empty headers.
   const [openMobileCard, setOpenMobileCard] = React.useState('theme');
@@ -470,10 +471,11 @@ export default function UiSettings() {
               Background
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 1.25 }}>
-              Changes the page backdrop only, so it combines with any accent palette above.
+              Choose a soft gradient wash, including bold multi-colour options. Dark mode uses a matching deep version.
             </Typography>
             <BackgroundPicker
               value={settings.backgroundPalette}
+              darkMode={resolvedDarkMode}
               onChange={(backgroundPalette) => update({ backgroundPalette })}
             />
           </InterfaceCard>

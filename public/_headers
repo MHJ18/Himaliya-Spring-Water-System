@@ -1,0 +1,44 @@
+# Keep account, operational, and tokenized pages out of search results. These
+# routes stay crawlable so compliant search engines can read the noindex rule.
+/app
+  X-Robots-Tag: noindex, nofollow, noarchive
+/app/*
+  X-Robots-Tag: noindex, nofollow, noarchive
+/customer
+  X-Robots-Tag: noindex, nofollow, noarchive
+/customer/*
+  X-Robots-Tag: noindex, nofollow, noarchive
+/rider
+  X-Robots-Tag: noindex, nofollow, noarchive
+/rider/*
+  X-Robots-Tag: noindex, nofollow, noarchive
+/invoice
+  X-Robots-Tag: noindex, nofollow, noarchive
+/invoice/*
+  X-Robots-Tag: noindex, nofollow, noarchive
+/track
+  X-Robots-Tag: noindex, nofollow, noarchive
+/track/*
+  X-Robots-Tag: noindex, nofollow, noarchive
+/account
+  X-Robots-Tag: noindex, nofollow, noarchive
+/account/*
+  X-Robots-Tag: noindex, nofollow, noarchive
+/login
+  X-Robots-Tag: noindex, nofollow, noarchive
+/forgot-password
+  X-Robots-Tag: noindex, nofollow, noarchive
+/reset-password
+  X-Robots-Tag: noindex, nofollow, noarchive
+/history
+  X-Robots-Tag: noindex, nofollow, noarchive
+/messages
+  X-Robots-Tag: noindex, nofollow, noarchive
+/notifications
+  X-Robots-Tag: noindex, nofollow, noarchive
+/profile
+  X-Robots-Tag: noindex, nofollow, noarchive
+/error
+  X-Robots-Tag: noindex, nofollow, noarchive
+/fluid-lab
+  X-Robots-Tag: noindex, nofollow, noarchive

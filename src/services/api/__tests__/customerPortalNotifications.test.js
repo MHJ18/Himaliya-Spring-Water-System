@@ -3,36 +3,32 @@ jest.mock('../../cloud/supabaseClient', () => ({
   clearPendingCustomerProfile: jest.fn(),
   consumeCustomerEmailConfirmation: jest.fn(),
   dbRequest: jest.fn(),
-  discardAuthSession: jest.fn(),
-  ensurePhoneVerificationEnabled: jest.fn(),
   getPendingCustomerProfile: jest.fn(),
   getStoredSession: jest.fn(() => ({ user: { id: 'admin-user-1' } })),
   getStoredSessionType: jest.fn(() => null),
   isSupabaseConfigured: jest.fn(() => true),
-  requestPhoneChange: jest.fn(),
+  requestCustomerLinkEmailOtp: jest.fn(),
   signInWithPassword: jest.fn(),
   signOut: jest.fn(),
   signUpWithPassword: jest.fn(),
   storeSession: jest.fn(),
   storePendingCustomerProfile: jest.fn((profile) => profile),
-  verifyPhoneChangeOtp: jest.fn(),
+  verifyCustomerLinkEmailOtp: jest.fn(),
 }));
 
 const {
   clearPendingCustomerProfile,
   consumeCustomerEmailConfirmation,
   dbRequest,
-  discardAuthSession,
-  ensurePhoneVerificationEnabled,
   getPendingCustomerProfile,
   getStoredSessionType,
-  requestPhoneChange,
+  requestCustomerLinkEmailOtp,
   signInWithPassword,
   signOut,
   signUpWithPassword,
   storeSession,
   storePendingCustomerProfile,
-  verifyPhoneChangeOtp,
+  verifyCustomerLinkEmailOtp,
 } = require('../../cloud/supabaseClient');
 const {
   completeCustomerProfile,
@@ -41,8 +37,8 @@ const {
   getCustomerInvoices,
   getCustomerNotifications,
   registerCustomer,
-  requestCustomerPhoneVerification,
-  verifyCustomerPhoneAndCompleteProfile,
+  beginCustomerProfileCompletion,
+  verifyCustomerLinkEmailAndCompleteProfile,
 } = require('../customerPortalApi');
 
 describe('notification API retention limits', () => {
@@ -57,14 +53,12 @@ describe('notification API retention limits', () => {
     storePendingCustomerProfile.mockImplementation((profile) => profile);
     clearPendingCustomerProfile.mockReset();
     consumeCustomerEmailConfirmation.mockReset();
-    discardAuthSession.mockReset();
-    ensurePhoneVerificationEnabled.mockReset();
-    ensurePhoneVerificationEnabled.mockResolvedValue(true);
     getPendingCustomerProfile.mockReset();
     getStoredSessionType.mockReset();
     getStoredSessionType.mockReturnValue(null);
-    requestPhoneChange.mockReset();
-    verifyPhoneChangeOtp.mockReset();
+    requestCustomerLinkEmailOtp.mockReset();
+    requestCustomerLinkEmailOtp.mockResolvedValue(true);
+    verifyCustomerLinkEmailOtp.mockReset();
   });
 
   it('limits the customer inbox query to the newest 30 rows', async () => {
@@ -164,8 +158,8 @@ describe('notification API retention limits', () => {
       session: autoConfirmedSession,
     });
     dbRequest.mockImplementation(async (path) => {
-      if (path === '/rpc/get_customer_claim_requirements') {
-        return [{ phone_verification_required: false }];
+      if (path === '/rpc/get_customer_link_requirement') {
+        return [{ email_otp_required: false }];
       }
       if (path === '/rpc/claim_customer_account') {
         return [{
@@ -191,7 +185,6 @@ describe('notification API retention limits', () => {
 
     expect(storeSession).toHaveBeenCalledWith(autoConfirmedSession, 'customer');
     expect(profile.id).toBe('new-customer-1');
-    expect(discardAuthSession).not.toHaveBeenCalled();
     expect(signOut).toHaveBeenCalledTimes(1);
   });
 
@@ -224,13 +217,9 @@ describe('notification API retention limits', () => {
     });
     getPendingCustomerProfile.mockReturnValue(pending);
     dbRequest.mockImplementation(async (path) => {
-      if (path === '/rpc/attest_customer_email_confirmation') {
-        events.push('attest-email');
-        return true;
-      }
-      if (path === '/rpc/get_customer_claim_requirements') {
-        events.push('check-requirements');
-        return [{ phone_verification_required: false }];
+      if (path === '/rpc/get_customer_link_requirement') {
+        events.push('check-link-requirement');
+        return [{ email_otp_required: false }];
       }
       if (path === '/rpc/claim_customer_account') {
         events.push('claim-profile');
@@ -254,36 +243,39 @@ describe('notification API retention limits', () => {
     expect(signOut).not.toHaveBeenCalled();
     expect(events).toEqual([
       'consume-callback',
-      'attest-email',
-      'check-requirements',
+      'check-link-requirement',
       'claim-profile',
     ]);
   });
 
-  it('reserves a phone before PUT /user and attests its challenge before OTP verification', async () => {
+  it('requests email OTP only after the database finds an existing customer link', async () => {
     const events = [];
-    ensurePhoneVerificationEnabled.mockImplementation(async () => { events.push('check-sms-settings'); });
-    requestPhoneChange.mockImplementation(async () => {
-      events.push('put-phone');
-      return { id: 'auth-user', phone: null, phone_confirmed_at: null };
-    });
     dbRequest.mockImplementation(async (path) => {
-      if (path === '/rpc/begin_customer_phone_verification') events.push('reserve-phone');
-      if (path === '/rpc/attest_customer_phone_challenge') events.push('attest-challenge');
-      return true;
+      if (path === '/rpc/get_customer_link_requirement') {
+        events.push('check-link-requirement');
+        return [{ email_otp_required: true }];
+      }
+      return [];
+    });
+    requestCustomerLinkEmailOtp.mockImplementation(async () => { events.push('request-email-otp'); });
+
+    const result = await beginCustomerProfileCompletion({
+      name: 'Ayesha Khan',
+      email: 'AYESHA@example.com',
+      phone: '0300 123 4567',
+      address: 'Sialkot',
     });
 
-    await requestCustomerPhoneVerification('0300 123 4567');
-
-    expect(events).toEqual([
-      'check-sms-settings',
-      'reserve-phone',
-      'put-phone',
-      'attest-challenge',
-    ]);
+    expect(result).toEqual(expect.objectContaining({
+      profile: null,
+      emailOtpRequired: true,
+      verificationSent: true,
+    }));
+    expect(requestCustomerLinkEmailOtp).toHaveBeenCalledWith('AYESHA@example.com');
+    expect(events).toEqual(['check-link-requirement', 'request-email-otp']);
   });
 
-  it('marks the verified phone proof before claiming the canonical customer row', async () => {
+  it('binds the verified email OTP before claiming the canonical customer row', async () => {
     const events = [];
     const row = {
       id: 'manual-customer-1',
@@ -294,10 +286,10 @@ describe('notification API retention limits', () => {
       address: 'Sialkot',
       active: true,
     };
-    verifyPhoneChangeOtp.mockImplementation(async () => { events.push('verify-otp'); });
+    verifyCustomerLinkEmailOtp.mockImplementation(async () => { events.push('verify-email-otp'); });
     dbRequest.mockImplementation(async (path) => {
-      if (path === '/rpc/complete_customer_phone_verification') {
-        events.push('mark-phone-proof');
+      if (path === '/rpc/attest_customer_link_email_otp') {
+        events.push('bind-customer-session-proof');
         return true;
       }
       if (path === '/rpc/claim_customer_account') {
@@ -307,7 +299,7 @@ describe('notification API retention limits', () => {
       return [];
     });
 
-    const profile = await verifyCustomerPhoneAndCompleteProfile({
+    const profile = await verifyCustomerLinkEmailAndCompleteProfile({
       name: row.name,
       email: row.email,
       phone: row.phone,
@@ -315,7 +307,7 @@ describe('notification API retention limits', () => {
     }, '123456');
 
     expect(profile.id).toBe('manual-customer-1');
-    expect(events).toEqual(['verify-otp', 'mark-phone-proof', 'claim-profile']);
+    expect(events).toEqual(['verify-email-otp', 'bind-customer-session-proof', 'claim-profile']);
   });
 
   it('clears a stale customer session when an email callback is invalid', async () => {

@@ -334,22 +334,18 @@ export const invoiceApi = {
     const normalized = String(invoiceNumber || '').trim();
     if (!normalized) return null;
 
-    try {
-      return await dbRequest('/rpc/lookup_invoice_by_number', {
-        method: 'POST',
-        useUserToken: false,
-        body: JSON.stringify({ p_invoice_number: normalized }),
-      });
-    } catch (error) {
-      const missingRpc = error.code === 'PGRST202'
-        || /lookup_invoice_by_number|schema cache/i.test(error.message || '');
-      if (!missingRpc || !options.authenticatedFallback) throw error;
-
+    if (options.authenticatedFallback) {
       const encodedNumber = encodeURIComponent(normalized);
       const rows = await dbRequest(
-        `/customer_invoices?select=id,payload,invoice_number,invoice_date,total_amount,total_qty,payment_status,validated&invoice_number=ilike.${encodedNumber}&limit=1`,
+        `/customer_invoices?select=*&invoice_number=ilike.${encodedNumber}&limit=1`,
       );
       return rowToInvoice(rows && rows[0]);
     }
+
+    return dbRequest('/rpc/lookup_invoice_by_number', {
+      method: 'POST',
+      useUserToken: false,
+      body: JSON.stringify({ p_invoice_number: normalized }),
+    });
   },
 };

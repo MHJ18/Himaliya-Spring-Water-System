@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { withRouter } from 'react-router-dom';
-import { motion } from 'motion/react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import {
   ArrowRight, BellRing, CalendarDays, CheckCheck, ChevronDown, Clock3, Cookie, Download, Droplets, LoaderCircle, LogOut, Minus, Navigation, PackageCheck, Plus, ReceiptText, ShieldCheck, UserRound, Wallet, X,
 } from 'lucide-react';
@@ -61,6 +61,14 @@ function formatDate(value) {
   return new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
+// Invoice numbers are long capability tokens meant for verification links and
+// PDFs, not for a customer to read at a glance — show the billing month instead.
+function invoiceMonthLabel(invoice) {
+  const date = new Date(invoice.invoiceDate);
+  if (Number.isNaN(date.getTime())) return 'Invoice';
+  return `${date.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })} invoice`;
+}
+
 function bottleLabel(type) {
   return BOTTLE_TYPE_LABELS[type] || type;
 }
@@ -115,6 +123,7 @@ StatRing.defaultProps = { ratio: 0 };
 
 function CustomerPortal({ history }) {
   const { theme, dashboardStyle } = useCustomerTheme();
+  const reduceMotion = useReducedMotion();
   const [loading, setLoading] = React.useState(true);
   const [profile, setProfile] = React.useState(null);
   const [orders, setOrders] = React.useState([]);
@@ -230,12 +239,12 @@ function CustomerPortal({ history }) {
         const newest = newlyRegistered[0];
         showNotification({
           title: 'New Himaliya invoice registered',
-          body: `${newest.invoiceNumber} is now available in your portal.`,
+          body: `Your ${invoiceMonthLabel(newest)} is now available in your portal.`,
           type: 'invoice',
           id: newest.id || newest.invoiceNumber,
           url: '/customer/portal',
         });
-        toast.info(`New invoice ${newest.invoiceNumber} is available.`);
+        toast.info(`Your ${invoiceMonthLabel(newest)} is available.`);
       }
       seenInvoiceIds.current = new Set(nextInvoices.map((invoice) => invoice.id || invoice.invoiceNumber));
       const deliveredUpdate = nextOrders.find((order) => {
@@ -787,7 +796,7 @@ function CustomerPortal({ history }) {
                   <div className="customer-invoice-identity">
                     <span className="customer-invoice-icon" aria-hidden="true"><ReceiptText size={19} /></span>
                     <div className="customer-invoice-copy">
-                      <strong title={invoice.invoiceNumber}>{invoice.invoiceNumber}</strong>
+                      <strong title={invoice.invoiceNumber}>{invoiceMonthLabel(invoice)}</strong>
                       <small>
                         <CalendarDays size={13} aria-hidden="true" />
                         <span>{formatDate(invoice.invoiceDate)}</span>
@@ -825,27 +834,41 @@ function CustomerPortal({ history }) {
         onOpenFullThread={() => history.push('/customer/messages')}
       />
 
-      {!cookieConsent && (
-        <motion.aside
-          className="customer-cookie-consent"
-          role="dialog"
-          aria-modal="false"
-          aria-labelledby="customer-cookie-title"
-          initial={{ opacity: 0, y: 28, scale: .97 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ type: 'spring', stiffness: 320, damping: 30, mass: 0.9 }}
-        >
-          <span className="customer-cookie-consent__icon"><Cookie size={20} aria-hidden="true" /></span>
-          <div>
-            <strong id="customer-cookie-title">Your privacy, your choice</strong>
-            <p>Essential storage keeps you signed in. Allow optional cookies for saved dashboard preferences, or decline them.</p>
-          </div>
-          <div className="customer-cookie-consent__actions">
-            <button type="button" className="is-secondary" onClick={() => chooseCookieConsent('declined')}>Decline</button>
-            <button type="button" className="is-primary" onClick={() => chooseCookieConsent('allowed')}><ShieldCheck size={15} /> Allow</button>
-          </div>
-        </motion.aside>
-      )}
+      <AnimatePresence>
+        {!cookieConsent && (
+          <motion.aside
+            key="customer-cookie-consent"
+            className="customer-cookie-consent"
+            role="dialog"
+            aria-modal="false"
+            aria-labelledby="customer-cookie-title"
+            aria-describedby="customer-cookie-description"
+            initial={reduceMotion ? false : { opacity: 0, y: 28, scale: .97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={reduceMotion
+              ? { opacity: 0, transition: { duration: 0 } }
+              : {
+                opacity: 0,
+                y: 18,
+                scale: .98,
+                transition: { duration: .24, ease: [0.4, 0, 1, 1] },
+              }}
+            transition={reduceMotion
+              ? { duration: 0 }
+              : { type: 'spring', stiffness: 320, damping: 30, mass: 0.9 }}
+          >
+            <span className="customer-cookie-consent__icon"><Cookie size={20} aria-hidden="true" /></span>
+            <div>
+              <strong id="customer-cookie-title">Your privacy, your choice</strong>
+              <p id="customer-cookie-description">Essential storage keeps you signed in. Allow optional cookies for saved dashboard preferences, or decline them.</p>
+            </div>
+            <div className="customer-cookie-consent__actions">
+              <button type="button" className="is-secondary" onClick={() => chooseCookieConsent('declined')}>Decline</button>
+              <button type="button" className="is-primary" onClick={() => chooseCookieConsent('allowed')}><ShieldCheck size={15} /> Allow</button>
+            </div>
+          </motion.aside>
+        )}
+      </AnimatePresence>
     </main>
   );
 }

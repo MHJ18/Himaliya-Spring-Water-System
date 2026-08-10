@@ -156,6 +156,7 @@
 }
 
 .customer-login-route {
+  --route-track: rgba(136, 213, 230, 0.15);
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   margin-top: 24px;
@@ -171,8 +172,7 @@
   color: #72919d;
 }
 
-/* The connector doubles as the progress bar: a track plus a fill that
-   travels left to right, so the rail reads as moving rather than static. */
+/* Static connector tracks; the current step gets its moving fill below. */
 .customer-login-route > span:not(:last-child)::after {
   position: absolute;
   top: 50%;
@@ -180,24 +180,12 @@
   left: 70px;
   height: 2px;
   content: '';
-  overflow: hidden;
-  background:
-    linear-gradient(90deg, var(--customer-cyan), rgba(114, 232, 245, 0)) left / 45% 100% no-repeat,
-    rgba(136, 213, 230, 0.15);
+  background: var(--route-track);
   border-radius: 999px;
-  animation: customer-route-travel 2.6s ease-in-out infinite;
 }
 
 .customer-login-route > span.is-complete:not(:last-child)::after {
-  background:
-    linear-gradient(90deg, var(--customer-cyan), var(--customer-cyan)) left / 100% 100% no-repeat,
-    rgba(136, 213, 230, 0.15);
-  animation: none;
-}
-
-@keyframes customer-route-travel {
-  0% { background-position: -55% 0, 0 0; }
-  60%, 100% { background-position: 130% 0, 0 0; }
+  background: var(--customer-cyan);
 }
 
 .customer-login-route i {
@@ -736,55 +724,52 @@ html[dir='rtl'] .customer-login-page .customer-auth-switch svg {
 .customer-login-page .water-login-input::placeholder,
 .customer-login-page .water-login-input::-webkit-input-placeholder {
   color: rgba(190, 213, 222, 0.62);
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
   font-weight: 500;
   opacity: 1;
 }
 
-/* 3. Continuous indeterminate bar: a fixed-width sliver translating across the
-   track on a linear loop. The previous background-position animation on a
-   percentage-sized gradient stuttered at the wrap point. */
-.customer-login-route > span:not(:last-child)::after {
-  background: rgba(136, 213, 230, 0.15);
-  animation: none;
-}
-
-.customer-login-route > span:not(:last-child) {
-  --route-track: rgba(136, 213, 230, 0.15);
-}
-
+/* A dedicated active track keeps the moving highlight above the connector
+   instead of letting the span's ::after layer cover it. */
 .customer-login-route > span.is-current:not(:last-child)::after {
-  overflow: hidden;
-  background: var(--route-track);
+  background: transparent;
 }
 
-.customer-login-route > span.is-current:not(:last-child) > u {
+.customer-login-route__motion {
   position: absolute;
   top: 50%;
   right: 12px;
   left: 70px;
+  z-index: 1;
+  display: block;
   height: 2px;
   overflow: hidden;
+  background: var(--route-track);
   border-radius: 999px;
   transform: translateY(-50%);
   pointer-events: none;
 }
 
-.customer-login-route > span.is-current:not(:last-child) > u::before {
+.customer-login-route__motion::before {
   position: absolute;
   inset: 0 auto 0 0;
   width: 40%;
   content: '';
   background: linear-gradient(90deg, rgba(114, 232, 245, 0), var(--customer-cyan), rgba(114, 232, 245, 0));
   border-radius: 999px;
+  box-shadow: 0 0 8px rgba(114, 232, 245, .5);
   animation: customer-route-slide 1.8s linear infinite;
 }
 
 @keyframes customer-route-slide {
-  from { transform: translateX(-100%); }
-  to { transform: translateX(250%); }
+  from { transform: translate3d(-100%, 0, 0); }
+  to { transform: translate3d(250%, 0, 0); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .customer-login-route > span.is-current:not(:last-child) > u::before { animation: none; }
+  .customer-login-route__motion::before {
+    width: 100%;
+    opacity: .55;
+    animation: none;
+  }
 }

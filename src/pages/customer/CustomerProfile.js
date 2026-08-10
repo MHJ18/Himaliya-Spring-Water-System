@@ -336,20 +336,75 @@ function CustomerProfile({ history }) {
           <Box
             component="header"
             sx={{
+              position: 'relative',
+              overflow: 'hidden',
               display: 'flex',
               alignItems: { xs: 'flex-start', sm: 'center' },
               justifyContent: 'space-between',
               flexDirection: { xs: 'column-reverse', sm: 'row' },
               gap: 1.5,
               mb: 2.5,
+              p: { xs: 2, sm: 'clamp(1.15rem, 3.2vw, 1.75rem)' },
+              borderRadius: '1.65rem',
+              border: '1px solid',
+              borderColor: theme === 'light' ? 'rgba(7,86,117,.16)' : 'rgba(125,223,255,.18)',
+              boxShadow: theme === 'light' ? '0 18px 46px rgba(25,79,105,.1)' : '0 30px 76px rgba(0,11,24,.34)',
+              backdropFilter: 'blur(18px)',
+              background: theme === 'light'
+                ? 'linear-gradient(145deg, rgba(255,255,255,.92), rgba(237,248,252,.92))'
+                : 'linear-gradient(145deg, rgba(9,36,60,.86), rgba(6,21,38,.88))',
             }}
           >
+            <Stack direction="row" alignItems="center" spacing={1.5} sx={{ position: 'relative', zIndex: 1 }}>
+              <Box sx={{
+                display: 'grid',
+                flex: '0 0 auto',
+                width: 44,
+                height: 44,
+                placeItems: 'center',
+                color: '#fff',
+                background: 'linear-gradient(140deg, #43cfe6, #0782ab)',
+                borderRadius: 2.25,
+                boxShadow: '0 10px 24px rgba(7, 130, 171, .3)',
+              }}
+              >
+                <WaterDropRoundedIcon />
+              </Box>
+              <Box>
+                <Typography
+                  sx={{
+                    display: 'block',
+                    mb: 0.35,
+                    color: theme === 'light' ? '#078eb4' : '#7ddfff',
+                    fontSize: '.72rem',
+                    fontWeight: 900,
+                    letterSpacing: '.12em',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  Himaliya Spring Water
+                </Typography>
+                <Typography
+                  variant="h5"
+                  component="p"
+                  sx={{ fontWeight: 900, color: theme === 'light' ? '#102a3d' : '#f2fbff', lineHeight: 1.15 }}
+                >
+                  Profile & preferences
+                </Typography>
+                <Typography sx={{ mt: 0.35, color: theme === 'light' ? '#4c6c7d' : '#c7ebfb' }}>
+                  Manage your account, delivery defaults, and appearance.
+                </Typography>
+              </Box>
+            </Stack>
             <Button
               color="primary"
               variant="outlined"
               startIcon={<ArrowBackRoundedIcon />}
               onClick={() => history.push('/customer/app')}
               sx={{
+                position: 'relative',
+                zIndex: 1,
+                flex: '0 0 auto',
                 color: theme === 'light' ? '#075675' : '#dff8ff',
                 bgcolor: theme === 'light' ? 'rgba(255,255,255,.78)' : 'rgba(125,223,255,.1)',
                 borderColor: theme === 'light' ? 'rgba(7,86,117,.28)' : 'rgba(125,223,255,.38)',
@@ -361,10 +416,6 @@ function CustomerProfile({ history }) {
             >
               Back to dashboard
             </Button>
-            <Stack direction="row" alignItems="center" spacing={1} color="primary.main">
-              <WaterDropRoundedIcon />
-              <Typography fontWeight={800}>Himaliya Spring Water</Typography>
-            </Stack>
           </Box>
 
           <Box

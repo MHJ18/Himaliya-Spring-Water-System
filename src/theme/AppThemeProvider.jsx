@@ -72,43 +72,43 @@ const buildTheme = (darkMode, compactMode, preset, fontStack) => {
         : (darkMode ? 'rgba(168, 197, 222, 0.13)' : 'rgba(34, 74, 111, 0.12)'),
     },
     shape: {
-      borderRadius: compactMode ? 13 : 16,
+      borderRadius: compactMode ? 11 : 14,
     },
     spacing: 8,
     typography: {
       fontFamily: fontStack,
       htmlFontSize: 16,
-      fontSize: compactMode ? 12 : 13,
+      fontSize: compactMode ? 11.5 : 12.5,
       h1: {
-        fontSize: compactMode ? 'clamp(1.2rem, 1.8vw, 1.6rem)' : 'clamp(1.4rem, 2vw, 1.85rem)',
+        fontSize: compactMode ? 'clamp(1.12rem, 1.7vw, 1.48rem)' : 'clamp(1.34rem, 1.9vw, 1.76rem)',
         fontWeight: 780,
         lineHeight: 1.15,
         letterSpacing: '-0.035em',
       },
       h2: {
-        fontSize: compactMode ? 'clamp(1.05rem, 1.4vw, 1.28rem)' : 'clamp(1.18rem, 1.6vw, 1.45rem)',
+        fontSize: compactMode ? 'clamp(0.98rem, 1.3vw, 1.2rem)' : 'clamp(1.12rem, 1.5vw, 1.38rem)',
         fontWeight: 760,
         lineHeight: 1.2,
         letterSpacing: '-0.025em',
       },
-      h3: { fontSize: compactMode ? '1rem' : '1.08rem', fontWeight: 740, lineHeight: 1.25 },
-      h4: { fontSize: compactMode ? '0.91rem' : '0.98rem', fontWeight: 730, lineHeight: 1.3 },
-      h5: { fontSize: compactMode ? '0.84rem' : '0.9rem', fontWeight: 730, lineHeight: 1.35 },
-      h6: { fontSize: compactMode ? '0.78rem' : '0.82rem', fontWeight: 730, lineHeight: 1.4 },
-      subtitle1: { fontSize: compactMode ? '0.82rem' : '0.86rem', lineHeight: 1.45 },
-      subtitle2: { fontSize: compactMode ? '0.76rem' : '0.8rem', lineHeight: 1.45 },
-      body1: { fontSize: compactMode ? '0.84rem' : '0.875rem', lineHeight: compactMode ? 1.42 : 1.48 },
-      body2: { fontSize: compactMode ? '0.77rem' : '0.8125rem', lineHeight: compactMode ? 1.42 : 1.46 },
-      caption: { fontSize: compactMode ? '0.7rem' : '0.72rem', lineHeight: 1.42 },
+      h3: { fontSize: compactMode ? '0.94rem' : '1.03rem', fontWeight: 720, lineHeight: 1.25 },
+      h4: { fontSize: compactMode ? '0.86rem' : '0.94rem', fontWeight: 710, lineHeight: 1.3 },
+      h5: { fontSize: compactMode ? '0.79rem' : '0.86rem', fontWeight: 700, lineHeight: 1.35 },
+      h6: { fontSize: compactMode ? '0.74rem' : '0.79rem', fontWeight: 700, lineHeight: 1.4 },
+      subtitle1: { fontSize: compactMode ? '0.78rem' : '0.83rem', lineHeight: 1.45 },
+      subtitle2: { fontSize: compactMode ? '0.72rem' : '0.77rem', lineHeight: 1.45 },
+      body1: { fontSize: compactMode ? '0.8rem' : '0.85rem', lineHeight: compactMode ? 1.4 : 1.46 },
+      body2: { fontSize: compactMode ? '0.73rem' : '0.785rem', lineHeight: compactMode ? 1.4 : 1.44 },
+      caption: { fontSize: compactMode ? '0.66rem' : '0.7rem', lineHeight: 1.4 },
       overline: {
-        fontSize: compactMode ? '0.64rem' : '0.67rem',
-        fontWeight: 820,
+        fontSize: compactMode ? '0.59rem' : '0.64rem',
+        fontWeight: 740,
         lineHeight: 1.7,
         letterSpacing: '0.1em',
       },
       button: {
-        fontSize: compactMode ? '0.72rem' : '0.76rem',
-        fontWeight: 780,
+        fontSize: compactMode ? '0.68rem' : '0.73rem',
+        fontWeight: 730,
         letterSpacing: 0,
         textTransform: 'none',
       },
@@ -130,11 +130,11 @@ const buildTheme = (darkMode, compactMode, preset, fontStack) => {
         },
         styleOverrides: {
           root: {
-            minHeight: compactMode ? 30 : 34,
-            paddingInline: compactMode ? 10 : 12,
+            minHeight: compactMode ? 28 : 32,
+            paddingInline: compactMode ? 8 : 10,
             border: '1px solid transparent',
             borderRadius: compactMode ? 9 : 11,
-            fontWeight: 790,
+            fontWeight: 730,
             transition: 'transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease, background 160ms ease',
             ...coarsePointerTarget,
             '&:hover': {
@@ -203,9 +203,9 @@ const buildTheme = (darkMode, compactMode, preset, fontStack) => {
             },
           },
           sizeSmall: {
-            minHeight: compactMode ? 28 : 30,
-            paddingInline: compactMode ? 8 : 9,
-            fontSize: compactMode ? '0.69rem' : '0.73rem',
+            minHeight: compactMode ? 26 : 28,
+            paddingInline: compactMode ? 7 : 8,
+            fontSize: compactMode ? '0.65rem' : '0.7rem',
             '@media (pointer: coarse)': {
               minHeight: 40,
             },
@@ -215,8 +215,8 @@ const buildTheme = (darkMode, compactMode, preset, fontStack) => {
       MuiIconButton: {
         styleOverrides: {
           root: {
-            width: compactMode ? 30 : 34,
-            height: compactMode ? 30 : 34,
+            width: compactMode ? 28 : 32,
+            height: compactMode ? 28 : 32,
             borderRadius: compactMode ? 8 : 10,
             transition: 'transform 160ms ease, color 160ms ease, background 160ms ease',
             '@media (pointer: coarse)': {
@@ -238,7 +238,7 @@ const buildTheme = (darkMode, compactMode, preset, fontStack) => {
       MuiPaper: {
         styleOverrides: {
           rounded: {
-            borderRadius: compactMode ? 13 : 16,
+            borderRadius: compactMode ? 11 : 14,
           },
         },
       },
@@ -250,7 +250,7 @@ const buildTheme = (darkMode, compactMode, preset, fontStack) => {
           root: ({ theme }) => ({
             border: `1px solid ${theme.palette.divider}`,
             backgroundImage: 'none',
-            borderRadius: compactMode ? 14 : 17,
+            borderRadius: compactMode ? 12 : 15,
             boxShadow: darkMode
               ? '0 20px 55px rgba(0, 0, 0, 0.24)'
               : '0 18px 48px rgba(25, 85, 104, 0.09)',
@@ -260,13 +260,13 @@ const buildTheme = (darkMode, compactMode, preset, fontStack) => {
       MuiCardHeader: {
         styleOverrides: {
           root: {
-            padding: compactMode ? '10px 11px 6px' : '12px 12px 8px',
+            padding: compactMode ? '8px 9px 5px' : '10px 10px 6px',
           },
           avatar: {
             marginRight: compactMode ? 8 : 10,
           },
           title: {
-            fontWeight: 820,
+            fontWeight: 700,
             letterSpacing: '-0.018em',
           },
         },
@@ -274,9 +274,9 @@ const buildTheme = (darkMode, compactMode, preset, fontStack) => {
       MuiCardContent: {
         styleOverrides: {
           root: {
-            padding: compactMode ? 10 : 12,
+            padding: compactMode ? 8 : 10,
             '&:last-child': {
-              paddingBottom: compactMode ? 10 : 12,
+              paddingBottom: compactMode ? 8 : 10,
             },
           },
         },
@@ -290,9 +290,9 @@ const buildTheme = (darkMode, compactMode, preset, fontStack) => {
       MuiOutlinedInput: {
         styleOverrides: {
           root: {
-            minHeight: compactMode ? 32 : 36,
+            minHeight: compactMode ? 30 : 34,
             borderRadius: compactMode ? 8 : 10,
-            fontSize: compactMode ? '0.77rem' : '0.8125rem',
+            fontSize: compactMode ? '0.73rem' : '0.785rem',
             // A recessed field reads as somewhere to type rather than a flat
             // outline: tinted surface, hairline inset, lift on focus.
             background: darkMode
@@ -327,7 +327,7 @@ const buildTheme = (darkMode, compactMode, preset, fontStack) => {
             },
           },
           input: {
-            padding: compactMode ? '6px 8px' : '7px 10px',
+            padding: compactMode ? '5px 7px' : '6px 9px',
             '@media (pointer: coarse)': {
               padding: '11px 13px',
             },
@@ -340,8 +340,8 @@ const buildTheme = (darkMode, compactMode, preset, fontStack) => {
       MuiInputLabel: {
         styleOverrides: {
           root: {
-            fontSize: compactMode ? '0.77rem' : '0.8125rem',
-            fontWeight: 650,
+            fontSize: compactMode ? '0.73rem' : '0.785rem',
+            fontWeight: 600,
             '&.Mui-focused': {
               color: darkMode ? preset.primaryLight : preset.primaryDark,
               fontWeight: 750,
@@ -374,10 +374,10 @@ const buildTheme = (darkMode, compactMode, preset, fontStack) => {
       MuiMenuItem: {
         styleOverrides: {
           root: {
-            minHeight: compactMode ? 32 : 36,
+            minHeight: compactMode ? 30 : 34,
             borderRadius: 8,
             marginInline: 4,
-            fontSize: compactMode ? '0.77rem' : '0.8125rem',
+            fontSize: compactMode ? '0.73rem' : '0.785rem',
             '&.Mui-selected': {
               background: softAccent,
               fontWeight: 700,
@@ -396,13 +396,13 @@ const buildTheme = (darkMode, compactMode, preset, fontStack) => {
       MuiTableCell: {
         styleOverrides: {
           root: {
-            padding: compactMode ? '6px 8px' : '7px 10px',
-            fontSize: compactMode ? '0.75rem' : '0.78rem',
+            padding: compactMode ? '5px 7px' : '6px 8px',
+            fontSize: compactMode ? '0.71rem' : '0.75rem',
             borderColor: darkMode ? 'rgba(168, 197, 222, 0.1)' : 'rgba(34, 74, 111, 0.1)',
           },
           head: {
-            fontWeight: 780,
-            fontSize: compactMode ? '0.7rem' : '0.72rem',
+            fontWeight: 720,
+            fontSize: compactMode ? '0.66rem' : '0.7rem',
             letterSpacing: '0.055em',
             textTransform: 'uppercase',
             whiteSpace: 'nowrap',
@@ -413,10 +413,10 @@ const buildTheme = (darkMode, compactMode, preset, fontStack) => {
       MuiChip: {
         styleOverrides: {
           root: {
-            height: compactMode ? 23 : 25,
+            height: compactMode ? 22 : 24,
             borderRadius: 999,
-            fontSize: compactMode ? '0.68rem' : '0.71rem',
-            fontWeight: 770,
+            fontSize: compactMode ? '0.64rem' : '0.69rem',
+            fontWeight: 700,
             '@media (pointer: coarse)': {
               minHeight: 28,
             },
@@ -426,7 +426,7 @@ const buildTheme = (darkMode, compactMode, preset, fontStack) => {
       MuiTabs: {
         styleOverrides: {
           root: {
-            minHeight: compactMode ? 38 : 41,
+            minHeight: compactMode ? 35 : 38,
           },
           indicator: {
             height: 3,
@@ -438,15 +438,15 @@ const buildTheme = (darkMode, compactMode, preset, fontStack) => {
       MuiTab: {
         styleOverrides: {
           root: {
-            minHeight: compactMode ? 38 : 41,
+            minHeight: compactMode ? 35 : 38,
             minWidth: 0,
-            padding: compactMode ? '5px 8px' : '6px 10px',
+            padding: compactMode ? '4px 7px' : '5px 9px',
             borderRadius: compactMode ? 8 : 10,
-            fontSize: compactMode ? '0.7rem' : '0.73rem',
+            fontSize: compactMode ? '0.66rem' : '0.71rem',
             '@media (pointer: coarse)': {
               minHeight: 44,
             },
-            fontWeight: 760,
+            fontWeight: 700,
             textTransform: 'none',
             '&.Mui-selected': {
               color: darkMode ? preset.primaryLight : preset.primaryDark,
@@ -462,13 +462,13 @@ const buildTheme = (darkMode, compactMode, preset, fontStack) => {
       MuiToggleButton: {
         styleOverrides: {
           root: {
-            minHeight: compactMode ? 32 : 36,
-            padding: compactMode ? '5px 7px' : '6px 9px',
+            minHeight: compactMode ? 30 : 34,
+            padding: compactMode ? '4px 6px' : '5px 8px',
             color: 'inherit',
             borderColor: darkMode ? 'rgba(168,197,222,.16)' : 'rgba(34,74,111,.14)',
             borderRadius: `${compactMode ? 8 : 10}px !important`,
-            fontSize: compactMode ? '0.7rem' : '0.73rem',
-            fontWeight: 760,
+            fontSize: compactMode ? '0.66rem' : '0.71rem',
+            fontWeight: 700,
             textTransform: 'none',
             ...coarsePointerTarget,
             '&.Mui-selected': {

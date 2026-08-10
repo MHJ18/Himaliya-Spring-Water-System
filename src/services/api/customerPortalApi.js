@@ -3,18 +3,17 @@ import {
   clearPendingCustomerProfile,
   consumeCustomerEmailConfirmation,
   dbRequest,
-  ensurePhoneVerificationEnabled,
   getPendingCustomerProfile,
   getStoredSession,
   getStoredSessionType,
   isSupabaseConfigured,
-  requestPhoneChange,
+  requestCustomerLinkEmailOtp,
   signInWithPassword,
   signOut,
   signUpWithPassword,
   storeSession,
   storePendingCustomerProfile,
-  verifyPhoneChangeOtp,
+  verifyCustomerLinkEmailOtp,
 } from '../cloud/supabaseClient';
 import { canonicalBottleType, resolveOrderPricing } from '../../utils/orderPricing';
 import { resolveInvoiceDocument } from '../../utils/invoiceTotals';
@@ -319,7 +318,7 @@ export async function registerCustomer(form) {
     clearPendingCustomerProfile();
     throw error;
   }
-  if (completion.phoneVerificationRequired) return completion;
+  if (completion.emailOtpRequired) return completion;
   const { profile } = completion;
   await signOut();
   return profile;
@@ -344,8 +343,8 @@ export async function completeCustomerProfile(form) {
   }
 }
 
-export async function getCustomerClaimRequirements(form) {
-  const result = await dbRequest('/rpc/get_customer_claim_requirements', {
+export async function getCustomerLinkRequirement(form) {
+  const result = await dbRequest('/rpc/get_customer_link_requirement', {
     method: 'POST',
     body: JSON.stringify({
       p_email: form.email.trim().toLowerCase(),
@@ -353,41 +352,17 @@ export async function getCustomerClaimRequirements(form) {
     }),
   });
   const row = Array.isArray(result) ? result[0] : result;
-  return { phoneVerificationRequired: Boolean(row && row.phone_verification_required) };
+  return { emailOtpRequired: Boolean(row && row.email_otp_required) };
 }
 
-export async function requestCustomerPhoneVerification(phone) {
-  const normalizedPhone = normalizePhone(phone);
-  await ensurePhoneVerificationEnabled();
-  await dbRequest('/rpc/begin_customer_phone_verification', {
-    method: 'POST',
-    body: JSON.stringify({ p_phone: normalizedPhone }),
-  });
-  try {
-    const user = await requestPhoneChange(normalizedPhone);
-    if (user.phone_confirmed_at && normalizePhone(user.phone) === normalizedPhone) {
-      throw new Error(
-        'Supabase confirmed the phone without an SMS challenge. Require phone confirmation in Auth settings before linking by phone.'
-      );
-    }
-    await dbRequest('/rpc/attest_customer_phone_challenge', {
-      method: 'POST',
-      body: JSON.stringify({ p_phone: normalizedPhone }),
-    });
-    return true;
-  } catch (error) {
-    await dbRequest('/rpc/cancel_customer_phone_verification', {
-      method: 'POST',
-      body: JSON.stringify({ p_phone: normalizedPhone }),
-    }).catch(() => false);
-    throw error;
-  }
+export async function requestCustomerLinkEmailVerification(email) {
+  return requestCustomerLinkEmailOtp(email);
 }
 
 export async function beginCustomerProfileCompletion(form) {
   let requirements;
   try {
-    requirements = await getCustomerClaimRequirements(form);
+    requirements = await getCustomerLinkRequirement(form);
   } catch (error) {
     try {
       await signOut();
@@ -396,35 +371,37 @@ export async function beginCustomerProfileCompletion(form) {
     }
     throw error;
   }
-  if (!requirements.phoneVerificationRequired) {
-    return { profile: await completeCustomerProfile(form), phoneVerificationRequired: false };
+  if (!requirements.emailOtpRequired) {
+    return { profile: await completeCustomerProfile(form), emailOtpRequired: false };
   }
 
   try {
-    await requestCustomerPhoneVerification(form.phone);
+    await requestCustomerLinkEmailVerification(form.email);
     return {
       profile: null,
-      phoneVerificationRequired: true,
+      emailOtpRequired: true,
       verificationSent: true,
-      phoneVerificationError: '',
+      emailOtpError: '',
     };
   } catch (error) {
     return {
       profile: null,
-      phoneVerificationRequired: true,
+      emailOtpRequired: true,
       verificationSent: false,
-      phoneVerificationError: error.message || 'SMS verification could not be started.',
+      emailOtpError: error.message || 'Email verification could not be started.',
     };
   }
 }
 
-export async function verifyCustomerPhoneAndCompleteProfile(form, token) {
-  const normalizedPhone = normalizePhone(form.phone);
-  await verifyPhoneChangeOtp(normalizedPhone, String(token || '').trim());
+export async function verifyCustomerLinkEmailAndCompleteProfile(form, token) {
+  await verifyCustomerLinkEmailOtp(form.email, String(token || '').trim());
   try {
-    await dbRequest('/rpc/complete_customer_phone_verification', {
+    await dbRequest('/rpc/attest_customer_link_email_otp', {
       method: 'POST',
-      body: JSON.stringify({ p_phone: normalizedPhone }),
+      body: JSON.stringify({
+        p_email: form.email.trim().toLowerCase(),
+        p_phone: normalizePhone(form.phone),
+      }),
     });
     return await completeCustomerProfile(form);
   } catch (error) {
@@ -441,12 +418,6 @@ export async function finishCustomerEmailConfirmation(hash, search) {
   let session;
   try {
     session = await consumeCustomerEmailConfirmation(hash, search);
-    if (session) {
-      await dbRequest('/rpc/attest_customer_email_confirmation', {
-        method: 'POST',
-        body: '{}',
-      });
-    }
   } catch (error) {
     if (getStoredSessionType() === 'customer') {
       try {
@@ -531,12 +502,13 @@ export async function getCustomerOrderControls() {
 }
 
 export async function cancelCustomerOrder(orderId) {
-  const rows = await dbRequest(`/customer_orders?id=eq.${encodeURIComponent(orderId)}&status=eq.pending&select=*`, {
-    method: 'PATCH',
-    body: JSON.stringify({ status: 'canceled', updated_at: new Date().toISOString() }),
+  const result = await dbRequest('/rpc/cancel_customer_order', {
+    method: 'POST',
+    body: JSON.stringify({ p_order_id: orderId }),
   });
-  if (!rows || !rows[0]) throw new Error('This order can no longer be canceled.');
-  return toOrder(rows[0], {});
+  const row = Array.isArray(result) ? result[0] : result;
+  if (!row) throw new Error('This order can no longer be canceled.');
+  return toOrder(row, {});
 }
 
 export async function createCustomerOrder(profile, form) {
@@ -549,53 +521,32 @@ export async function createCustomerOrder(profile, form) {
     .map((item) => ({
       bottleType: canonicalBottleType(item.bottleType),
       quantity: Math.max(0, Number(item.quantity || 0)),
-      unitPrice: Math.max(0, Number(item.unitPrice || 0)),
     }))
     .filter((item) => item.bottleType && item.quantity > 0);
   if (!items.length) throw new Error('Choose at least one bottle before placing the order.');
-  const quantity = items.reduce((sum, item) => sum + item.quantity, 0);
-  const totalAmount = items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
-  const firstItem = items[0];
   const deliveryAddress = String(profile.address || '').trim();
   if (!deliveryAddress) {
     throw new Error('Add a delivery address to your profile before placing an order.');
   }
-  const payload = {
-    customer_id: profile.id,
-    quantity,
-    bottle_type: firstItem.bottleType,
-    items,
-    unit_price: items.length === 1 ? firstItem.unitPrice : 0,
-    total_amount: totalAmount,
-    delivery_address: deliveryAddress,
-    delivery_date: form.deliveryDate || null,
-    notes: form.notes || '',
-  };
-
-  const createOrder = (body) => dbRequest('/customer_orders', {
+  const result = await dbRequest('/rpc/create_customer_order', {
     method: 'POST',
-    body: JSON.stringify(body),
+    body: JSON.stringify({
+      p_items: items.map((item) => ({
+        bottleType: item.bottleType,
+        quantity: item.quantity,
+      })),
+      p_delivery_address: deliveryAddress,
+      p_delivery_date: form.deliveryDate || null,
+      p_notes: form.notes || '',
+    }),
   });
-
-  let rows;
-  try {
-    rows = await createOrder(payload);
-  } catch (error) {
-    const schemaCacheMiss = error.code === 'PGRST204' ||
-      /schema cache|total_amount|unit_price/i.test(error.message || '');
-    if (!schemaCacheMiss) throw error;
-    const legacyPayload = { ...payload };
-    delete legacyPayload.unit_price;
-    delete legacyPayload.total_amount;
-    rows = await createOrder(legacyPayload);
+  const row = Array.isArray(result) ? result[0] : result;
+  if (!row) throw new Error('The order could not be created. Please try again.');
+  const created = toOrder(row, {});
+  if (created.totalAmount <= 0) {
+    throw new Error('Order pricing could not be resolved. Please contact the business.');
   }
-  const created = toOrder(rows[0], Object.fromEntries(items.map((item) => [item.bottleType, item.unitPrice])));
-  if (created.totalAmount > 0) return created;
-  return {
-    ...created,
-    items: items.map((item) => ({ ...item, totalAmount: item.quantity * item.unitPrice })),
-    totalAmount: totalAmount || created.totalAmount,
-  };
+  return created;
 }
 
 export async function getCustomerNotifications() {
@@ -606,10 +557,9 @@ export async function getCustomerNotifications() {
 
 export async function markCustomerNotificationsRead() {
   requireCloud();
-  await dbRequest('/customer_notifications?audience=eq.customer&read=eq.false', {
-    method: 'PATCH',
-    prefer: 'return=minimal',
-    body: JSON.stringify({ read: true }),
+  await dbRequest('/rpc/mark_customer_notifications_read', {
+    method: 'POST',
+    body: '{}',
   });
 }
 
@@ -653,7 +603,7 @@ export async function getAdminCustomerOrders(prices) {
 
 export async function getActiveRiders() {
   requireCloud();
-  const rows = await dbRequest('/admin_profiles?role=eq.Rider&active=eq.true&select=id,auth_user_id,name,email,phone,active,created_at&order=name.asc');
+  const rows = await dbRequest('/admin_profiles?role=eq.Rider&active=eq.true&select=id,auth_user_id,name,email,phone,active,rider_available,last_seen_at,last_assigned_at,created_at&order=name.asc');
   return (rows || []).map((row) => ({
     id: row.id,
     authUserId: row.auth_user_id,
@@ -661,6 +611,9 @@ export async function getActiveRiders() {
     email: row.email || '',
     phone: row.phone || '',
     active: row.active !== false,
+    available: Boolean(row.rider_available),
+    lastSeenAt: row.last_seen_at || null,
+    lastAssignedAt: row.last_assigned_at || null,
     createdAt: row.created_at,
   }));
 }

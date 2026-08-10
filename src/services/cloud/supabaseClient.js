@@ -340,6 +340,64 @@ export async function verifyPhoneChangeOtp(phone, token) {
   return nextSession;
 }
 
+export async function requestCustomerLinkEmailOtp(email) {
+  const normalizedEmail = String(email || '').trim().toLowerCase();
+  if (!/^\S+@\S+\.\S+$/.test(normalizedEmail)) {
+    throw new Error('Enter a valid email address before requesting a verification code.');
+  }
+
+  await authRequest('/otp', {
+    method: 'POST',
+    body: JSON.stringify({
+      email: normalizedEmail,
+      create_user: false,
+    }),
+  });
+  return true;
+}
+
+export async function verifyCustomerLinkEmailOtp(email, token) {
+  const normalizedEmail = String(email || '').trim().toLowerCase();
+  const normalizedToken = String(token || '').trim();
+  const originalSession = await getFreshSession();
+  const originalUserId = originalSession.user && originalSession.user.id;
+
+  const response = await authRequest('/verify', {
+    method: 'POST',
+    body: JSON.stringify({
+      email: normalizedEmail,
+      token: normalizedToken,
+      type: 'email',
+    }),
+  });
+  const data = response && response.data ? response.data : response;
+  const verificationSession = data && (data.session || (
+    data.access_token && data.refresh_token ? data : null
+  ));
+  if (!verificationSession || !verificationSession.access_token) {
+    throw new Error('The email verification code did not create a valid session. Request a new code.');
+  }
+
+  const userResponse = verificationSession.user || await authRequest('/user', {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${verificationSession.access_token}` },
+  });
+  const verifiedUser = userResponse && userResponse.user ? userResponse.user : userResponse;
+  const verifiedEmail = String((verifiedUser && verifiedUser.email) || '').trim().toLowerCase();
+
+  if (!verifiedUser || verifiedUser.id !== originalUserId || verifiedEmail !== normalizedEmail) {
+    await revokeAccessToken(verificationSession.access_token);
+    await discardAuthSession(originalSession);
+    throw new Error(
+      'Email verification returned a different account. Both sessions were revoked; contact Himaliya Spring Water before retrying.'
+    );
+  }
+
+  const nextSession = { ...verificationSession, user: verifiedUser };
+  storeSession(nextSession, 'customer');
+  return nextSession;
+}
+
 export async function signUpWithPassword(email, password, redirectTo) {
   const redirectQuery = redirectTo ? `?redirect_to=${encodeURIComponent(redirectTo)}` : '';
   const response = await authRequest(`/signup${redirectQuery}`, {

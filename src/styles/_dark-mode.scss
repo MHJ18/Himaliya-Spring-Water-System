@@ -40,8 +40,8 @@ body.dashboard-light {
   background: var(--hs-page-bg);
   color: #182033;
 
-  .content,
-  main {
+  .admin-shell .content,
+  .admin-shell main {
     color: #182033;
   }
 
@@ -120,8 +120,16 @@ body.dashboard-light {
   }
 
   .stat-item .value,
-  .fw-semi-bold,
-  h1, h2, h3, h4, h5, h6 {
+  .fw-semi-bold {
+    color: #182033;
+  }
+
+  .admin-shell h1,
+  .admin-shell h2,
+  .admin-shell h3,
+  .admin-shell h4,
+  .admin-shell h5,
+  .admin-shell h6 {
     color: #182033;
   }
 
@@ -1376,6 +1384,7 @@ body.dashboard-dark[data-admin-theme='monochrome'] {
    both <body> and the admin Layout root already consume. Only the paint
    behaviour needs stating here. */
 body[data-bg-palette] {
+  background: var(--hs-selected-page-bg, var(--hs-page-bg));
   background-attachment: fixed;
 }
 
