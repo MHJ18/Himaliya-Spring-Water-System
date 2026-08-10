@@ -50,10 +50,12 @@
   background: linear-gradient(90deg, transparent, rgba(104, 226, 244, 0.34), transparent);
 }
 
-.admin-login-shell {
-  grid-template-columns: minmax(0, 1fr) minmax(330px, 442px);
-  gap: clamp(42px, 8vw, 112px);
-  max-width: 1210px;
+@media (min-width: 901px) {
+  .admin-login-shell {
+    grid-template-columns: minmax(0, 1fr) minmax(330px, 442px);
+    gap: clamp(42px, 8vw, 112px);
+    max-width: 1210px;
+  }
 }
 
 .admin-login-copy {
